@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Техно Парк PRO</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --orange: #FF7300; --dark: #0a0a0a; --card: #141414; --input: #1f1f1f;
+            --white: #ffffff; --red: #FF3D00; --green: #00E676; --gray: #888;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--dark); color: var(--white); margin: 0; padding-bottom: 100px; overflow-x: hidden; }
+        
+        .nav { display: flex; position: sticky; top: 0; background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(15px); z-index: 1000; padding: 10px; gap: 8px; border-bottom: 1px solid #222; }
+        .nav-item { flex: 1; padding: 12px; text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--gray); cursor: pointer; border-radius: 12px; transition: 0.2s; }
+        .nav-item.active { background: var(--orange); color: black; box-shadow: 0 4px 15px rgba(255, 115, 0, 0.3); }
+
+        .page { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-title { color: var(--gray); font-size: 11px; margin: 25px 0 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .section-title::after { content: ""; height: 1px; background: #222; flex: 1; }
+
+        input { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid #222; background: var(--input); color: white; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
+        input:focus { border-color: var(--orange); outline: none; background: #252525; }
+
+        .btn { width: 100%; padding: 18px; border-radius: 16px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn:active { transform: scale(0.97); opacity: 0.8; }
+        .btn-main { background: var(--orange); color: black; }
+        .btn-time { background: var(--card); color: var(--gray); border: 1px solid #222; padding: 14px; }
+        .btn-time.active { border-color: var(--orange); color: var(--orange); background: rgba(255, 115, 0, 0.1); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        /* Карточки товаров */
+        .tile-card { background: var(--card); border-radius: 20px; padding: 25px 15px; text-align: center; border: 1px solid #222; transition: 0.1s; position: relative; overflow: hidden; }
+        .tile-card:active { transform: scale(0.95); border-color: var(--orange); background: #1a1a1a; }
+        .tile-card b { font-size: 18px; display: block; margin-top: 10px; }
+        .tile-card small { color: var(--gray); font-size: 12px; }
+
+        /* Игроки Полигона */
+        .player-card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid var(--green); transition: 0.3s; }
+        .player-timer { font-size: 24px; font-weight: 900; font-family: 'Courier New', monospace; color: var(--orange); }
+        .player-actions { max-height: 0; overflow: hidden; transition: 0.3s ease; opacity: 0; }
+        .player-card.open .player-actions { max-height: 200px; margin-top: 15px; opacity: 1; }
+
+        /* История продаж и расходов */
+        .stat-row { display: flex; justify-content: space-between; align-items: center; background:#1a1a1a; padding:12px; border-radius:12px; margin-bottom:8px; border: 1px solid #222; }
+        .del-btn { background: #331515; color: var(--red); border: 1px solid var(--red); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 16px; }
+
+        /* Окна Админа */
+        .full-window { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: none; padding: 20px; overflow-y: auto; }
+        .full-window.active { display: block; }
+        .report-box { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #222; }
+        .rep-line { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .rep-val { font-weight: 700; color: var(--white); }
+        
+        /* Склад */
+        .stock-item { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #222; }
+        .stock-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .stock-inputs div { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-bottom: 4px; }
+        .stock-inputs input { padding: 10px; text-align: center; margin-bottom: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <div class="nav-item active" onclick="showPage('poly', this)">Полигон</div>
+        <div class="nav-item" onclick="showPage('fest', this)">Праздник</div>
+        <div class="nav-item" onclick="showPage('goods', this)">Товары</div>
+        <div class="nav-item" onclick="checkAdmin(this)">Админ</div>
+    </div>
+
+    <div id="poly" class="page active">
+        <input type="text" id="p_name" placeholder="Имя игрока">
+        <input type="tel" id="p_tel" placeholder="Номер телефона">
+        <div class="grid-2" style="margin-bottom: 15px;">
+            <button class="btn btn-time" id="t30" onclick="selT(30, 250, 't30')">30 МИН / 250₽</button>
+            <button class="btn btn-time" id="t60" onclick="selT(60, 500, 't60')">1 ЧАС / 500₽</button>
+        </div>
+        <button class="btn btn-main" onclick="startSession()">🚀 Запустить заезд</button>
+        <div class="section-title">СЕЙЧАС ИГРАЮТ НА ПОЛИГОНЕ</div>
+        <div id="online_list"></div>
+    </div>
+
+    <div id="fest" class="page">
+        <div class="section-title">Оформление праздника</div>
+        <input type="text" id="f_name" placeholder="Имя именинника">
+        <input type="tel" id="f_tel" placeholder="Телефон">
+        <div class="grid-2">
+            <input type="number" id="f_people" placeholder="Гостей">
+            <input type="number" id="f_hours" placeholder="Часов">
+        </div>
+        <input type="number" id="f_sum" placeholder="Итоговая сумма (₽)">
+        <button class="btn btn-main" onclick="saveParty()">💳 Зафиксировать праздник</button>
+    </div>
+
+    <div id="goods" class="page">
+        <div class="grid-2" id="goods_grid">
+            <div class="tile-card" onclick="sellItem('coffee')">☕<b>КОФЕ</b><br><small id="lbl_coffee">--</small></div>
+            <div class="tile-card" onclick="sellItem('water')">💧<b>ВОДА</b><br><small id="lbl_water">--</small></div>
+            <div class="tile-card" onclick="sellItem('juice')">🥤<b>СОК</b><br><small id="lbl_juice">--</small></div>
+        </div>
+        <div class="section-title">История продаж за сегодня</div>
+        <div id="sales_history"></div>
+    </div>
+
+    <div id="adm_page" class="page">
+        <div class="grid-2">
+            <div class="tile-card" onclick="openWin('win_reports')">📊<b>ОТЧЕТЫ</b></div>
+            <div class="tile-card" onclick="openWin('win_stock')">📦<b>СКЛАД</b></div>
+            <div class="tile-card" onclick="openWin('win_exp')">💸<b>РАСХОДЫ</b></div>
+        </div>
+    </div>
+
+    <div id="win_stock" class="full-window">
+        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
+        <div id="stock_manager_list"></div>
+    </div>
+
+    <div id="win_exp" class="full-window">
+        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
+        <div class="section-title">Новый расход</div>
+        <input type="text" id="exp_comment" placeholder="На что расход? (Зарплата, аренда...)">
+        <input type="number" id="exp_amount" placeholder="Сумма (₽)">
+        <button class="btn btn-main" onclick="saveExp()">💾 Сохранить расход</button>
+        
+        <div class="section-title" style="margin-top: 30px;">ЛЕНТА РАСХОДОВ (ЗА 30 ДНЕЙ)</div>
+        <div id="exp_history_list"></div>
+    </div>
+
+    <div id="win_reports" class="full-window">
+        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
+        <div class="grid-2" style="margin-bottom:20px;">
+            <button class="btn btn-time active" id="btn_rep_day" onclick="loadReports('day')">День</button>
+            <button class="btn btn-time" id="btn_rep_week" onclick="loadReports('week')">Неделя</button>
+        </div>
+        <button class="btn btn-time" id="btn_rep_month" style="margin-bottom:20px;" onclick="loadReports('month')">Месяц</button>
+        <div id="report_content"></div>
+    </div>
+
+    <script>
+        const S_URL = "https://ereiiidezagburttpxtn.supabase.co";
+        const S_KEY = "sb_publishable_YuQ8s49c1LvkCTmoBPQ0hA_7EJ3Z1cj";
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        let db = { players: [], stock: {}, expenses: [] };
+        let selMins = 0, selPrice = 0, openCardId = null;
+
+        async function init() {
+            // Склад
+            const { data: st } = await _supabase.from('tp_stock').select('*');
+            if(st) st.forEach(i => {
+                db.stock[i.id] = i;
+                if(document.getElementById(`lbl_${i.id}`)) document.getElementById(`lbl_${i.id}`).innerText = `Ост: ${i.qty}`;
+            });
+            
+            // Игроки
+            const { data: sess } = await _supabase.from('tp_sessions').select('*').or('finished.is.null,finished.eq.false').eq('type','poly').order('created_at', {ascending: false});
+            db.players = sess || [];
+            
+            // Продажи за сегодня
+            const today = new Date(); today.setHours(0,0,0,0);
+            const { data: sls } = await _supabase.from('tp_sales').select('*').gte('created_at', today.toISOString()).order('created_at', {ascending: false});
+            
+            // Расходы за 30 дней
+            const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const { data: exps } = await _supabase.from('tp_expenses').select('*').gte('created_at', thirtyDaysAgo.toISOString()).order('created_at', {ascending: false});
+            db.expenses = exps || [];
+
+            renderSales(sls || []);
+            renderPlayers();
+            renderStockEdit();
+            renderExpenses();
+        }
+
+        // --- ПОЛИГОН ---
+        async function startSession() {
+            const name = document.getElementById('p_name').value;
+            const phone = document.getElementById('p_tel').value;
+            if(!name || !selMins) return alert("Выберите время и введите имя!");
+            await _supabase.from('tp_sessions').insert([{ client_name: name, phone: phone, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
+            document.getElementById('p_name').value = ''; document.getElementById('p_tel').value = ''; init();
+        }
+
+        function renderPlayers() {
+            let html = '';
+            const now = new Date().getTime();
+            db.players.forEach(p => {
+                const startObj = new Date(p.created_at);
+                const end = startObj.getTime() + (p.duration * 60000);
+                const diff = end - now;
+                const m = Math.floor(Math.abs(diff)/60000);
+                const s = Math.floor((Math.abs(diff)%60000)/1000);
+                const isOp = openCardId === p.id;
+                
+                html += `
+                <div class="player-card ${isOp ? 'open' : ''}" onclick="toggleC(${p.id})">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b>${p.client_name}</b><br>
+                            <small style="color:var(--gray)">Старт: ${startObj.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} | На ${p.duration}м</small>
+                        </div>
+                        <div class="player-timer" style="color:${diff<0?'var(--red)':'var(--orange)'}">${diff<0?'-':''}${m}:${s.toString().padStart(2,'0')}</div>
+                    </div>
+                    <div class="player-actions" onclick="event.stopPropagation()">
+                        <button class="btn" style="background:#2a1010; color:var(--red); border:1px solid var(--red); margin-bottom:10px;" onclick="finishS(${p.id})">🛑 ЗАВЕРШИТЬ ЗАЕЗД</button>
+                        <div class="grid-2">
+                            <button class="btn btn-time active" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 30, 250)">+30 МИН</button>
+                            <button class="btn btn-time active" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 500)">+1 ЧАС</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('online_list').innerHTML = html || '<center style="color:var(--gray)">На полигоне никого нет</center>';
+        }
+
+        function toggleC(id) { openCardId = openCardId === id ? null : id; renderPlayers(); }
+        async function finishS(id) { if(confirm("Завершить заезд? Игрок уйдет в историю.")) { await _supabase.from('tp_sessions').update({finished:true}).eq('id', id); init(); } }
+        async function extendS(id, currD, currP, addD, addP) { await _supabase.from('tp_sessions').update({duration: currD + addD, price: currP + addP}).eq('id', id); init(); }
+
+        // --- ПРАЗДНИК ---
+        async function saveParty() {
+            const n = document.getElementById('f_name').value;
+            const ph = document.getElementById('f_tel').value;
+            const h = document.getElementById('f_hours').value || 0;
+            const s = document.getElementById('f_sum').value;
+            if(!n || !s) return alert("Имя и сумма обязательны!");
+            await _supabase.from('tp_sessions').insert([{ client_name: n, phone: ph, duration: h*60, price: parseFloat(s), type: 'fest', finished: true }]);
+            alert("Праздник зафиксирован!");
+            document.querySelectorAll('#fest input').forEach(i => i.value = '');
+            init();
+        }
+
+        // --- ТОВАРЫ И ИСТОРИЯ ---
+        async function sellItem(id) {
+            const item = db.stock[id];
+            if(item.qty <= 0) return alert("Нет на складе!");
+            document.getElementById(`lbl_${id}`).innerText = `Ост: ${item.qty - 1}`;
+            await _supabase.from('tp_sales').insert([{item_id: id, name: item.name, price: item.price, cost: item.cost}]);
+            await _supabase.from('tp_stock').update({qty: item.qty - 1}).eq('id', id);
+            init();
+        }
+
+        function renderSales(list) {
+            let html = '';
+            list.forEach(s => {
+                const time = new Date(s.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                html += `<div class="stat-row">
+                    <div><b>${s.name}</b><br><small style="color:var(--gray)">${time} — ${s.price}₽</small></div>
+                    <button class="del-btn" onclick="deleteSale(${s.id}, '${s.item_id}')">🗑</button>
+                </div>`;
+            });
+            document.getElementById('sales_history').innerHTML = html || '<center style="color:var(--gray)">Продаж пока нет</center>';
+        }
+
+        async function deleteSale(id, item_id) {
+            if(confirm("Отменить продажу? Товар вернется на склад.")) {
+                await _supabase.from('tp_stock').update({qty: db.stock[item_id].qty + 1}).eq('id', item_id);
+                await _supabase.from('tp_sales').delete().eq('id', id);
+                init();
+            }
+        }
+
+        // --- СКЛАД И РАСХОДЫ ---
+        function renderStockEdit() {
+            let html = '';
+            Object.values(db.stock).forEach(i => {
+                html += `<div class="stock-item"><b>${i.name}</b>
+                    <div class="stock-inputs">
+                        <div>Приход<input type="number" value="${i.cost}" onchange="updSt('${i.id}','cost',this.value)"></div>
+                        <div>Продажа<input type="number" value="${i.price}" onchange="updSt('${i.id}','price',this.value)"></div>
+                        <div>Остаток<input type="number" value="${i.qty}" onchange="updSt('${i.id}','qty',this.value)"></div>
+                    </div></div>`;
+            });
+            document.getElementById('stock_manager_list').innerHTML = html;
+        }
+        async function updSt(id, f, v) { await _supabase.from('tp_stock').update({[f]: parseFloat(v)}).eq('id', id); init(); }
+
+        async function saveExp() {
+            const comm = document.getElementById('exp_comment').value;
+            const amt = document.getElementById('exp_amount').value;
+            if(!comm || !amt) return alert("Заполните оба поля!");
+            
+            await _supabase.from('tp_expenses').insert([{ comment: comm, amount: parseFloat(amt) }]);
+            
+            document.getElementById('exp_comment').value = ''; 
+            document.getElementById('exp_amount').value = '';
+            
+            // Сразу обновляем интерфейс, чтобы показать новый расход в ленте
+            init(); 
+        }
+
+        function renderExpenses() {
+            let html = '';
+            db.expenses.forEach(e => {
+                const dateObj = new Date(e.created_at);
+                const dateStr = dateObj.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'});
+                const timeStr = dateObj.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+                html += `<div class="stat-row">
+                    <div><b>${e.comment}</b><br><small style="color:var(--gray)">${dateStr} в ${timeStr}</small></div>
+                    <div style="color:var(--red); font-weight:bold; font-size:16px;">- ${e.amount} ₽</div>
+                </div>`;
+            });
+            document.getElementById('exp_history_list').innerHTML = html || '<center style="color:var(--gray)">За последние 30 дней расходов не было</center>';
+        }
+
+        // --- ДЕТАЛЬНЫЕ ОТЧЕТЫ ---
+        async function loadReports(period) {
+            document.getElementById('btn_rep_day').classList.remove('active');
+            document.getElementById('btn_rep_week').classList.remove('active');
+            document.getElementById('btn_rep_month').classList.remove('active');
+            document.getElementById(`btn_rep_${period}`).classList.add('active');
+
+            let df = new Date(); df.setHours(0,0,0,0);
+            if(period === 'week') df.setDate(df.getDate() - 7);
+            if(period === 'month') df.setMonth(df.getMonth() - 1);
+            
+            const iso = df.toISOString();
+            const { data: sess } = await _supabase.from('tp_sessions').select('*').gte('created_at', iso);
+            const { data: sales } = await _supabase.from('tp_sales').select('*').gte('created_at', iso);
+            const { data: exps } = await _supabase.from('tp_expenses').select('*').gte('created_at', iso);
+
+            let pRev=0, pCount=0, pMins=0;
+            let fRev=0, fCount=0, fMins=0;
+            sess.forEach(s => { 
+                if(s.type==='poly') { pRev += s.price; pCount++; pMins += s.duration; }
+                else if(s.type==='fest') { fRev += s.price; fCount++; fMins += s.duration; }
+            });
+
+            let gRev=0, gCost=0, gCount=0, itemsMap={};
+            sales.forEach(s => { 
+                gRev += s.price; gCost += (s.cost||0); gCount++; 
+                if(!itemsMap[s.name]) itemsMap[s.name] = {q:0, r:0};
+                itemsMap[s.name].q++; itemsMap[s.name].r += s.price;
+            });
+            let itemsHtml = '';
+            for(let n in itemsMap) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gray); margin-bottom:4px;"><span>- ${n} (${itemsMap[n].q} шт)</span><span>${itemsMap[n].r} ₽</span></div>`;
+
+            let eTotal=0; exps.forEach(e => eTotal += e.amount);
+
+            document.getElementById('report_content').innerHTML = `
+                <div class="report-box">
+                    <div class="section-title">🏎 ПОЛИГОН</div>
+                    <div class="rep-line"><span>Кол-во заездов:</span><span class="rep-val">${pCount}</span></div>
+                    <div class="rep-line"><span>Откатано часов:</span><span class="rep-val">${(pMins/60).toFixed(1)} ч.</span></div>
+                    <div class="rep-line"><span>Выручка:</span><span class="rep-val" style="color:var(--orange)">${pRev} ₽</span></div>
+                </div>
+
+                <div class="report-box">
+                    <div class="section-title">🎈 ПРАЗДНИКИ</div>
+                    <div class="rep-line"><span>Проведено праздников:</span><span class="rep-val">${fCount}</span></div>
+                    <div class="rep-line"><span>Всего часов:</span><span class="rep-val">${(fMins/60).toFixed(1)} ч.</span></div>
+                    <div class="rep-line"><span>Выручка:</span><span class="rep-val" style="color:var(--orange)">${fRev} ₽</span></div>
+                </div>
+
+                <div class="report-box">
+                    <div class="section-title">🥤 ТОВАРЫ</div>
+                    ${itemsHtml ? `<div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #333;">${itemsHtml}</div>` : ''}
+                    <div class="rep-line"><span>Всего продано шт:</span><span class="rep-val">${gCount}</span></div>
+                    <div class="rep-line"><span>Грязная выручка:</span><span class="rep-val">${gRev} ₽</span></div>
+                    <div class="rep-line"><span>Себестоимость:</span><span class="rep-val" style="color:var(--gray)">- ${gCost} ₽</span></div>
+                    <div class="rep-line"><span>Прибыль с товаров:</span><span class="rep-val" style="color:var(--green)">${gRev - gCost} ₽</span></div>
+                </div>
+
+                <div class="report-box" style="border-color:var(--orange)">
+                    <div class="section-title">💰 ФИНАНСОВЫЙ ИТОГ</div>
+                    <div class="rep-line"><span>ОБЩАЯ ВЫРУЧКА:</span><span class="rep-val">${pRev+fRev+gRev} ₽</span></div>
+                    <div class="rep-line"><span>Все расходы:</span><span class="rep-val" style="color:var(--red)">- ${eTotal} ₽</span></div>
+                    <div class="rep-line"><span>Себестоимость товаров:</span><span class="rep-val" style="color:var(--gray)">- ${gCost} ₽</span></div>
+                    <hr style="border:0; border-top:1px dashed #333; margin:10px 0;">
+                    <div class="rep-line" style="font-size:18px;"><span>ЧИСТАЯ ПРИБЫЛЬ:</span><span class="rep-val" style="color:var(--green)">${(pRev+fRev+gRev) - eTotal - gCost} ₽</span></div>
+                </div>
+            `;
+        }
+
+        function showPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(el) el.classList.add('active');
+        }
+        function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('day'); }
+        function closeWin() { document.querySelectorAll('.full-window').forEach(w => w.classList.remove('active')); }
+        function checkAdmin(el) { if(prompt("Пароль:") === "7826") showPage('adm_page', el); }
+        function selT(m, p, id) { selMins = m; selPrice = p; document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        
+        setInterval(renderPlayers, 1000);
+        init();
+        window.Telegram.WebApp.expand();
+    </script>
+</body>
+</html>
