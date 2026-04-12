@@ -309,7 +309,7 @@
             document.getElementById('exp_history_list').innerHTML = html || '<center style="color:var(--gray)">За последние 30 дней расходов не было</center>';
         }
 
-        // --- ДЕТАЛЬНЫЕ ОТЧЕТЫ ---
+      // --- ДЕТАЛЬНЫЕ ОТЧЕТЫ ---
         async function loadReports(period) {
             document.getElementById('btn_rep_day').classList.remove('active');
             document.getElementById('btn_rep_week').classList.remove('active');
@@ -318,7 +318,7 @@
 
             let df = new Date(); df.setHours(0,0,0,0);
             if(period === 'week') df.setDate(df.getDate() - 7);
-            if(period === 'month') df.setMonth(df.getMonth() - 1);
+            if(period === 'month') df.setDate(1); // ИСПРАВЛЕНО: Теперь берет строго 1-е число текущего месяца
             
             const iso = df.toISOString();
             const { data: sess } = await _supabase.from('tp_sessions').select('*').gte('created_at', iso);
