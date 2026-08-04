@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Техно Парк PRO</title>
+    <title>ТЕХНОПАРК PRO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -46,7 +46,7 @@
         .player-card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid var(--green); transition: 0.3s; }
         .player-timer { font-size: 24px; font-weight: 900; font-family: 'Courier New', monospace; color: var(--orange); }
         .player-actions { max-height: 0; overflow: hidden; transition: 0.3s ease; opacity: 0; }
-        .player-card.open .player-actions { max-height: 200px; margin-top: 15px; opacity: 1; }
+        .player-card.open .player-actions { max-height: 250px; margin-top: 15px; opacity: 1; }
 
         /* История продаж и расходов */
         .stat-row { display: flex; justify-content: space-between; align-items: center; background:#1a1a1a; padding:12px; border-radius:12px; margin-bottom:8px; border: 1px solid #222; }
@@ -69,21 +69,36 @@
 <body>
 
     <div class="nav">
-        <div class="nav-item active" onclick="showPage('poly', this)">Полигон</div>
+        <div class="nav-item active" onclick="showPage('poly', this)">Аренда</div>
         <div class="nav-item" onclick="showPage('fest', this)">Праздник</div>
         <div class="nav-item" onclick="showPage('goods', this)">Товары</div>
         <div class="nav-item" onclick="checkAdmin(this)">Админ</div>
     </div>
 
     <div id="poly" class="page active">
-        <input type="text" id="p_name" placeholder="Имя игрока">
+        <input type="text" id="p_name" placeholder="Имя клиента/ребенка">
         <input type="tel" id="p_tel" placeholder="Номер телефона">
+        
+        <div class="section-title">ПОЛИГОН (МАШИНКИ)</div>
         <div class="grid-2" style="margin-bottom: 15px;">
-            <button class="btn btn-time" id="t30" onclick="selT(30, 250, 't30')">30 МИН / 250₽</button>
-            <button class="btn btn-time" id="t60" onclick="selT(60, 500, 't60')">1 ЧАС / 500₽</button>
+            <button class="btn btn-time" id="t_poly_30" onclick="selT(30, 300, 't_poly_30', 'Полигон')">30 МИН / 300₽</button>
+            <button class="btn btn-time" id="t_poly_60" onclick="selT(60, 500, 't_poly_60', 'Полигон')">1 ЧАС / 500₽</button>
         </div>
-        <button class="btn btn-main" onclick="startSession()">🚀 Запустить заезд</button>
-        <div class="section-title">СЕЙЧАС ИГРАЮТ НА ПОЛИГОНЕ</div>
+
+        <div class="section-title">VR ШЛЕМЫ (OCULUS)</div>
+        <div class="grid-2" style="margin-bottom: 15px;">
+            <button class="btn btn-time" id="t_vr_30" onclick="selT(30, 300, 't_vr_30', 'VR')">30 МИН / 300₽</button>
+            <button class="btn btn-time" id="t_vr_60" onclick="selT(60, 500, 't_vr_60', 'VR')">1 ЧАС / 500₽</button>
+        </div>
+
+        <div class="section-title">SONY PLAYSTATION 4</div>
+        <button class="btn btn-time" id="t_ps_60" style="margin-bottom: 15px;" onclick="selT(60, 400, 't_ps_60', 'PS4')">1 ЧАС / 400₽</button>
+
+        <div class="section-title">DRIFT CAR / ВЕЛОСИПЕД</div>
+        <button class="btn btn-time" id="t_drift_10" style="margin-bottom: 20px;" onclick="selT(10, 150, 't_drift_10', 'Дрифт/Вело')">10 МИН / 150₽</button>
+
+        <button class="btn btn-main" onclick="startSession()">🚀 Запустить аренду</button>
+        <div class="section-title">СЕЙЧАС АРЕНДУЮТ</div>
         <div id="online_list"></div>
     </div>
 
@@ -149,25 +164,21 @@
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         let db = { players: [], stock: {}, expenses: [] };
-        let selMins = 0, selPrice = 0, openCardId = null;
+        let selMins = 0, selPrice = 0, selService = '', openCardId = null;
 
         async function init() {
-            // Склад
             const { data: st } = await _supabase.from('tp_stock').select('*');
             if(st) st.forEach(i => {
                 db.stock[i.id] = i;
                 if(document.getElementById(`lbl_${i.id}`)) document.getElementById(`lbl_${i.id}`).innerText = `Ост: ${i.qty}`;
             });
             
-            // Игроки
             const { data: sess } = await _supabase.from('tp_sessions').select('*').or('finished.is.null,finished.eq.false').eq('type','poly').order('created_at', {ascending: false});
             db.players = sess || [];
             
-            // Продажи за сегодня
             const today = new Date(); today.setHours(0,0,0,0);
             const { data: sls } = await _supabase.from('tp_sales').select('*').gte('created_at', today.toISOString()).order('created_at', {ascending: false});
             
-            // Расходы за 30 дней
             const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const { data: exps } = await _supabase.from('tp_expenses').select('*').gte('created_at', thirtyDaysAgo.toISOString()).order('created_at', {ascending: false});
             db.expenses = exps || [];
@@ -178,13 +189,30 @@
             renderExpenses();
         }
 
-        // --- ПОЛИГОН ---
+        function selT(m, p, id, serviceName) {
+            selMins = m; 
+            selPrice = p; 
+            selService = serviceName;
+            document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+        }
+
         async function startSession() {
-            const name = document.getElementById('p_name').value;
+            let name = document.getElementById('p_name').value;
             const phone = document.getElementById('p_tel').value;
-            if(!name || !selMins) return alert("Выберите время и введите имя!");
+            if(!name || !selMins) return alert("Выберите услугу, время и введите имя!");
+            
+            if (selService) {
+                name = `${name} (${selService})`;
+            }
+
             await _supabase.from('tp_sessions').insert([{ client_name: name, phone: phone, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
-            document.getElementById('p_name').value = ''; document.getElementById('p_tel').value = ''; init();
+            document.getElementById('p_name').value = ''; 
+            document.getElementById('p_tel').value = ''; 
+            
+            selMins = 0; selPrice = 0; selService = '';
+            document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active'));
+            init();
         }
 
         function renderPlayers() {
@@ -208,19 +236,23 @@
                         <div class="player-timer" style="color:${diff<0?'var(--red)':'var(--orange)'}">${diff<0?'-':''}${m}:${s.toString().padStart(2,'0')}</div>
                     </div>
                     <div class="player-actions" onclick="event.stopPropagation()">
-                        <button class="btn" style="background:#2a1010; color:var(--red); border:1px solid var(--red); margin-bottom:10px;" onclick="finishS(${p.id})">🛑 ЗАВЕРШИТЬ ЗАЕЗД</button>
+                        <button class="btn" style="background:#2a1010; color:var(--red); border:1px solid var(--red); margin-bottom:10px;" onclick="finishS(${p.id})">🛑 ЗАВЕРШИТЬ</button>
+                        <div class="grid-2" style="margin-bottom: 8px;">
+                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 10, 150)">+10м (150₽)</button>
+                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 30, 300)">+30м (300₽)</button>
+                        </div>
                         <div class="grid-2">
-                            <button class="btn btn-time active" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 30, 250)">+30 МИН</button>
-                            <button class="btn btn-time active" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 500)">+1 ЧАС</button>
+                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 400)">+1ч PS (400₽)</button>
+                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 500)">+1ч (500₽)</button>
                         </div>
                     </div>
                 </div>`;
             });
-            document.getElementById('online_list').innerHTML = html || '<center style="color:var(--gray)">На полигоне никого нет</center>';
+            document.getElementById('online_list').innerHTML = html || '<center style="color:var(--gray)">Активных аренд нет</center>';
         }
 
         function toggleC(id) { openCardId = openCardId === id ? null : id; renderPlayers(); }
-        async function finishS(id) { if(confirm("Завершить заезд? Игрок уйдет в историю.")) { await _supabase.from('tp_sessions').update({finished:true}).eq('id', id); init(); } }
+        async function finishS(id) { if(confirm("Завершить аренду? Клиент уйдет в историю.")) { await _supabase.from('tp_sessions').update({finished:true}).eq('id', id); init(); } }
         async function extendS(id, currD, currP, addD, addP) { await _supabase.from('tp_sessions').update({duration: currD + addD, price: currP + addP}).eq('id', id); init(); }
 
         // --- ПРАЗДНИК ---
@@ -291,7 +323,6 @@
             document.getElementById('exp_comment').value = ''; 
             document.getElementById('exp_amount').value = '';
             
-            // Сразу обновляем интерфейс, чтобы показать новый расход в ленте
             init(); 
         }
 
@@ -318,7 +349,7 @@
 
             let df = new Date(); df.setHours(0,0,0,0);
             if(period === 'week') df.setDate(df.getDate() - 7);
-            if(period === 'month') df.setDate(1); // ИСПРАВЛЕНО: Теперь берет строго 1-е число текущего месяца
+            if(period === 'month') df.setDate(1); 
             
             const iso = df.toISOString();
             const { data: sess } = await _supabase.from('tp_sessions').select('*').gte('created_at', iso);
@@ -345,9 +376,9 @@
 
             document.getElementById('report_content').innerHTML = `
                 <div class="report-box">
-                    <div class="section-title">🏎 ПОЛИГОН</div>
-                    <div class="rep-line"><span>Кол-во заездов:</span><span class="rep-val">${pCount}</span></div>
-                    <div class="rep-line"><span>Откатано часов:</span><span class="rep-val">${(pMins/60).toFixed(1)} ч.</span></div>
+                    <div class="section-title">🏎 АРЕНДЫ (ВСЕ УСЛУГИ)</div>
+                    <div class="rep-line"><span>Кол-во сеансов:</span><span class="rep-val">${pCount}</span></div>
+                    <div class="rep-line"><span>Откатано/наиграно:</span><span class="rep-val">${(pMins/60).toFixed(1)} ч.</span></div>
                     <div class="rep-line"><span>Выручка:</span><span class="rep-val" style="color:var(--orange)">${pRev} ₽</span></div>
                 </div>
 
@@ -387,7 +418,6 @@
         function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('day'); }
         function closeWin() { document.querySelectorAll('.full-window').forEach(w => w.classList.remove('active')); }
         function checkAdmin(el) { if(prompt("Пароль:") === "7826") showPage('adm_page', el); }
-        function selT(m, p, id) { selMins = m; selPrice = p; document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         
         setInterval(renderPlayers, 1000);
         init();
