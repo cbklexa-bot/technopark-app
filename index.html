@@ -91,6 +91,9 @@ input::placeholder{color:#68717d}
 .auth-gate{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 85% 0,rgba(255,122,0,.2),transparent 32%),#07090c}
 .auth-card{width:min(100%,390px);padding:22px;border-radius:26px;background:linear-gradient(145deg,#191e26,#0f1319);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.55)}.auth-card h2{margin:6px 0 6px;font-size:25px}.auth-card p{color:var(--muted);font-size:11px;line-height:1.5;margin:0 0 16px}.auth-card input{margin-bottom:8px}.auth-error{min-height:18px;margin-top:9px;color:var(--red);font-size:10px}
 .logout{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--muted);border-radius:11px;padding:8px 10px;font-size:9px;font-weight:900}
+.journal-type{font-size:9px;padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.journal-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:center;padding:11px 10px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.journal-date{color:var(--muted);font-size:9px}.journal-main{display:flex;flex-direction:column;gap:4px;min-width:0}.journal-main b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.journal-main small{font-size:9px;color:var(--muted)}.journal-amount{font-weight:950;font-size:11px;white-space:nowrap}
 @media(max-width:365px){.services,.admin-grid{grid-template-columns:1fr}.admin-wide{grid-column:auto}.form-grid-2,.month-row,.exp-head{grid-template-columns:1fr}}
 </style>
 </head>
@@ -185,6 +188,7 @@ input::placeholder{color:#68717d}
   <div id="admin_kpis" class="kpi-grid" style="margin-bottom:10px"></div>
   <div class="admin-grid">
     <div class="admin-card admin-wide" onclick="openWin('win_reports')"><span class="admin-icon">📊</span><div><b>Финансы и аналитика</b><small>День, текущий месяц, прошлые месяцы, прибыль и экономика</small></div><span class="admin-arrow">→</span></div>
+    <div class="admin-card" onclick="openWin('win_journal')"><span class="admin-icon">🧾</span><div><b>Журнал операций</b><small>Все аренды, праздники, товары и расходы</small></div></div>
     <div class="admin-card" onclick="openWin('win_exp')"><span class="admin-icon">💸</span><div><b>Расходы</b><small>Добавление задним числом и история</small></div></div>
     <div class="admin-card" onclick="openWin('win_stock')"><span class="admin-icon">📦</span><div><b>Склад</b><small>Остатки, закупка, цена и маржа</small></div></div>
   </div>
@@ -199,6 +203,18 @@ input::placeholder{color:#68717d}
   <div id="report_day_controls" class="month-row hidden"><input class="full" id="rep_day" type="date" onchange="loadReports('day')"></div>
   <div id="report_month_controls" class="month-row"><select id="rep_month" class="full" onchange="loadReports('month')"></select></div>
   <div id="report_content"></div>
+</div>
+
+<div id="win_journal" class="window">
+  <div class="window-head"><button class="back" onclick="closeWin()">←</button><div><div class="eyebrow">ИСТОРИЯ</div><h2>Журнал операций</h2></div></div>
+  <div class="month-row">
+    <select id="journal_month" class="full" onchange="loadJournal()"></select>
+  </div>
+  <div class="panel" style="padding:10px;margin-bottom:9px">
+    <button class="btn btn-ghost" onclick="exportJournalCsv()">⬇ Экспорт CSV</button>
+  </div>
+  <div id="journal_summary" class="kpi-grid" style="margin-bottom:9px"></div>
+  <div id="journal_list" class="list"></div>
 </div>
 
 <div id="win_exp" class="window">
@@ -250,7 +266,7 @@ function monthLabel(key){const [y,m]=key.split("-").map(Number);const d=new Date
 function monthRange(key){const [y,m]=key.split("-").map(Number);return {start:new Date(y,m-1,1),end:new Date(y,m,1)};}
 function showToast(msg,kind="good"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+(kind==="bad"?"bad":"good");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2600);}
 function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");}
-function openWin(id){document.getElementById(id)?.classList.add("active");if(id==="win_reports"){prepareReportControls();loadReports(reportPeriod);}if(id==="win_exp"){prepareExpenseControls();loadExpensesHistory();}if(id==="win_stock")renderStockEdit();}
+function openWin(id){document.getElementById(id)?.classList.add("active");if(id==="win_reports"){prepareReportControls();loadReports(reportPeriod);}if(id==="win_exp"){prepareExpenseControls();loadExpensesHistory();}if(id==="win_stock")renderStockEdit();if(id==="win_journal"){prepareJournalControls();loadJournal();}}
 function closeWin(){document.querySelectorAll(".window").forEach(x=>x.classList.remove("active"));}
 function selectPeriodButton(){document.querySelectorAll(".period").forEach(x=>x.classList.remove("active"));document.getElementById(reportPeriod==="day"?"btn_rep_day":"btn_rep_month")?.classList.add("active");document.getElementById("report_day_controls")?.classList.toggle("hidden",reportPeriod!=="day");document.getElementById("report_month_controls")?.classList.toggle("hidden",reportPeriod==="day");}
 
@@ -339,7 +355,7 @@ function renderPlayers(){
 }
 function toggleSession(id){openCardId=openCardId===id?null:id;renderPlayers();}
 async function finishS(id){if(!confirm("Завершить аренду?"))return;const {error}=await _supabase.from("tp_sessions").update({finished:true,finished_at:new Date().toISOString()}).eq("id",id);if(error){showToast("Не удалось завершить аренду.","bad");return;}await init();showToast("Аренда завершена.");}
-async function extendS(id,d,p,addD,addP){const {error}=await _supabase.from("tp_sessions").update({duration:Number(d)+Number(addD),price:Number(p)+Number(addP),finished:false}).eq("id",id);if(error){showToast("Не удалось продлить аренду.","bad");return;}await init();showToast("Время добавлено: +"+addD+" мин.");}
+async function extendS(id,d,p,addD,addP){const {error}=await _supabase.rpc("tp_extend_session",{p_session_id:id,p_add_minutes:addD});if(error){showToast(error.message||"Не удалось продлить аренду.","bad");return;}await init();showToast("Время добавлено: +"+addD+" мин.");}
 
 async function saveParty(){
   const n=document.getElementById("f_name").value.trim(),ph=document.getElementById("f_tel").value.trim(),people=Number(document.getElementById("f_people").value)||1,h=Number(document.getElementById("f_hours").value)||0,s=Number(document.getElementById("f_sum").value)||0;
@@ -350,12 +366,10 @@ async function saveParty(){
 }
 
 async function sellItem(id){
-  const item=db.stock[id];if(!item){showToast("Товар не найден на складе.","bad");return;}
-  if(Number(item.qty)<=0){showToast("Товар закончился.","bad");return;}
-  const {error:saleError}=await _supabase.from("tp_sales").insert([{item_id:id,name:item.name,price:item.price,cost:item.cost}]);
-  if(saleError){showToast("Не удалось оформить продажу.","bad");return;}
-  const {error:stockError}=await _supabase.from("tp_stock").update({qty:Number(item.qty)-1}).eq("id",id);
-  if(stockError){showToast("Продажа оформлена, но остаток не обновился.","bad");}
+  const item=db.stock[id];
+  if(!item){showToast("Товар не найден на складе.","bad");return;}
+  const {error}=await _supabase.rpc("tp_sell_item",{p_item_id:id});
+  if(error){showToast(error.message||"Не удалось оформить продажу.","bad");return;}
   await init();showToast(item.name+" продан.");
 }
 function renderSales(list){
@@ -396,6 +410,42 @@ async function loadExpensesHistory(){
   document.getElementById("exp_history_list").innerHTML=db.expenses.map(e=>`<div class="expense-row"><div class="expense-main"><b>${esc(e.category||"Прочее")} · ${esc(e.comment||"")}</b><small>${new Date(e.expense_date+"T12:00:00").toLocaleDateString("ru-RU")} · внесено ${new Date(e.created_at).toLocaleDateString("ru-RU")}</small></div><div><div class="expense-amount">− ${money(e.amount)}</div><div class="expense-actions"><button class="icon-btn" onclick="deleteExpense(${e.id})">🗑</button></div></div></div>`).join("")||'<div class="empty">За выбранный месяц расходов нет</div>';
 }
 async function deleteExpense(id){if(!confirm("Удалить этот расход?"))return;const {error}=await _supabase.from("tp_expenses").delete().eq("id",id);if(error){showToast("Не удалось удалить расход.","bad");return;}await loadExpensesHistory();await loadAdminDashboard();showToast("Расход удалён.");}
+
+let journalRows=[];
+
+function prepareJournalControls(){
+  const select=document.getElementById("journal_month");
+  if(select && !select.options.length){
+    for(let i=0;i<36;i++){const d=new Date();d.setMonth(d.getMonth()-i);const key=monthKey(d);select.add(new Option(monthLabel(key),key));}
+    select.value=monthKey();
+  }
+}
+async function loadJournal(){
+  prepareJournalControls();
+  const key=document.getElementById("journal_month").value||monthKey();
+  const r=monthRange(key);
+  const [sessRes,salesRes,expRes]=await Promise.all([
+    _supabase.from("tp_sessions").select("*").gte("created_at",r.start.toISOString()).lt("created_at",r.end.toISOString()).order("created_at",{ascending:false}),
+    _supabase.from("tp_sales").select("*").gte("created_at",r.start.toISOString()).lt("created_at",r.end.toISOString()).order("created_at",{ascending:false}),
+    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(r.start)).lt("expense_date",dateInputValue(r.end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false})
+  ]);
+  if(sessRes.error||salesRes.error||expRes.error){showToast("Не удалось загрузить журнал.","bad");return;}
+  journalRows=[];
+  (sessRes.data||[]).forEach(s=>journalRows.push({date:new Date(s.created_at),sort:new Date(s.created_at),type:s.type==="fest"?"Праздник":"Аренда",name:s.client_name,service:s.service_code||detectService(s),amount:Number(s.price)||0,kind:"income"}));
+  (salesRes.data||[]).forEach(s=>journalRows.push({date:new Date(s.created_at),sort:new Date(s.created_at),type:"Товар",name:s.name,service:"Продажа",amount:Number(s.price)||0,kind:"income"}));
+  (expRes.data||[]).forEach(e=>journalRows.push({date:new Date(e.expense_date+"T12:00:00"),sort:new Date(e.created_at),type:"Расход",name:e.comment||e.category||"Расход",service:e.category||"Прочее",amount:Number(e.amount)||0,kind:"expense"}));
+  journalRows.sort((a,b)=>b.sort-a.sort);
+  const revenue=journalRows.filter(x=>x.kind==="income").reduce((s,x)=>s+x.amount,0), expenses=journalRows.filter(x=>x.kind==="expense").reduce((s,x)=>s+x.amount,0);
+  document.getElementById("journal_summary").innerHTML='<div class="kpi"><span>Операций</span><b>'+journalRows.length+'</b></div><div class="kpi"><span>Приход</span><b class="positive">'+money(revenue)+'</b></div><div class="kpi"><span>Расход</span><b class="negative">'+money(expenses)+'</b></div><div class="kpi"><span>Баланс</span><b class="'+(revenue-expenses>=0?"positive":"negative")+'">'+money(revenue-expenses)+'</b></div>';
+  document.getElementById("journal_list").innerHTML=journalRows.map(x=>'<div class="journal-row"><div class="journal-date">'+x.date.toLocaleDateString("ru-RU")+'<br>'+x.date.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})+'</div><div class="journal-main"><div><span class="journal-type">'+esc(x.type)+'</span></div><b>'+esc(x.name)+'</b><small>'+esc(x.service)+'</small></div><div class="journal-amount '+(x.kind==="expense"?"negative":"positive")+'">'+(x.kind==="expense"?"− ":"+")+money(x.amount)+'</div></div>').join("")||'<div class="empty">За выбранный месяц операций нет</div>';
+}
+function exportJournalCsv(){
+  if(!journalRows.length){showToast("В журнале нет данных.","bad");return;}
+  const rows=[["Дата","Тип","Операция","Услуга/категория","Сумма","Направление"],...journalRows.map(x=>[x.date.toLocaleDateString("ru-RU"),x.type,x.name,x.service,x.amount,x.kind==="expense"?"Расход":"Приход"])];
+  const csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="technopark-journal-"+(document.getElementById("journal_month").value||monthKey())+".csv";a.click();URL.revokeObjectURL(a.href);
+}
 
 function prepareReportControls(){
   const today=dateInputValue();const day=document.getElementById("rep_day");if(!day.value)day.value=today;day.max=today;
