@@ -90,6 +90,66 @@
         .report-box{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.95));border-radius:21px}
 .live-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 14px}.live-summary>div{background:rgba(19,23,29,.9);border:1px solid var(--line);border-radius:17px;padding:11px 9px;min-width:0}.live-summary span{display:block;color:var(--gray);font-size:8px;letter-spacing:.6px;font-weight:900;margin-bottom:5px}.live-summary b{font-size:15px;line-height:1.1;white-space:nowrap}.online-dot{color:var(--green)!important;font-size:10px!important}
         .client-name-input{margin-bottom:4px}
+
+        /* --- НОВЫЙ UI 2026 --- */
+        .service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+        .service-tile{min-height:108px!important;padding:14px 10px!important;display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;align-items:center;gap:4px 8px;text-transform:none!important;text-align:left}
+        .service-tile .service-icon{grid-row:1 / span 2;width:42px;height:42px}
+        .service-tile span:nth-child(2){font-size:12px;font-weight:800;color:#cdd3dc;align-self:end}
+        .service-tile b{font-size:17px;line-height:1;align-self:start}
+        .btn-main{min-height:58px;font-size:14px}
+        .empty-state{padding:26px 12px;text-align:center;color:var(--gray);background:rgba(19,23,29,.65);border:1px dashed var(--line);border-radius:18px}
+        .player-main-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+        .player-meta{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+        .player-meta>b{font-size:16px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .player-meta small{color:var(--gray);font-size:11px}
+        .service-badge{font-size:9px;padding:4px 8px;border-radius:999px;background:rgba(255,122,0,.12);color:var(--orange-2);border:1px solid rgba(255,122,0,.18);font-weight:900}
+        .extend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        .extend-btn{min-height:50px!important;padding:8px 6px!important;font-size:10px!important;text-transform:none!important;flex-direction:column;gap:2px}
+        .extend-btn span{font-size:11px;color:var(--orange-2);font-weight:900}
+        .finish-btn{background:rgba(255,61,0,.10);color:var(--red);border:1px solid rgba(255,77,95,.4);min-height:48px;padding:12px!important;margin-bottom:10px}
+        .admin-hero{padding:18px;border-radius:24px;background:linear-gradient(145deg,rgba(255,122,0,.17),rgba(255,255,255,.035));border:1px solid rgba(255,170,85,.14);box-shadow:var(--shadow);margin-bottom:12px}
+        .admin-hero h2{margin:0 0 6px;font-size:22px}
+        .admin-hero p{margin:0;color:var(--gray);font-size:12px;line-height:1.5}
+        .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+        .admin-card{min-height:128px;padding:15px;border-radius:20px;background:linear-gradient(145deg,rgba(24,29,36,.94),rgba(16,19,24,.96));border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
+        .admin-card-wide{grid-column:1/-1;min-height:94px;flex-direction:row;align-items:center;gap:12px}
+        .admin-card b{font-size:14px}
+        .admin-card small{color:var(--gray);font-size:10px;line-height:1.35}
+        .admin-card-wide>div{flex:1;display:flex;flex-direction:column;gap:4px}
+        .admin-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.07);font-size:21px}
+        .admin-arrow{font-size:22px;color:var(--orange-2)}
+        .window-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+        .window-head h2{margin:0;font-size:22px}
+        .back-btn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff;font-size:20px}
+        .report-period-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+        .period-btn{min-height:48px;border-radius:14px;border:1px solid var(--line);background:rgba(19,23,29,.92);color:var(--gray);font-weight:900}
+        .period-btn.active{background:rgba(255,122,0,.16);color:#fff;border-color:rgba(255,122,0,.6)}
+        .month-select-card{padding:12px;border-radius:16px;background:rgba(19,23,29,.76);border:1px solid var(--line);margin-bottom:12px}
+        .month-select-card label{display:block;color:var(--gray);font-size:9px;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:6px}
+        .month-select-card select{width:100%;padding:12px 13px;border-radius:12px;background:#12161c;color:#fff;border:1px solid var(--line);font-size:14px}
+        .report-period-caption{font-size:12px;color:var(--gray);font-weight:800;margin:2px 2px 10px}
+        .finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+        .metric-card{padding:13px;border-radius:17px;background:rgba(19,23,29,.9);border:1px solid var(--line)}
+        .metric-card span{display:block;color:var(--gray);font-size:8px;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:6px}
+        .metric-card b{font-size:16px}
+        .metric-card b.positive{color:var(--green)}
+        .metric-card b.negative{color:var(--red)}
+        .report-highlight{display:flex;justify-content:space-between;align-items:center;padding:11px 0;margin-bottom:4px}
+        .report-highlight span{color:var(--gray);font-size:12px}
+        .report-highlight b{font-size:18px}
+        .data-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)}
+        .data-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+        .data-row b{font-size:12px}
+        .data-row small{color:var(--gray);font-size:10px}
+        .data-row strong{font-size:12px;white-space:nowrap}
+        .subsection{margin-top:8px}
+        .muted{color:var(--gray);font-size:11px}
+        .positive{color:var(--green)!important}
+        .negative{color:var(--red)!important}
+        .finance-total-box{border-color:rgba(255,122,0,.4)!important}
+        .total-line{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #333;padding-top:12px;margin-top:12px;font-size:16px;font-weight:950}
+        @media(max-width:360px){.service-grid,.admin-grid{grid-template-columns:1fr}.admin-card-wide{grid-column:auto}.extend-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -103,7 +163,7 @@
     </div>
 
     <div id="poly" class="page active">
-        <div class="live-summary" id="live_summary"><div><span>АКТИВНЫЕ</span><b id="live_count">0</b></div><div><span>В СЕЙЧАС</span><b id="live_revenue">0 ₽</b></div><div><span>СТАТУС</span><b class="online-dot">● ОТКРЫТО</b></div></div>
+        
         <input type="text" id="p_name" placeholder="Имя клиента / ребёнка" class="client-name-input">
         
         <div class="section-title">ПОЛИГОН (МАШИНКИ)</div>
@@ -146,16 +206,22 @@
             <div class="tile-card" onclick="sellItem('coffee')">☕<b>КОФЕ</b><br><small id="lbl_coffee">--</small></div>
             <div class="tile-card" onclick="sellItem('water')">💧<b>ВОДА</b><br><small id="lbl_water">--</small></div>
             <div class="tile-card" onclick="sellItem('juice')">🥤<b>СОК</b><br><small id="lbl_juice">--</small></div>
+            <div class="tile-card" onclick="sellItem('popcorn')">🍿<b>ПОПКОРН</b><br><small id="lbl_popcorn">--</small></div>
         </div>
         <div class="section-title">История продаж за сегодня</div>
         <div id="sales_history"></div>
     </div>
 
     <div id="adm_page" class="page">
-        <div class="grid-2">
-            <div class="tile-card" onclick="openWin('win_reports')">📊<b>ОТЧЕТЫ</b></div>
-            <div class="tile-card" onclick="openWin('win_stock')">📦<b>СКЛАД</b></div>
-            <div class="tile-card" onclick="openWin('win_exp')">💸<b>РАСХОДЫ</b></div>
+        <div class="admin-hero">
+            <div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div>
+            <h2>Администратор</h2>
+            <p>Финансы, склад и расходы — в одном месте.</p>
+        </div>
+        <div class="admin-grid">
+            <div class="admin-card admin-card-wide" onclick="openWin('win_reports')"><span class="admin-icon">📊</span><div><b>Финансы и отчёты</b><small>Сегодня, текущий и прошлые месяцы</small></div><span class="admin-arrow">→</span></div>
+            <div class="admin-card" onclick="openWin('win_stock')"><span class="admin-icon">📦</span><b>Склад</b><small>Остатки и цены</small></div>
+            <div class="admin-card" onclick="openWin('win_exp')"><span class="admin-icon">💸</span><b>Расходы</b><small>Последние 30 дней</small></div>
         </div>
     </div>
 
@@ -176,14 +242,17 @@
     </div>
 
     <div id="win_reports" class="full-window">
-        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
-        <div class="grid-2" style="margin-bottom:10px;">
-            <button class="btn btn-time active" id="btn_rep_day" onclick="loadReports('day')">День</button>
-            <button class="btn btn-time" id="btn_rep_week" onclick="loadReports('week')">Неделя</button>
+        <div class="window-head">
+            <button class="back-btn" onclick="closeWin()">←</button>
+            <div><div class="eyebrow">АНАЛИТИКА</div><h2>Финансы</h2></div>
         </div>
-        <div class="grid-2" style="margin-bottom:20px;">
-            <button class="btn btn-time" id="btn_rep_month" onclick="loadReports('month')">Месяц</button>
-            <button class="btn btn-time" id="btn_rep_30" onclick="loadReports('30')">30 дней</button>
+        <div class="report-period-grid">
+            <button class="period-btn active" id="btn_rep_day" onclick="loadReports('day')">Сегодня</button>
+            <button class="period-btn" id="btn_rep_month" onclick="loadReports('month')">Этот месяц</button>
+        </div>
+        <div class="month-select-card">
+            <label for="rep_month">Выбрать месяц</label>
+            <select id="rep_month" onchange="loadReports('custom')"></select>
         </div>
         <div id="report_content"></div>
     </div>
@@ -244,6 +313,30 @@
             init();
         }
 
+        function getServiceFromSession(p) {
+            const n = String(p.client_name || '');
+            const m = n.match(/\(([^)]+)\)\s*$/);
+            if (m) return m[1];
+            if (p.price === 400 && p.duration >= 60) return 'PS4';
+            if (p.price === 150 && p.duration === 5) return 'Мини-тир';
+            if (p.price === 150 && p.duration === 10) return 'Дрифт/Вело';
+            if (p.price === 300 && p.duration === 30) return 'VR';
+            return 'Полигон';
+        }
+
+        function extensionButtons(service, id, p) {
+            const items = {
+                'PS4': [[30,200,'+30 мин','200 ₽'],[60,400,'+1 час','400 ₽']],
+                'Дрифт/Вело': [[10,150,'+10 мин','150 ₽']],
+                'Мини-тир': [[5,150,'+5 мин','150 ₽']],
+                'VR': [[30,300,'+30 мин','300 ₽'],[60,500,'+1 час','500 ₽']],
+                'Полигон': [[30,200,'+30 мин','200 ₽'],[60,400,'+1 час','400 ₽']]
+            };
+            return (items[service] || items['Полигон']).map(x =>
+                '<button class="btn btn-time extend-btn" onclick="extendS(' + id + ',' + p.duration + ',' + p.price + ',' + x[0] + ',' + x[1] + ')">' + x[2] + ' <span>' + x[3] + '</span></button>'
+            ).join('');
+        }
+
         function renderPlayers() {
             let html = '';
             const now = new Date().getTime();
@@ -254,39 +347,33 @@
                 const m = Math.floor(Math.abs(diff)/60000);
                 const s = Math.floor((Math.abs(diff)%60000)/1000);
                 const isOp = openCardId === p.id;
-                
-                html += `
-                <div class="player-card ${isOp ? 'open' : ''}" onclick="toggleC(${p.id})">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b>${p.client_name}</b><br>
-                            <small style="color:var(--gray)">Старт: ${startObj.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} | На ${p.duration}м</small>
-                        </div>
-                        <div class="player-timer" style="color:${diff<0?'var(--red)':'var(--orange)'}">${diff<0?'-':''}${m}:${s.toString().padStart(2,'0')}</div>
-                    </div>
-                    <div class="player-actions" onclick="event.stopPropagation()">
-                        <button class="btn" style="background:#2a1010; color:var(--red); border:1px solid var(--red); margin-bottom:10px;" onclick="finishS(${p.id})">🛑 ЗАВЕРШИТЬ</button>
-                        <div class="grid-2" style="margin-bottom: 8px;">
-                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 10, 150)">+10м (150₽)</button>
-                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 30, 300)">+30м (300₽)</button>
-                        </div>
-                        <div class="grid-2">
-                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 400)">+1ч PS (400₽)</button>
-                            <button class="btn btn-time active" style="font-size: 11px; padding: 12px;" onclick="extendS(${p.id}, ${p.duration}, ${p.price}, 60, 500)">+1ч (500₽)</button>
-                        </div>
-                    </div>
-                </div>`;
+                const service = getServiceFromSession(p);
+                const displayName = String(p.client_name || '').replace(/\s*\([^)]+\)\s*$/, '');
+
+                html += '<div class="player-card ' + (isOp ? 'open' : '') + '" onclick="toggleC(' + p.id + ')">' +
+                    '<div class="player-main-row">' +
+                        '<div class="player-meta"><b>' + displayName + '</b><span class="service-badge">' + service + '</span><small>Старт ' + startObj.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' · ' + p.duration + ' мин</small></div>' +
+                        '<div class="player-timer" style="color:' + (diff < 0 ? 'var(--red)' : 'var(--orange)') + '">' + (diff < 0 ? '-' : '') + m + ':' + s.toString().padStart(2,'0') + '</div>' +
+                    '</div>' +
+                    '<div class="player-actions" onclick="event.stopPropagation()">' +
+                        '<button class="btn finish-btn" onclick="finishS(' + p.id + ')">🛑 Завершить аренду</button>' +
+                        '<div class="extend-grid">' + extensionButtons(service, p.id, p) + '</div>' +
+                    '</div>' +
+                '</div>';
             });
-            document.getElementById('online_list').innerHTML = html || '<center style="color:var(--gray)">Активных аренд нет</center>';
-            const liveCount = db.players.length;
-            const liveRevenue = db.players.reduce((sum,p)=>sum+(Number(p.price)||0),0);
-            document.getElementById('live_count').innerText = liveCount;
-            document.getElementById('live_revenue').innerText = liveRevenue + ' ₽';
+            document.getElementById('online_list').innerHTML = html || '<div class="empty-state">Активных аренд нет</div>';
         }
 
         function toggleC(id) { openCardId = openCardId === id ? null : id; renderPlayers(); }
         async function finishS(id) { if(confirm("Завершить аренду? Клиент уйдет в историю.")) { await _supabase.from('tp_sessions').update({finished:true}).eq('id', id); init(); } }
-        async function extendS(id, currD, currP, addD, addP) { await _supabase.from('tp_sessions').update({duration: currD + addD, price: currP + addP}).eq('id', id); init(); }
+        async function extendS(id, currD, currP, addD, addP) {
+            const { error } = await _supabase.from('tp_sessions').update({
+                duration: currD + addD,
+                price: currP + addP
+            }).eq('id', id);
+            if (error) return alert('Не удалось продлить аренду: ' + error.message);
+            init();
+        }
 
         // --- ПРАЗДНИК ---
         async function saveParty() {
@@ -376,82 +463,204 @@
         }
 
       // --- ДЕТАЛЬНЫЕ ОТЧЕТЫ ---
-        async function loadReports(period) {
-            document.getElementById('btn_rep_day').classList.remove('active');
-            document.getElementById('btn_rep_week').classList.remove('active');
-            document.getElementById('btn_rep_month').classList.remove('active');
-            document.getElementById('btn_rep_30').classList.remove('active');
-            document.getElementById(`btn_rep_${period}`).classList.add('active');
+        function pad2(v) { return String(v).padStart(2,'0'); }
 
-            let df = new Date(); df.setHours(0,0,0,0);
-            if(period === 'week') df.setDate(df.getDate() - 7);
-            if(period === 'month') df.setDate(1);
-            if(period === '30') df.setDate(df.getDate() - 30); 
-            
-            const iso = df.toISOString();
+        function formatRub(v) {
+            return Math.round(Number(v) || 0).toLocaleString('ru-RU') + ' ₽';
+        }
+
+        function getMonthKey(d) {
+            return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+        }
+
+        function setupMonthSelector() {
+            const select = document.getElementById('rep_month');
+            if (!select || select.options.length) return;
+            const now = new Date();
+            for (let i = 0; i < 12; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = getMonthKey(d);
+                const label = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+                select.appendChild(opt);
+            }
+            select.value = getMonthKey(now);
+        }
+
+        function setReportButtons(period) {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            const el = document.getElementById(period === 'day' ? 'btn_rep_day' : 'btn_rep_month');
+            if (el) el.classList.add('active');
+        }
+
+        function getRangeForReport(period) {
+            const now = new Date();
+            let start, end;
+            if (period === 'day') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            } else {
+                let year = now.getFullYear(), month = now.getMonth();
+                if (period === 'custom') {
+                    const value = document.getElementById('rep_month').value;
+                    const parts = value.split('-');
+                    year = Number(parts[0]);
+                    month = Number(parts[1]) - 1;
+                }
+                start = new Date(year, month, 1);
+                end = new Date(year, month + 1, 1);
+            }
+            return {start, end};
+        }
+
+        function serviceNameFromSession(s) {
+            const name = String(s.client_name || '');
+            const match = name.match(/\(([^)]+)\)\s*$/);
+            if (match) return match[1];
+            if (s.type !== 'poly') return 'Праздники';
+            if (s.price === 400 && s.duration >= 60) return 'PS4';
+            if (s.price === 150 && s.duration === 5) return 'Мини-тир';
+            if (s.price === 150 && s.duration === 10) return 'Дрифт/Вело';
+            if (s.price === 300 && s.duration === 30) return 'VR';
+            return 'Полигон';
+        }
+
+        async function loadReports(period) {
+            setupMonthSelector();
+            setReportButtons(period);
+
+            const range = getRangeForReport(period);
+            const fromIso = range.start.toISOString();
+            const toIso = range.end.toISOString();
+
             const [sessRes, salesRes, expRes] = await Promise.all([
-                _supabase.from('tp_sessions').select('*').gte('created_at', iso),
-                _supabase.from('tp_sales').select('*').gte('created_at', iso),
-                _supabase.from('tp_expenses').select('*').gte('created_at', iso)
+                _supabase.from('tp_sessions').select('*').gte('created_at', fromIso).lt('created_at', toIso),
+                _supabase.from('tp_sales').select('*').gte('created_at', fromIso).lt('created_at', toIso),
+                _supabase.from('tp_expenses').select('*').gte('created_at', fromIso).lt('created_at', toIso)
             ]);
-            if(sessRes.error || salesRes.error || expRes.error) {
+
+            if (sessRes.error || salesRes.error || expRes.error) {
                 const msg = [sessRes.error?.message, salesRes.error?.message, expRes.error?.message].filter(Boolean).join(' • ');
-                document.getElementById('report_content').innerHTML = '<div class="report-box"><b style="color:var(--red)">Не удалось загрузить отчёт</b><div style="color:var(--gray);font-size:12px;margin-top:8px;">'+msg+'</div></div>';
+                document.getElementById('report_content').innerHTML =
+                    '<div class="report-box"><b style="color:var(--red)">Не удалось загрузить отчёт</b><div class="muted" style="margin-top:8px;">' + msg + '</div></div>';
                 return;
             }
-            const sess = sessRes.data || [], sales = salesRes.data || [], exps = expRes.data || [];
 
-            let pRev=0, pCount=0, pMins=0;
-            let fRev=0, fCount=0, fMins=0;
-            sess.forEach(s => { 
-                if(s.type==='poly') { pRev += s.price; pCount++; pMins += s.duration; }
-                else if(s.type==='fest') { fRev += s.price; fCount++; fMins += s.duration; }
+            const sess = sessRes.data || [];
+            const sales = salesRes.data || [];
+            const exps = expRes.data || [];
+
+            let rentRevenue = 0, rentCount = 0, rentMins = 0;
+            let festRevenue = 0, festCount = 0, festMins = 0;
+            const serviceMap = {};
+            sess.forEach(s => {
+                const price = Number(s.price) || 0;
+                const mins = Number(s.duration) || 0;
+                if (s.type === 'fest') {
+                    festRevenue += price;
+                    festCount++;
+                    festMins += mins;
+                } else {
+                    rentRevenue += price;
+                    rentCount++;
+                    rentMins += mins;
+                    const service = serviceNameFromSession(s);
+                    if (!serviceMap[service]) serviceMap[service] = {count:0, mins:0, revenue:0};
+                    serviceMap[service].count++;
+                    serviceMap[service].mins += mins;
+                    serviceMap[service].revenue += price;
+                }
             });
 
-            let gRev=0, gCost=0, gCount=0, itemsMap={};
-            sales.forEach(s => { 
-                gRev += s.price; gCost += (s.cost||0); gCount++; 
-                if(!itemsMap[s.name]) itemsMap[s.name] = {q:0, r:0};
-                itemsMap[s.name].q++; itemsMap[s.name].r += s.price;
+            let goodsRevenue = 0, goodsCost = 0, goodsCount = 0;
+            const goodsMap = {};
+            sales.forEach(s => {
+                const revenue = Number(s.price) || 0;
+                const cost = Number(s.cost) || 0;
+                goodsRevenue += revenue;
+                goodsCost += cost;
+                goodsCount++;
+                if (!goodsMap[s.name]) goodsMap[s.name] = {count:0, revenue:0, cost:0};
+                goodsMap[s.name].count++;
+                goodsMap[s.name].revenue += revenue;
+                goodsMap[s.name].cost += cost;
             });
-            let itemsHtml = '';
-            for(let n in itemsMap) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gray); margin-bottom:4px;"><span>- ${n} (${itemsMap[n].q} шт)</span><span>${itemsMap[n].r} ₽</span></div>`;
 
-            let eTotal=0; exps.forEach(e => eTotal += e.amount);
+            let expensesTotal = 0;
+            const expenseMap = {};
+            exps.forEach(e => {
+                const amount = Number(e.amount) || 0;
+                expensesTotal += amount;
+                const category = String(e.comment || 'Без категории').trim() || 'Без категории';
+                if (!expenseMap[category]) expenseMap[category] = 0;
+                expenseMap[category] += amount;
+            });
 
-            document.getElementById('report_content').innerHTML = `
-                <div class="report-box">
-                    <div class="section-title">🏎 АРЕНДЫ (ВСЕ УСЛУГИ)</div>
-                    <div class="rep-line"><span>Кол-во сеансов:</span><span class="rep-val">${pCount}</span></div>
-                    <div class="rep-line"><span>Откатано/наиграно:</span><span class="rep-val">${(pMins/60).toFixed(1)} ч.</span></div>
-                    <div class="rep-line"><span>Выручка:</span><span class="rep-val" style="color:var(--orange)">${pRev} ₽</span></div>
-                </div>
+            const totalRevenue = rentRevenue + festRevenue + goodsRevenue;
+            const netProfit = totalRevenue - expensesTotal - goodsCost;
+            const transactions = rentCount + festCount + goodsCount;
+            const avgCheck = transactions ? totalRevenue / transactions : 0;
 
-                <div class="report-box">
-                    <div class="section-title">🎈 ПРАЗДНИКИ</div>
-                    <div class="rep-line"><span>Проведено праздников:</span><span class="rep-val">${fCount}</span></div>
-                    <div class="rep-line"><span>Всего часов:</span><span class="rep-val">${(fMins/60).toFixed(1)} ч.</span></div>
-                    <div class="rep-line"><span>Выручка:</span><span class="rep-val" style="color:var(--orange)">${fRev} ₽</span></div>
-                </div>
+            const serviceRows = Object.keys(serviceMap).sort((a,b) => serviceMap[b].revenue - serviceMap[a].revenue).map(name => {
+                const x = serviceMap[name];
+                return '<div class="data-row"><div><b>' + name + '</b><small>' + x.count + ' сеанс. · ' + (x.mins/60).toFixed(1) + ' ч.</small></div><strong>' + formatRub(x.revenue) + '</strong></div>';
+            }).join('');
 
-                <div class="report-box">
-                    <div class="section-title">🥤 ТОВАРЫ</div>
-                    ${itemsHtml ? `<div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #333;">${itemsHtml}</div>` : ''}
-                    <div class="rep-line"><span>Всего продано шт:</span><span class="rep-val">${gCount}</span></div>
-                    <div class="rep-line"><span>Грязная выручка:</span><span class="rep-val">${gRev} ₽</span></div>
-                    <div class="rep-line"><span>Себестоимость:</span><span class="rep-val" style="color:var(--gray)">- ${gCost} ₽</span></div>
-                    <div class="rep-line"><span>Прибыль с товаров:</span><span class="rep-val" style="color:var(--green)">${gRev - gCost} ₽</span></div>
-                </div>
+            const goodsRows = Object.keys(goodsMap).sort((a,b) => goodsMap[b].revenue - goodsMap[a].revenue).map(name => {
+                const x = goodsMap[name];
+                return '<div class="data-row"><div><b>' + name + '</b><small>' + x.count + ' шт. · прибыль ' + formatRub(x.revenue - x.cost) + '</small></div><strong>' + formatRub(x.revenue) + '</strong></div>';
+            }).join('');
 
-                <div class="report-box" style="border-color:var(--orange)">
-                    <div class="section-title">💰 ФИНАНСОВЫЙ ИТОГ</div>
-                    <div class="rep-line"><span>ОБЩАЯ ВЫРУЧКА:</span><span class="rep-val">${pRev+fRev+gRev} ₽</span></div>
-                    <div class="rep-line"><span>Все расходы:</span><span class="rep-val" style="color:var(--red)">- ${eTotal} ₽</span></div>
-                    <div class="rep-line"><span>Себестоимость товаров:</span><span class="rep-val" style="color:var(--gray)">- ${gCost} ₽</span></div>
-                    <hr style="border:0; border-top:1px dashed #333; margin:10px 0;">
-                    <div class="rep-line" style="font-size:18px;"><span>ЧИСТАЯ ПРИБЫЛЬ:</span><span class="rep-val" style="color:var(--green)">${(pRev+fRev+gRev) - eTotal - gCost} ₽</span></div>
-                </div>
-            `;
+            const expenseRows = Object.keys(expenseMap).sort((a,b) => expenseMap[b] - expenseMap[a]).map(name => {
+                return '<div class="data-row"><div><b>' + name + '</b></div><strong class="negative">− ' + formatRub(expenseMap[name]) + '</strong></div>';
+            }).join('');
+
+            const title = period === 'day'
+                ? range.start.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'})
+                : range.start.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+
+            document.getElementById('report_content').innerHTML =
+                '<div class="report-period-caption">' + title + '</div>' +
+                '<div class="finance-grid">' +
+                    '<div class="metric-card"><span>Выручка</span><b>' + formatRub(totalRevenue) + '</b></div>' +
+                    '<div class="metric-card"><span>Чистая прибыль</span><b class="' + (netProfit >= 0 ? 'positive' : 'negative') + '">' + formatRub(netProfit) + '</b></div>' +
+                    '<div class="metric-card"><span>Операций</span><b>' + transactions + '</b></div>' +
+                    '<div class="metric-card"><span>Средний чек</span><b>' + formatRub(avgCheck) + '</b></div>' +
+                '</div>' +
+
+                '<div class="report-box"><div class="section-title">АРЕНДА</div>' +
+                    '<div class="report-highlight"><span>Выручка аренды</span><b>' + formatRub(rentRevenue) + '</b></div>' +
+                    '<div class="rep-line"><span>Сеансов</span><span class="rep-val">' + rentCount + '</span></div>' +
+                    '<div class="rep-line"><span>Всего времени</span><span class="rep-val">' + (rentMins/60).toFixed(1) + ' ч.</span></div>' +
+                    '<div class="subsection">' + (serviceRows || '<div class="muted">Нет данных за период</div>') + '</div>' +
+                '</div>' +
+
+                '<div class="report-box"><div class="section-title">ПРАЗДНИКИ</div>' +
+                    '<div class="report-highlight"><span>Выручка</span><b>' + formatRub(festRevenue) + '</b></div>' +
+                    '<div class="rep-line"><span>Проведено праздников</span><span class="rep-val">' + festCount + '</span></div>' +
+                    '<div class="rep-line"><span>Всего часов</span><span class="rep-val">' + (festMins/60).toFixed(1) + ' ч.</span></div>' +
+                '</div>' +
+
+                '<div class="report-box"><div class="section-title">ТОВАРЫ</div>' +
+                    '<div class="rep-line"><span>Выручка</span><span class="rep-val">' + formatRub(goodsRevenue) + '</span></div>' +
+                    '<div class="rep-line"><span>Себестоимость</span><span class="rep-val negative">− ' + formatRub(goodsCost) + '</span></div>' +
+                    '<div class="rep-line"><span>Прибыль с товаров</span><span class="rep-val positive">' + formatRub(goodsRevenue - goodsCost) + '</span></div>' +
+                    '<div class="subsection">' + (goodsRows || '<div class="muted">Продаж нет</div>') + '</div>' +
+                '</div>' +
+
+                '<div class="report-box"><div class="section-title">РАСХОДЫ</div>' +
+                    '<div class="report-highlight"><span>Всего расходов</span><b class="negative">− ' + formatRub(expensesTotal) + '</b></div>' +
+                    '<div class="subsection">' + (expenseRows || '<div class="muted">Расходов нет</div>') + '</div>' +
+                '</div>' +
+
+                '<div class="report-box finance-total-box"><div class="section-title">ЭКОНОМИКА</div>' +
+                    '<div class="rep-line"><span>Общая выручка</span><span class="rep-val">' + formatRub(totalRevenue) + '</span></div>' +
+                    '<div class="rep-line"><span>Себестоимость товаров</span><span class="rep-val negative">− ' + formatRub(goodsCost) + '</span></div>' +
+                    '<div class="rep-line"><span>Прочие расходы</span><span class="rep-val negative">− ' + formatRub(expensesTotal) + '</span></div>' +
+                    '<div class="total-line"><span>ЧИСТАЯ ПРИБЫЛЬ</span><b class="' + (netProfit >= 0 ? 'positive' : 'negative') + '">' + formatRub(netProfit) + '</b></div>' +
+                '</div>';
         }
 
         function showPage(id, el) {
@@ -460,7 +669,7 @@
             document.getElementById(id).classList.add('active');
             if(el) el.classList.add('active');
         }
-        function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('day'); }
+        function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('month'); }
         function closeWin() { document.querySelectorAll('.full-window').forEach(w => w.classList.remove('active')); }
         function checkAdmin(el) { if(prompt("Пароль:") === "7826") showPage('adm_page', el); }
         
