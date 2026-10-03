@@ -88,9 +88,6 @@ input::placeholder{color:#68717d}
 .exp-head{display:grid;grid-template-columns:1fr 1fr;gap:8px}.expense-form{padding:13px;margin-bottom:10px}.expense-form select{margin-bottom:8px}.expense-form input{margin-bottom:8px}
 .expense-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:13px}.expense-main{display:flex;flex-direction:column;gap:4px}.expense-main b{font-size:12px}.expense-main small{color:var(--muted);font-size:9px}.expense-amount{color:var(--red);font-weight:950;white-space:nowrap;font-size:12px}.expense-actions{display:flex;gap:5px;margin-top:6px}.icon-btn{width:34px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#aeb5bf}
 .toast{position:fixed;left:14px;right:14px;bottom:18px;z-index:6000;display:none;padding:12px 14px;border-radius:14px;background:rgba(20,24,31,.97);border:1px solid var(--line);box-shadow:var(--shadow);font-size:11px;font-weight:800}.toast.show{display:block}.toast.good{border-color:rgba(52,223,145,.3)}.toast.bad{border-color:rgba(255,83,102,.35);color:#ffd2d8}
-.auth-gate{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 85% 0,rgba(255,122,0,.2),transparent 32%),#07090c}
-.auth-card{width:min(100%,390px);padding:22px;border-radius:26px;background:linear-gradient(145deg,#191e26,#0f1319);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.55)}.auth-card h2{margin:6px 0 6px;font-size:25px}.auth-card p{color:var(--muted);font-size:11px;line-height:1.5;margin:0 0 16px}.auth-card input{margin-bottom:8px}.auth-error{min-height:18px;margin-top:9px;color:var(--red);font-size:10px}
-.logout{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--muted);border-radius:11px;padding:8px 10px;font-size:9px;font-weight:900}
 .journal-type{font-size:9px;padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .journal-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:center;padding:11px 10px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
 .journal-date{color:var(--muted);font-size:9px}.journal-main{display:flex;flex-direction:column;gap:4px;min-width:0}.journal-main b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.journal-main small{font-size:9px;color:var(--muted)}.journal-amount{font-weight:950;font-size:11px;white-space:nowrap}
@@ -98,19 +95,6 @@ input::placeholder{color:#68717d}
 </style>
 </head>
 <body>
-<div id="auth_gate" class="auth-gate">
-  <div class="auth-card">
-    <div class="brand-badge">ТЕХНОПАРК PRO</div>
-    <div class="eyebrow" style="margin-top:17px">ЗАКРЫТАЯ ЗОНА</div>
-    <h2>Вход администратора</h2>
-    <p>Доступ к управлению центром защищён Supabase Auth.</p>
-    <input id="auth_email" type="email" placeholder="Email администратора" autocomplete="username">
-    <input id="auth_password" type="password" placeholder="Пароль" autocomplete="current-password">
-    <button class="btn btn-main" onclick="adminLogin()">🔐 Войти</button>
-    <div id="auth_error" class="auth-error"></div>
-  </div>
-</div>
-
 <div class="app-header">
   <div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div>
   <div class="brand-badge">PRO</div>
@@ -120,7 +104,7 @@ input::placeholder{color:#68717d}
   <button class="nav-item active" onclick="showPage('poly',this)">Аренда</button>
   <button class="nav-item" onclick="showPage('fest',this)">Праздник</button>
   <button class="nav-item" onclick="showPage('goods',this)">Товары</button>
-  <button class="nav-item" onclick="checkAdmin(this)">Админ</button>
+  <button class="nav-item" onclick="showPage('adm_page',this);loadAdminDashboard()">Админ</button>
 </div>
 
 <section id="poly" class="page active">
@@ -182,7 +166,6 @@ input::placeholder{color:#68717d}
     <div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div><h2>Администратор</h2><p>Финансы, склад и расходы — в одной панели.</p></div>
-      <button class="logout" onclick="adminLogout()">Выйти</button>
     </div>
   </div>
   <div id="admin_kpis" class="kpi-grid" style="margin-bottom:10px"></div>
@@ -270,26 +253,6 @@ function openWin(id){document.getElementById(id)?.classList.add("active");if(id=
 function closeWin(){document.querySelectorAll(".window").forEach(x=>x.classList.remove("active"));}
 function selectPeriodButton(){document.querySelectorAll(".period").forEach(x=>x.classList.remove("active"));document.getElementById(reportPeriod==="day"?"btn_rep_day":"btn_rep_month")?.classList.add("active");document.getElementById("report_day_controls")?.classList.toggle("hidden",reportPeriod!=="day");document.getElementById("report_month_controls")?.classList.toggle("hidden",reportPeriod==="day");}
 
-async function adminLogin(){
-  const email=document.getElementById("auth_email").value.trim();
-  const password=document.getElementById("auth_password").value;
-  const err=document.getElementById("auth_error");err.textContent="";
-  if(!email||!password){err.textContent="Введите email и пароль.";return;}
-  const {data,error}=await _supabase.auth.signInWithPassword({email,password});
-  if(error){err.textContent="Не удалось войти. Проверьте email и пароль.";return;}
-  if(data.user?.app_metadata?.role!=="admin"){await _supabase.auth.signOut();err.textContent="У аккаунта нет прав администратора.";return;}
-  document.getElementById("auth_gate").style.display="none";
-  document.getElementById("auth_password").value="";
-  await init();
-}
-async function adminLogout(){await _supabase.auth.signOut();closeWin();showPage("poly",document.querySelector(".nav-item"));document.getElementById("auth_gate").style.display="flex";}
-
-async function checkAdmin(el){
-  const {data:{session}}=await _supabase.auth.getSession();
-  if(session?.user?.app_metadata?.role==="admin") {showPage("adm_page",el);await loadAdminDashboard();}
-  else document.getElementById("auth_gate").style.display="flex";
-}
-
 async function init(){
   const [stRes,sessRes,salesRes]=await Promise.all([
     _supabase.from("tp_stock").select("*").order("id"),
@@ -297,7 +260,7 @@ async function init(){
     _supabase.from("tp_sales").select("*").gte("created_at",new Date(new Date().setHours(0,0,0,0)).toISOString()).order("created_at",{ascending:false})
   ]);
   if(stRes.error||sessRes.error||salesRes.error){
-    showToast("Не удалось загрузить данные. Проверьте авторизацию.","bad");
+    showToast("Не удалось загрузить данные.","bad");
     return;
   }
   db.stock={};(stRes.data||[]).forEach(i=>db.stock[i.id]=i);
@@ -514,10 +477,7 @@ async function loadAdminDashboard(){
   const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
 
 async function boot(){
-  const {data:{session}}=await _supabase.auth.getSession();
-  if(session?.user?.app_metadata?.role==="admin"){document.getElementById("auth_gate").style.display="none";await init();}
-  else document.getElementById("auth_gate").style.display="flex";
-  _supabase.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"||!session)document.getElementById("auth_gate").style.display="flex";});
+  await init();
   prepareExpenseControls();prepareReportControls();
   if(window.Telegram?.WebApp)window.Telegram.WebApp.expand();
 }
