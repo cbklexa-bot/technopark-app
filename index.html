@@ -177,11 +177,14 @@
 
     <div id="win_reports" class="full-window">
         <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
-        <div class="grid-2" style="margin-bottom:20px;">
+        <div class="grid-2" style="margin-bottom:10px;">
             <button class="btn btn-time active" id="btn_rep_day" onclick="loadReports('day')">День</button>
             <button class="btn btn-time" id="btn_rep_week" onclick="loadReports('week')">Неделя</button>
         </div>
-        <button class="btn btn-time" id="btn_rep_month" style="margin-bottom:20px;" onclick="loadReports('month')">Месяц</button>
+        <div class="grid-2" style="margin-bottom:20px;">
+            <button class="btn btn-time" id="btn_rep_month" onclick="loadReports('month')">Месяц</button>
+            <button class="btn btn-time" id="btn_rep_30" onclick="loadReports('30')">30 дней</button>
+        </div>
         <div id="report_content"></div>
     </div>
 
@@ -375,11 +378,13 @@
             document.getElementById('btn_rep_day').classList.remove('active');
             document.getElementById('btn_rep_week').classList.remove('active');
             document.getElementById('btn_rep_month').classList.remove('active');
+            document.getElementById('btn_rep_30').classList.remove('active');
             document.getElementById(`btn_rep_${period}`).classList.add('active');
 
             let df = new Date(); df.setHours(0,0,0,0);
             if(period === 'week') df.setDate(df.getDate() - 7);
-            if(period === 'month') df.setDate(1); 
+            if(period === 'month') df.setDate(1);
+            if(period === '30') df.setDate(df.getDate() - 30); 
             
             const iso = df.toISOString();
             const [sessRes, salesRes, expRes] = await Promise.all([
