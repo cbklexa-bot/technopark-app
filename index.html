@@ -544,9 +544,14 @@ async function loadAdminDashboard(){
 
 async function boot(){
   const {data:{session}}=await _supabase.auth.getSession();
-  if(!session){
+  if(!session?.user?.is_anonymous){
+    if(session) await _supabase.auth.signOut();
     const {error}=await _supabase.auth.signInAnonymously();
-    if(error){showToast("Не удалось открыть приложение.","bad");return;}
+    if(error){
+      console.error("Anonymous sign-in failed:",error);
+      showToast("Не удалось открыть приложение. Проверьте Anonymous Sign-Ins в Supabase для проекта Технопарк.","bad");
+      return;
+    }
   }
   await init();
   prepareExpenseControls();prepareReportControls();
