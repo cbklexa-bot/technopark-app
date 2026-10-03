@@ -1,745 +1,478 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ТЕХНОПАРК PRO</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { 
-            --orange: #FF7300; --dark: #0a0a0a; --card: #141414; --input: #1f1f1f;
-            --white: #ffffff; --red: #FF3D00; --green: #00E676; --gray: #888;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--dark); color: var(--white); margin: 0; padding-bottom: 100px; overflow-x: hidden; }
-        
-        .nav { display: flex; position: sticky; top: 0; background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(15px); z-index: 1000; padding: 10px; gap: 8px; border-bottom: 1px solid #222; }
-        .nav-item { flex: 1; padding: 12px; text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--gray); cursor: pointer; border-radius: 12px; transition: 0.2s; }
-        .nav-item.active { background: var(--orange); color: black; box-shadow: 0 4px 15px rgba(255, 115, 0, 0.3); }
-
-        .page { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .section-title { color:#9da6b3; font-size:10px; margin:20px 2px 9px; text-transform:uppercase; font-weight:900; letter-spacing:1.3px; display:flex; align-items:center; gap:8px; }
-        .section-title::after { content: ""; height: 1px; background: #222; flex: 1; }
-
-        input { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid #222; background: var(--input); color: white; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: var(--orange); outline: none; background: #252525; }
-
-        .btn { width: 100%; padding: 18px; border-radius: 16px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn:active { transform: scale(0.97); opacity: 0.8; }
-        .btn-main { background: var(--orange); color: black; }
-        .btn-time { background: var(--card); color: var(--gray); border: 1px solid #222; padding: 14px; }
-        .btn-time.active { border-color: var(--orange); color: var(--orange); background: rgba(255, 115, 0, 0.1); }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        
-        /* Карточки товаров */
-        .tile-card { background: var(--card); border-radius: 20px; padding: 25px 15px; text-align: center; border: 1px solid #222; transition: 0.1s; position: relative; overflow: hidden; }
-        .tile-card:active { transform: scale(0.95); border-color: var(--orange); background: #1a1a1a; }
-        .tile-card b { font-size: 18px; display: block; margin-top: 10px; }
-        .tile-card small { color: var(--gray); font-size: 12px; }
-
-        /* Игроки Полигона */
-        .player-card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid var(--green); transition: 0.3s; }
-        .player-timer { font-size: 24px; font-weight: 900; font-family: 'Courier New', monospace; color: var(--orange); }
-        .player-actions { max-height: 0; overflow: hidden; transition: 0.3s ease; opacity: 0; }
-        .player-card.open .player-actions { max-height: 250px; margin-top: 15px; opacity: 1; }
-
-        /* История продаж и расходов */
-        .stat-row { display: flex; justify-content: space-between; align-items: center; background:#1a1a1a; padding:12px; border-radius:12px; margin-bottom:8px; border: 1px solid #222; }
-        .del-btn { background: #331515; color: var(--red); border: 1px solid var(--red); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 16px; }
-
-        /* Окна Админа */
-        .full-window { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: none; padding: 20px; overflow-y: auto; }
-        .full-window.active { display: block; }
-        .report-box { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #222; }
-        .rep-line { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-        .rep-val { font-weight: 700; color: var(--white); }
-        
-        /* Склад */
-        .stock-item { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #222; }
-        .stock-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .stock-inputs div { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-bottom: 4px; }
-        .stock-inputs input { padding: 10px; text-align: center; margin-bottom: 0; }
-    
-        :root{--orange:#ff7a00;--orange-2:#ffb347;--dark:#07090c;--card:rgba(19,23,29,.94);--input:rgba(255,255,255,.06);--white:#f6f7f9;--red:#ff4d5f;--green:#32e28b;--gray:#8f98a6;--line:rgba(255,255,255,.08);--shadow:0 14px 35px rgba(0,0,0,.26)}
-        body{background:radial-gradient(circle at 85% -10%,rgba(255,122,0,.18),transparent 32%),radial-gradient(circle at -10% 35%,rgba(56,93,140,.14),transparent 28%),var(--dark);padding:16px 14px 110px}
-        .app-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 2px 16px}
-        .eyebrow{font-size:10px;letter-spacing:2px;color:var(--orange-2);font-weight:900;margin-bottom:4px}
-        .app-title{margin:0;font-size:24px;line-height:1.05;font-weight:950;letter-spacing:-.7px}
-        .brand-badge{padding:9px 11px;border-radius:14px;background:linear-gradient(135deg,var(--orange),#ff5300);color:#111;font-weight:950;font-size:11px;box-shadow:0 8px 22px rgba(255,122,0,.23)}
-        .nav{display:flex;position:sticky;top:10px;background:rgba(9,12,16,.82);backdrop-filter:blur(18px);z-index:1000;padding:6px;gap:6px;border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.22);margin-bottom:14px}
-        .nav-item{flex:1;min-width:0;padding:12px 7px;font-size:10px;font-weight:850;border-radius:13px}
-        .nav-item.active{background:linear-gradient(135deg,var(--orange),#ff5b00);color:#111;box-shadow:0 6px 18px rgba(255,122,0,.28)}
-        .page{padding:2px 0 0}
-        .hero-card{background:linear-gradient(145deg,rgba(255,122,0,.18),rgba(255,255,255,.035));border:1px solid rgba(255,170,85,.16);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
-        .hero-card b{display:block;font-size:17px;margin-bottom:5px}.hero-card span{color:var(--gray);font-size:12px;line-height:1.45}
-        .form-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:var(--shadow);margin-bottom:14px}
-        input{border-color:var(--line);background:var(--input);padding:15px;border-radius:15px}
-        input:focus{border-color:rgba(255,122,0,.72);box-shadow:0 0 0 3px rgba(255,122,0,.10)}
-        .btn{border-radius:16px;font-weight:900}.btn-main{background:linear-gradient(135deg,var(--orange),#ff5b00);box-shadow:0 10px 24px rgba(255,122,0,.20)}
-        .btn-time{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(17,20,25,.92));border-color:var(--line);box-shadow:0 7px 22px rgba(0,0,0,.14)}
-        .btn-time.active{border-color:rgba(255,122,0,.78);color:#fff;background:linear-gradient(145deg,rgba(255,122,0,.18),rgba(255,122,0,.06));box-shadow:inset 0 0 0 1px rgba(255,122,0,.12),0 8px 24px rgba(255,122,0,.11)}
-        .service-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:rgba(255,255,255,.07);font-size:20px}
-        .tile-card{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.94));border-color:var(--line);box-shadow:var(--shadow);padding:21px 14px}
-        .player-card,.report-box,.stock-item{box-shadow:var(--shadow);border-color:var(--line)}
-        .full-window{background:radial-gradient(circle at 85% 0%,rgba(255,122,0,.12),transparent 28%),var(--dark);padding:18px 14px 30px}
-        .report-box{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.95));border-radius:21px}
-.live-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 14px}.live-summary>div{background:rgba(19,23,29,.9);border:1px solid var(--line);border-radius:17px;padding:11px 9px;min-width:0}.live-summary span{display:block;color:var(--gray);font-size:8px;letter-spacing:.6px;font-weight:900;margin-bottom:5px}.live-summary b{font-size:15px;line-height:1.1;white-space:nowrap}.online-dot{color:var(--green)!important;font-size:10px!important}
-        .client-name-input{margin-bottom:4px}
-
-        .auth-gate{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 85% 0%,rgba(255,122,0,.20),transparent 32%),#07090c}
-        .auth-card{width:min(100%,390px);padding:22px;border-radius:26px;background:linear-gradient(145deg,rgba(24,29,36,.98),rgba(13,16,21,.98));border:1px solid rgba(255,255,255,.09);box-shadow:0 25px 70px rgba(0,0,0,.48)}
-        .auth-card h2{margin:6px 0 7px;font-size:25px}.auth-card p{margin:0 0 17px;color:var(--gray);font-size:12px;line-height:1.5}
-        .auth-brand{display:inline-block}.auth-error{min-height:18px;margin-top:10px;color:var(--red);font-size:11px;line-height:1.4}
-        .admin-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.logout-btn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--gray);border-radius:12px;padding:9px 11px;font-size:10px;font-weight:900}
-                /* --- НОВЫЙ UI 2026 --- */
-        .service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
-        .service-tile{min-height:108px!important;padding:14px 10px!important;display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;align-items:center;gap:4px 8px;text-transform:none!important;text-align:left}
-        .service-tile .service-icon{grid-row:1 / span 2;width:42px;height:42px}
-        .service-tile span:nth-child(2){font-size:12px;font-weight:800;color:#cdd3dc;align-self:end}
-        .service-tile b{font-size:17px;line-height:1;align-self:start}
-        .btn-main{min-height:58px;font-size:14px}
-        .empty-state{padding:26px 12px;text-align:center;color:var(--gray);background:rgba(19,23,29,.65);border:1px dashed var(--line);border-radius:18px}
-        .player-main-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
-        .player-meta{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
-        .player-meta>b{font-size:16px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .player-meta small{color:var(--gray);font-size:11px}
-        .service-badge{font-size:9px;padding:4px 8px;border-radius:999px;background:rgba(255,122,0,.12);color:var(--orange-2);border:1px solid rgba(255,122,0,.18);font-weight:900}
-        .extend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-        .extend-btn{min-height:50px!important;padding:8px 6px!important;font-size:10px!important;text-transform:none!important;flex-direction:column;gap:2px}
-        .extend-btn span{font-size:11px;color:var(--orange-2);font-weight:900}
-        .finish-btn{background:rgba(255,61,0,.10);color:var(--red);border:1px solid rgba(255,77,95,.4);min-height:48px;padding:12px!important;margin-bottom:10px}
-        .admin-hero{padding:18px;border-radius:24px;background:linear-gradient(145deg,rgba(255,122,0,.17),rgba(255,255,255,.035));border:1px solid rgba(255,170,85,.14);box-shadow:var(--shadow);margin-bottom:12px}
-        .admin-hero h2{margin:0 0 6px;font-size:22px}
-        .admin-hero p{margin:0;color:var(--gray);font-size:12px;line-height:1.5}
-        .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-        .admin-card{min-height:128px;padding:15px;border-radius:20px;background:linear-gradient(145deg,rgba(24,29,36,.94),rgba(16,19,24,.96));border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
-        .admin-card-wide{grid-column:1/-1;min-height:94px;flex-direction:row;align-items:center;gap:12px}
-        .admin-card b{font-size:14px}
-        .admin-card small{color:var(--gray);font-size:10px;line-height:1.35}
-        .admin-card-wide>div{flex:1;display:flex;flex-direction:column;gap:4px}
-        .admin-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.07);font-size:21px}
-        .admin-arrow{font-size:22px;color:var(--orange-2)}
-        .window-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-        .window-head h2{margin:0;font-size:22px}
-        .back-btn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff;font-size:20px}
-        .report-period-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-        .period-btn{min-height:48px;border-radius:14px;border:1px solid var(--line);background:rgba(19,23,29,.92);color:var(--gray);font-weight:900}
-        .period-btn.active{background:rgba(255,122,0,.16);color:#fff;border-color:rgba(255,122,0,.6)}
-        .month-select-card{padding:12px;border-radius:16px;background:rgba(19,23,29,.76);border:1px solid var(--line);margin-bottom:12px}
-        .month-select-card label{display:block;color:var(--gray);font-size:9px;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:6px}
-        .month-select-card select{width:100%;padding:12px 13px;border-radius:12px;background:#12161c;color:#fff;border:1px solid var(--line);font-size:14px}
-        .report-period-caption{font-size:12px;color:var(--gray);font-weight:800;margin:2px 2px 10px}
-        .finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-        .metric-card{padding:13px;border-radius:17px;background:rgba(19,23,29,.9);border:1px solid var(--line)}
-        .metric-card span{display:block;color:var(--gray);font-size:8px;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:6px}
-        .metric-card b{font-size:16px}
-        .metric-card b.positive{color:var(--green)}
-        .metric-card b.negative{color:var(--red)}
-        .report-highlight{display:flex;justify-content:space-between;align-items:center;padding:11px 0;margin-bottom:4px}
-        .report-highlight span{color:var(--gray);font-size:12px}
-        .report-highlight b{font-size:18px}
-        .data-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)}
-        .data-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}
-        .data-row b{font-size:12px}
-        .data-row small{color:var(--gray);font-size:10px}
-        .data-row strong{font-size:12px;white-space:nowrap}
-        .subsection{margin-top:8px}
-        .muted{color:var(--gray);font-size:11px}
-        .positive{color:var(--green)!important}
-        .negative{color:var(--red)!important}
-        .finance-total-box{border-color:rgba(255,122,0,.4)!important}
-        .total-line{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #333;padding-top:12px;margin-top:12px;font-size:16px;font-weight:950}
-        @media(max-width:360px){.service-grid,.admin-grid{grid-template-columns:1fr}.admin-card-wide{grid-column:auto}.extend-grid{grid-template-columns:1fr 1fr}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080a0e">
+<title>Технопарк PRO</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#080a0e;--panel:#11151b;--panel2:#171c24;--panel3:#1c222b;--line:rgba(255,255,255,.08);
+  --text:#f5f7fa;--muted:#8d97a6;--orange:#ff7a00;--orange2:#ffb45d;--green:#34df91;
+  --red:#ff5366;--blue:#5ba7ff;--shadow:0 18px 48px rgba(0,0,0,.28);--radius:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:radial-gradient(circle at 100% 0,rgba(255,122,0,.13),transparent 30%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{min-height:100vh;padding:14px 14px 104px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.app-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 2px 14px}
+.eyebrow{font-size:9px;letter-spacing:1.8px;color:var(--orange2);font-weight:950;text-transform:uppercase}
+.app-title{font-size:24px;line-height:1;margin:4px 0 0;letter-spacing:-.8px}
+.brand-badge{padding:8px 11px;border-radius:13px;background:linear-gradient(135deg,var(--orange),#ff5200);color:#111;font-size:10px;font-weight:950}
+.nav{position:sticky;top:8px;z-index:1000;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px;background:rgba(10,13,17,.86);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 35px rgba(0,0,0,.24);margin-bottom:14px}
+.nav-item{border:0;background:transparent;color:var(--muted);padding:11px 6px;border-radius:12px;font-size:10px;font-weight:900}
+.nav-item.active{background:linear-gradient(135deg,var(--orange),#ff5a00);color:#111;box-shadow:0 7px 20px rgba(255,122,0,.25)}
+.page{display:none}.page.active{display:block}
+.section-title{display:flex;align-items:center;gap:8px;color:#9da7b5;font-size:9px;letter-spacing:1.35px;font-weight:950;margin:18px 2px 9px;text-transform:uppercase}
+.section-title:after{content:"";height:1px;flex:1;background:var(--line)}
+.panel{background:linear-gradient(145deg,rgba(23,28,36,.96),rgba(14,18,24,.96));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.form-panel{padding:13px;margin-bottom:12px}
+input,select{width:100%;background:rgba(255,255,255,.055);border:1px solid var(--line);color:var(--text);border-radius:15px;padding:14px 13px;outline:none}
+input:focus,select:focus{border-color:rgba(255,122,0,.65);box-shadow:0 0 0 3px rgba(255,122,0,.1)}
+input::placeholder{color:#68717d}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{width:100%;min-height:50px;border:0;border-radius:15px;font-weight:900;color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px;padding:12px}
+.btn:active{transform:scale(.98)}
+.btn-main{background:linear-gradient(135deg,var(--orange),#ff5b00);color:#111;box-shadow:0 10px 25px rgba(255,122,0,.2)}
+.btn-ghost{background:rgba(255,255,255,.05);border:1px solid var(--line);color:#dbe0e7}
+.btn-danger{background:rgba(255,83,102,.10);border:1px solid rgba(255,83,102,.32);color:var(--red)}
+.btn-small{min-height:40px;padding:8px 11px;border-radius:12px;font-size:11px}
+.services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.service{position:relative;text-align:left;min-height:108px;background:linear-gradient(145deg,#171d25,#11161d);border:1px solid var(--line);border-radius:18px;padding:13px;color:var(--text);overflow:hidden}
+.service.active{border-color:rgba(255,122,0,.76);background:linear-gradient(145deg,rgba(255,122,0,.18),rgba(255,122,0,.055));box-shadow:inset 0 0 0 1px rgba(255,122,0,.11)}
+.service-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.065);font-size:20px;margin-bottom:10px}
+.service-name{font-weight:900;font-size:13px}.service-meta{color:var(--muted);font-size:10px;margin-top:3px}.service-price{font-size:16px;font-weight:950;position:absolute;right:12px;bottom:12px}
+.active-list{display:grid;gap:9px}
+.empty{padding:22px;border:1px dashed var(--line);border-radius:17px;text-align:center;color:var(--muted);background:rgba(255,255,255,.02)}
+.session-card{background:linear-gradient(145deg,#171d25,#11161c);border:1px solid var(--line);border-radius:18px;padding:14px}
+.session-main{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.session-left{min-width:0;display:flex;flex-direction:column;gap:5px}
+.session-name{font-size:15px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.badge{display:inline-flex;align-items:center;width:max-content;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;background:rgba(255,122,0,.11);color:var(--orange2);border:1px solid rgba(255,122,0,.16)}
+.session-sub{font-size:10px;color:var(--muted)}
+.timer{font-family:"SFMono-Regular",Consolas,monospace;font-size:22px;font-weight:950;color:var(--orange);white-space:nowrap}
+.timer.over{color:var(--red)}
+.session-actions{display:none;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+.session-card.open .session-actions{display:block}
+.extend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.extend{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:13px;color:#eef1f5;min-height:48px;padding:8px;font-size:10px;font-weight:900}
+.extend span{display:block;color:var(--orange2);margin-top:2px}
+.session-stop{margin-bottom:8px}
+.tile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.tile{background:linear-gradient(145deg,#171d25,#11161d);border:1px solid var(--line);border-radius:18px;padding:18px 14px;text-align:center}
+.tile:active{transform:scale(.98)}
+.tile-icon{font-size:25px}.tile b{display:block;margin-top:7px;font-size:13px}.tile small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.list{display:grid;gap:7px}.list-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.list-row small{color:var(--muted);font-size:10px}.list-row b{font-size:12px}
+.window{position:fixed;inset:0;background:radial-gradient(circle at 100% 0,rgba(255,122,0,.09),transparent 28%),var(--bg);z-index:2500;display:none;overflow:auto;padding:16px 14px 38px}
+.window.active{display:block}
+.window-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}.back{width:43px;height:43px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:#fff;font-size:20px}.window-head h2{margin:2px 0 0;font-size:22px}
+.hero{padding:17px;border-radius:22px;background:linear-gradient(145deg,rgba(255,122,0,.15),rgba(255,255,255,.03));border:1px solid rgba(255,170,85,.13);box-shadow:var(--shadow);margin-bottom:11px}
+.hero h2{font-size:22px;margin:4px 0 5px}.hero p{margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.admin-card{background:linear-gradient(145deg,#171d25,#11161d);border:1px solid var(--line);border-radius:18px;padding:15px;min-height:132px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:var(--shadow)}.admin-wide{grid-column:1/-1;min-height:88px;display:flex;flex-direction:row;align-items:center;gap:12px}.admin-icon{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.06);display:grid;place-items:center;font-size:20px}.admin-card b{font-size:13px}.admin-card small{display:block;color:var(--muted);font-size:10px;line-height:1.4;margin-top:4px}.admin-wide>div{flex:1}.admin-arrow{font-size:22px;color:var(--orange2)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:16px;padding:13px}.kpi span{display:block;color:var(--muted);font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}.kpi b{font-size:17px}.positive{color:var(--green)!important}.negative{color:var(--red)!important}
+.periods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}.period{min-height:46px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);font-weight:900;font-size:11px}.period.active{background:rgba(255,122,0,.15);border-color:rgba(255,122,0,.55);color:#fff}
+.month-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}.month-row .full{grid-column:1/-1}
+.report-caption{font-size:11px;color:var(--muted);font-weight:900;margin:4px 2px 10px}
+.report-box{padding:14px;margin-bottom:9px}.report-box .section-title{margin-top:0}
+.highlight{display:flex;justify-content:space-between;align-items:center;padding:10px 0}.highlight span{color:var(--muted);font-size:11px}.highlight b{font-size:19px}
+.rep-line{display:flex;justify-content:space-between;gap:8px;padding:8px 0;font-size:11px;border-top:1px solid rgba(255,255,255,.045)}.rep-line span:first-child{color:#aeb5bf}
+.data-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.045)}.data-row>div{min-width:0;display:flex;flex-direction:column;gap:3px}.data-row b{font-size:11px}.data-row small{font-size:9px;color:var(--muted)}.data-row strong{font-size:11px;white-space:nowrap}
+.day-list{display:grid;gap:6px}.day-row{display:grid;grid-template-columns:66px 1fr auto;gap:8px;align-items:center;padding:10px 9px;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid var(--line)}.day-row small{color:var(--muted);font-size:9px}.day-row b{font-size:11px}.day-row .profit{font-size:11px}
+.total-box{border-color:rgba(255,122,0,.38)}
+.stock-card{padding:14px;margin-bottom:8px}.stock-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.stock-name{font-size:13px;font-weight:950}.stock-qty{font-size:10px;color:var(--muted)}.stock-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:10px}.stock-grid label{font-size:8px;color:var(--muted);text-transform:uppercase;font-weight:900}.stock-grid input{margin-top:4px;padding:10px 8px;border-radius:11px;text-align:center;font-size:12px}
+.exp-head{display:grid;grid-template-columns:1fr 1fr;gap:8px}.expense-form{padding:13px;margin-bottom:10px}.expense-form select{margin-bottom:8px}.expense-form input{margin-bottom:8px}
+.expense-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:13px}.expense-main{display:flex;flex-direction:column;gap:4px}.expense-main b{font-size:12px}.expense-main small{color:var(--muted);font-size:9px}.expense-amount{color:var(--red);font-weight:950;white-space:nowrap;font-size:12px}.expense-actions{display:flex;gap:5px;margin-top:6px}.icon-btn{width:34px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#aeb5bf}
+.toast{position:fixed;left:14px;right:14px;bottom:18px;z-index:6000;display:none;padding:12px 14px;border-radius:14px;background:rgba(20,24,31,.97);border:1px solid var(--line);box-shadow:var(--shadow);font-size:11px;font-weight:800}.toast.show{display:block}.toast.good{border-color:rgba(52,223,145,.3)}.toast.bad{border-color:rgba(255,83,102,.35);color:#ffd2d8}
+.auth-gate{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 85% 0,rgba(255,122,0,.2),transparent 32%),#07090c}
+.auth-card{width:min(100%,390px);padding:22px;border-radius:26px;background:linear-gradient(145deg,#191e26,#0f1319);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.55)}.auth-card h2{margin:6px 0 6px;font-size:25px}.auth-card p{color:var(--muted);font-size:11px;line-height:1.5;margin:0 0 16px}.auth-card input{margin-bottom:8px}.auth-error{min-height:18px;margin-top:9px;color:var(--red);font-size:10px}
+.logout{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--muted);border-radius:11px;padding:8px 10px;font-size:9px;font-weight:900}
+@media(max-width:365px){.services,.admin-grid{grid-template-columns:1fr}.admin-wide{grid-column:auto}.form-grid-2,.month-row,.exp-head{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-    <div id="auth_gate" class="auth-gate">
-        <div class="auth-card">
-            <div class="brand-badge auth-brand">ТЕХНОПАРК PRO</div>
-            <div class="eyebrow" style="margin-top:18px;">ЗАКРЫТАЯ ЗОНА</div>
-            <h2>Вход администратора</h2>
-            <p>Доступ к управлению центром защищён Supabase Auth.</p>
-            <input type="email" id="auth_email" placeholder="Email администратора" autocomplete="username">
-            <input type="password" id="auth_password" placeholder="Пароль" autocomplete="current-password">
-            <button class="btn btn-main" onclick="adminLogin()">🔐 Войти</button>
-            <div id="auth_error" class="auth-error"></div>
-        </div>
+<div id="auth_gate" class="auth-gate">
+  <div class="auth-card">
+    <div class="brand-badge">ТЕХНОПАРК PRO</div>
+    <div class="eyebrow" style="margin-top:17px">ЗАКРЫТАЯ ЗОНА</div>
+    <h2>Вход администратора</h2>
+    <p>Доступ к управлению центром защищён Supabase Auth.</p>
+    <input id="auth_email" type="email" placeholder="Email администратора" autocomplete="username">
+    <input id="auth_password" type="password" placeholder="Пароль" autocomplete="current-password">
+    <button class="btn btn-main" onclick="adminLogin()">🔐 Войти</button>
+    <div id="auth_error" class="auth-error"></div>
+  </div>
+</div>
+
+<div class="app-header">
+  <div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div>
+  <div class="brand-badge">PRO</div>
+</div>
+
+<div class="nav">
+  <button class="nav-item active" onclick="showPage('poly',this)">Аренда</button>
+  <button class="nav-item" onclick="showPage('fest',this)">Праздник</button>
+  <button class="nav-item" onclick="showPage('goods',this)">Товары</button>
+  <button class="nav-item" onclick="checkAdmin(this)">Админ</button>
+</div>
+
+<section id="poly" class="page active">
+  <div class="panel form-panel">
+    <div class="section-title" style="margin-top:0">Клиент</div>
+    <input id="p_name" type="text" placeholder="Имя клиента / ребёнка">
+  </div>
+
+  <div class="section-title">Полигон</div>
+  <div class="services">
+    <button class="service" id="t_poly_30" onclick="selT(30,300,'t_poly_30','Полигон')"><div class="service-icon">🏎️</div><div class="service-name">30 минут</div><div class="service-meta">Полигон</div><div class="service-price">300 ₽</div></button>
+    <button class="service" id="t_poly_60" onclick="selT(60,500,'t_poly_60','Полигон')"><div class="service-icon">🏁</div><div class="service-name">1 час</div><div class="service-meta">Полигон</div><div class="service-price">500 ₽</div></button>
+  </div>
+
+  <div class="section-title">VR шлемы</div>
+  <div class="services">
+    <button class="service" id="t_vr_30" onclick="selT(30,300,'t_vr_30','VR')"><div class="service-icon">🥽</div><div class="service-name">30 минут</div><div class="service-meta">VR</div><div class="service-price">300 ₽</div></button>
+    <button class="service" id="t_vr_60" onclick="selT(60,500,'t_vr_60','VR')"><div class="service-icon">🌐</div><div class="service-name">1 час</div><div class="service-meta">VR</div><div class="service-price">500 ₽</div></button>
+  </div>
+
+  <div class="section-title">Другие аттракционы</div>
+  <div class="services">
+    <button class="service" id="t_ps_60" onclick="selT(60,400,'t_ps_60','PS4')"><div class="service-icon">🎮</div><div class="service-name">PS4 · 1 час</div><div class="service-meta">Приставка</div><div class="service-price">400 ₽</div></button>
+    <button class="service" id="t_drift_10" onclick="selT(10,150,'t_drift_10','Дрифт/Вело')"><div class="service-icon">🚲</div><div class="service-name">10 минут</div><div class="service-meta">Дрифт / вело</div><div class="service-price">150 ₽</div></button>
+    <button class="service" id="t_range_5" onclick="selT(5,150,'t_range_5','Мини-тир')"><div class="service-icon">🎯</div><div class="service-name">5 минут</div><div class="service-meta">Мини-тир</div><div class="service-price">150 ₽</div></button>
+  </div>
+
+  <button class="btn btn-main" style="margin-top:12px" onclick="startSession()">🚀 Запустить аренду</button>
+
+  <div class="section-title">Текущие аренды</div>
+  <div id="online_list" class="active-list"></div>
+</section>
+
+<section id="fest" class="page">
+  <div class="hero"><div class="eyebrow">БРОНИРОВАНИЕ</div><h2>Праздник</h2><p>Фиксируйте выручку праздников отдельно от обычных аренд.</p></div>
+  <div class="panel form-panel">
+    <input id="f_name" type="text" placeholder="Имя именинника" style="margin-bottom:8px">
+    <input id="f_tel" type="tel" placeholder="Телефон" style="margin-bottom:8px">
+    <div class="form-grid-2" style="margin-bottom:8px"><input id="f_people" type="number" min="1" placeholder="Гостей"><input id="f_hours" type="number" step="0.5" min="0" placeholder="Часов"></div>
+    <input id="f_sum" type="number" min="0" placeholder="Итоговая сумма ₽" style="margin-bottom:8px">
+    <button class="btn btn-main" onclick="saveParty()">💳 Зафиксировать праздник</button>
+  </div>
+</section>
+
+<section id="goods" class="page">
+  <div class="hero"><div class="eyebrow">БЫСТРЫЕ ПРОДАЖИ</div><h2>Товары</h2><p>Нажмите на товар — продажа уйдёт в историю и уменьшит остаток.</p></div>
+  <div class="tile-grid">
+    <div class="tile" onclick="sellItem('coffee')"><div class="tile-icon">☕</div><b>Кофе</b><small id="lbl_coffee">—</small></div>
+    <div class="tile" onclick="sellItem('water')"><div class="tile-icon">💧</div><b>Вода</b><small id="lbl_water">—</small></div>
+    <div class="tile" onclick="sellItem('juice')"><div class="tile-icon">🥤</div><b>Сок</b><small id="lbl_juice">—</small></div>
+    <div class="tile" onclick="sellItem('popcorn')"><div class="tile-icon">🍿</div><b>Попкорн</b><small id="lbl_popcorn">—</small></div>
+  </div>
+  <div class="section-title">Продажи сегодня</div>
+  <div id="sales_history" class="list"></div>
+</section>
+
+<section id="adm_page" class="page">
+  <div class="hero">
+    <div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div><h2>Администратор</h2><p>Финансы, склад и расходы — в одной панели.</p></div>
+      <button class="logout" onclick="adminLogout()">Выйти</button>
     </div>
-    <div class="app-header"><div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div><div class="brand-badge">PRO</div></div>
+  </div>
+  <div id="admin_kpis" class="kpi-grid" style="margin-bottom:10px"></div>
+  <div class="admin-grid">
+    <div class="admin-card admin-wide" onclick="openWin('win_reports')"><span class="admin-icon">📊</span><div><b>Финансы и аналитика</b><small>День, текущий месяц, прошлые месяцы, прибыль и экономика</small></div><span class="admin-arrow">→</span></div>
+    <div class="admin-card" onclick="openWin('win_exp')"><span class="admin-icon">💸</span><div><b>Расходы</b><small>Добавление задним числом и история</small></div></div>
+    <div class="admin-card" onclick="openWin('win_stock')"><span class="admin-icon">📦</span><div><b>Склад</b><small>Остатки, закупка, цена и маржа</small></div></div>
+  </div>
+</section>
 
-    <div class="nav">
-        <div class="nav-item active" onclick="showPage('poly', this)">Аренда</div>
-        <div class="nav-item" onclick="showPage('fest', this)">Праздник</div>
-        <div class="nav-item" onclick="showPage('goods', this)">Товары</div>
-        <div class="nav-item" onclick="checkAdmin(this)">Админ</div>
+<div id="win_reports" class="window">
+  <div class="window-head"><button class="back" onclick="closeWin()">←</button><div><div class="eyebrow">АНАЛИТИКА</div><h2>Финансы</h2></div></div>
+  <div class="periods">
+    <button class="period active" id="btn_rep_day" onclick="setReportPeriod('day')">День</button>
+    <button class="period" id="btn_rep_month" onclick="setReportPeriod('month')">Месяц</button>
+  </div>
+  <div id="report_day_controls" class="month-row hidden"><input class="full" id="rep_day" type="date" onchange="loadReports('day')"></div>
+  <div id="report_month_controls" class="month-row"><select id="rep_month" class="full" onchange="loadReports('month')"></select></div>
+  <div id="report_content"></div>
+</div>
+
+<div id="win_exp" class="window">
+  <div class="window-head"><button class="back" onclick="closeWin()">←</button><div><div class="eyebrow">УПРАВЛЕНИЕ</div><h2>Расходы</h2></div></div>
+  <div class="panel expense-form">
+    <div class="section-title" style="margin-top:0">Новый расход</div>
+    <div class="exp-head" style="margin-bottom:8px"><input id="exp_date" type="date"><select id="exp_category"><option>Аренда</option><option>Зарплата</option><option>Электричество</option><option>Коммунальные</option><option>Закупка</option><option>Реклама</option><option>Ремонт</option><option>Прочее</option></select></div>
+    <input id="exp_amount" type="number" min="0" placeholder="Сумма ₽" style="margin-bottom:8px">
+    <input id="exp_comment" type="text" placeholder="Комментарий / на что расход" style="margin-bottom:8px">
+    <button class="btn btn-main" onclick="saveExp()">💾 Сохранить расход</button>
+  </div>
+  <div class="panel" style="padding:13px;margin-bottom:9px">
+    <div class="section-title" style="margin-top:0">Период истории</div>
+    <select id="exp_month_filter" onchange="loadExpensesHistory()"></select>
+  </div>
+  <div id="expense_total" class="kpi-grid" style="margin-bottom:9px"></div>
+  <div id="exp_history_list" class="list"></div>
+</div>
+
+<div id="win_stock" class="window">
+  <div class="window-head"><button class="back" onclick="closeWin()">←</button><div><div class="eyebrow">ТОВАРЫ</div><h2>Склад</h2></div></div>
+  <div id="stock_manager_list"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const S_URL="https://ereiiidezagburttpxtn.supabase.co";
+const S_KEY="sb_publishable_YuQ8s49c1LvkCTmoBPQ0hA_7EJ3Z1cj";
+const _supabase=supabase.createClient(S_URL,S_KEY);
+let db={players:[],stock:{},expenses:[]};
+let selMins=0,selPrice=0,selService="",openCardId=null;
+let reportPeriod="month";
+let toastTimer=null;
+
+const EXTENSIONS={
+  "PS4":[[30,200,"+30 мин","200 ₽"],[60,400,"+1 час","400 ₽"]],
+  "Дрифт/Вело":[[10,150,"+10 мин","150 ₽"]],
+  "Мини-тир":[[5,150,"+5 мин","150 ₽"]],
+  "VR":[[30,300,"+30 мин","300 ₽"],[60,500,"+1 час","500 ₽"]],
+  "Полигон":[[30,300,"+30 мин","300 ₽"],[60,500,"+1 час","500 ₽"]]
+};
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+function money(v){return Math.round(Number(v)||0).toLocaleString("ru-RU")+" ₽";}
+function dateInputValue(d=new Date()){const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");}
+function monthKey(d=new Date()){const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0");}
+function monthLabel(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-1,1);let s=d.toLocaleDateString("ru-RU",{month:"long",year:"numeric"});return s.charAt(0).toUpperCase()+s.slice(1);}
+function monthRange(key){const [y,m]=key.split("-").map(Number);return {start:new Date(y,m-1,1),end:new Date(y,m,1)};}
+function showToast(msg,kind="good"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+(kind==="bad"?"bad":"good");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2600);}
+function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");}
+function openWin(id){document.getElementById(id)?.classList.add("active");if(id==="win_reports"){prepareReportControls();loadReports(reportPeriod);}if(id==="win_exp"){prepareExpenseControls();loadExpensesHistory();}if(id==="win_stock")renderStockEdit();}
+function closeWin(){document.querySelectorAll(".window").forEach(x=>x.classList.remove("active"));}
+function selectPeriodButton(){document.querySelectorAll(".period").forEach(x=>x.classList.remove("active"));document.getElementById(reportPeriod==="day"?"btn_rep_day":"btn_rep_month")?.classList.add("active");document.getElementById("report_day_controls")?.classList.toggle("hidden",reportPeriod!=="day");document.getElementById("report_month_controls")?.classList.toggle("hidden",reportPeriod==="day");}
+
+async function adminLogin(){
+  const email=document.getElementById("auth_email").value.trim();
+  const password=document.getElementById("auth_password").value;
+  const err=document.getElementById("auth_error");err.textContent="";
+  if(!email||!password){err.textContent="Введите email и пароль.";return;}
+  const {data,error}=await _supabase.auth.signInWithPassword({email,password});
+  if(error){err.textContent="Не удалось войти. Проверьте email и пароль.";return;}
+  if(data.user?.app_metadata?.role!=="admin"){await _supabase.auth.signOut();err.textContent="У аккаунта нет прав администратора.";return;}
+  document.getElementById("auth_gate").style.display="none";
+  document.getElementById("auth_password").value="";
+  await init();
+}
+async function adminLogout(){await _supabase.auth.signOut();closeWin();showPage("poly",document.querySelector(".nav-item"));document.getElementById("auth_gate").style.display="flex";}
+
+async function checkAdmin(el){
+  const {data:{session}}=await _supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role==="admin") {showPage("adm_page",el);await loadAdminDashboard();}
+  else document.getElementById("auth_gate").style.display="flex";
+}
+
+async function init(){
+  const [stRes,sessRes,salesRes]=await Promise.all([
+    _supabase.from("tp_stock").select("*").order("id"),
+    _supabase.from("tp_sessions").select("*").or("finished.is.null,finished.eq.false").order("created_at",{ascending:false}),
+    _supabase.from("tp_sales").select("*").gte("created_at",new Date(new Date().setHours(0,0,0,0)).toISOString()).order("created_at",{ascending:false})
+  ]);
+  if(stRes.error||sessRes.error||salesRes.error){
+    showToast("Не удалось загрузить данные. Проверьте авторизацию.","bad");
+    return;
+  }
+  db.stock={};(stRes.data||[]).forEach(i=>db.stock[i.id]=i);
+  db.players=sessRes.data||[];
+  renderPlayers();renderStockEdit();renderSales(salesRes.data||[]);renderStockLabels();
+}
+
+function renderStockLabels(){
+  ["coffee","water","juice","popcorn"].forEach(id=>{const el=document.getElementById("lbl_"+id);const x=db.stock[id];if(el)el.textContent=x?("Остаток: "+x.qty+" · "+money(x.price)):"Нет в складе";});
+}
+
+function selT(m,p,id,service){selMins=m;selPrice=p;selService=service;document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");}
+
+async function startSession(){
+  const name=document.getElementById("p_name").value.trim();
+  if(!name||!selMins){showToast("Введите имя и выберите услугу.","bad");return;}
+  const {error}=await _supabase.from("tp_sessions").insert([{client_name:name,duration:selMins,price:selPrice,type:"poly",service_code:selService,finished:false}]);
+  if(error){showToast("Не удалось запустить аренду.","bad");return;}
+  document.getElementById("p_name").value="";selMins=0;selPrice=0;selService="";
+  document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
+  await init();showToast("Аренда запущена.");
+}
+
+function detectService(p){
+  if(p.service_code)return p.service_code;
+  const m=String(p.client_name||"").match(/\(([^)]+)\)\s*$/);if(m)return m[1];
+  if(p.price===400&&p.duration>=60)return "PS4";
+  if(p.price===150&&p.duration===5)return "Мини-тир";
+  if(p.price===150&&p.duration===10)return "Дрифт/Вело";
+  if(p.price===300&&p.duration===30)return "VR";
+  return "Полигон";
+}
+function cleanName(p){return String(p.client_name||"").replace(/\s*\((PS4|Дрифт\/Вело|Мини-тир|VR|Полигон)\)\s*$/,"");}
+
+function renderPlayers(){
+  const now=Date.now();
+  let html="";
+  db.players.forEach(p=>{
+    const start=new Date(p.created_at);const end=start.getTime()+Number(p.duration||0)*60000;const diff=end-now;
+    const mins=Math.floor(Math.abs(diff)/60000);const sec=Math.floor(Math.abs(diff)%60000/1000);
+    const service=detectService(p);const open=openCardId===p.id;
+    const opts=EXTENSIONS[service]||EXTENSIONS["Полигон"];
+    html+=`<div class="session-card ${open?"open":""}" onclick="toggleSession(${p.id})">
+      <div class="session-main">
+        <div class="session-left"><div class="session-name">${esc(cleanName(p))}</div><div class="badge">${esc(service)}</div><div class="session-sub">Старт ${start.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})} · ${p.duration} мин · ${money(p.price)}</div></div>
+        <div class="timer ${diff<0?"over":""}">${diff<0?"-":""}${mins}:${String(sec).padStart(2,"0")}</div>
+      </div>
+      <div class="session-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-danger session-stop" onclick="finishS(${p.id})">🛑 Завершить аренду</button>
+        <div class="extend-grid">${opts.map(o=>`<button class="extend" onclick="extendS(${p.id},${p.duration},${p.price},${o[0]},${o[1]})">${o[2]}<span>${o[3]}</span></button>`).join("")}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById("online_list").innerHTML=html||'<div class="empty">Активных аренд сейчас нет</div>';
+}
+function toggleSession(id){openCardId=openCardId===id?null:id;renderPlayers();}
+async function finishS(id){if(!confirm("Завершить аренду?"))return;const {error}=await _supabase.from("tp_sessions").update({finished:true,finished_at:new Date().toISOString()}).eq("id",id);if(error){showToast("Не удалось завершить аренду.","bad");return;}await init();showToast("Аренда завершена.");}
+async function extendS(id,d,p,addD,addP){const {error}=await _supabase.from("tp_sessions").update({duration:Number(d)+Number(addD),price:Number(p)+Number(addP),finished:false}).eq("id",id);if(error){showToast("Не удалось продлить аренду.","bad");return;}await init();showToast("Время добавлено: +"+addD+" мин.");}
+
+async function saveParty(){
+  const n=document.getElementById("f_name").value.trim(),ph=document.getElementById("f_tel").value.trim(),people=Number(document.getElementById("f_people").value)||1,h=Number(document.getElementById("f_hours").value)||0,s=Number(document.getElementById("f_sum").value)||0;
+  if(!n||!s){showToast("Имя и сумма обязательны.","bad");return;}
+  const {error}=await _supabase.from("tp_sessions").insert([{client_name:n,phone:ph,people,duration:Math.round(h*60),price:s,type:"fest",service_code:"Праздники",finished:true,finished_at:new Date().toISOString()}]);
+  if(error){showToast("Не удалось сохранить праздник.","bad");return;}
+  document.querySelectorAll("#fest input").forEach(x=>x.value="");await init();showToast("Праздник сохранён.");
+}
+
+async function sellItem(id){
+  const item=db.stock[id];if(!item){showToast("Товар не найден на складе.","bad");return;}
+  if(Number(item.qty)<=0){showToast("Товар закончился.","bad");return;}
+  const {error:saleError}=await _supabase.from("tp_sales").insert([{item_id:id,name:item.name,price:item.price,cost:item.cost}]);
+  if(saleError){showToast("Не удалось оформить продажу.","bad");return;}
+  const {error:stockError}=await _supabase.from("tp_stock").update({qty:Number(item.qty)-1}).eq("id",id);
+  if(stockError){showToast("Продажа оформлена, но остаток не обновился.","bad");}
+  await init();showToast(item.name+" продан.");
+}
+function renderSales(list){
+  const html=list.map(s=>`<div class="list-row"><div><b>${esc(s.name)}</b><small>${new Date(s.created_at).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})} · ${money(s.price)}</small></div><button class="icon-btn" onclick="deleteSale(${s.id},'${esc(s.item_id)}')">🗑</button></div>`).join("");
+  document.getElementById("sales_history").innerHTML=html||'<div class="empty">Продаж сегодня не было</div>';
+}
+async function deleteSale(id,itemId){if(!confirm("Отменить продажу и вернуть товар на склад?"))return;const item=db.stock[itemId];if(!item)return;const {error:e1}=await _supabase.from("tp_sales").delete().eq("id",id);if(e1){showToast("Не удалось отменить продажу.","bad");return;}await _supabase.from("tp_stock").update({qty:Number(item.qty)+1}).eq("id",itemId);await init();showToast("Продажа отменена.");}
+
+function renderStockEdit(){
+  const rows=Object.values(db.stock).map(i=>`<div class="panel stock-card">
+    <div class="stock-head"><div><div class="stock-name">${esc(i.name)}</div><div class="stock-qty">Остаток: ${i.qty} · маржа: ${money(Number(i.price)-Number(i.cost))}</div></div></div>
+    <div class="stock-grid">
+      <label>Закупка<input type="number" value="${i.cost}" onchange="updStock('${esc(i.id)}','cost',this.value)"></label>
+      <label>Продажа<input type="number" value="${i.price}" onchange="updStock('${esc(i.id)}','price',this.value)"></label>
+      <label>Остаток<input type="number" value="${i.qty}" onchange="updStock('${esc(i.id)}','qty',this.value)"></label>
+    </div></div>`).join("");
+  document.getElementById("stock_manager_list").innerHTML=rows||'<div class="empty">Склад пуст</div>';
+}
+async function updStock(id,field,value){const v=Math.max(0,Number(value)||0);const {error}=await _supabase.from("tp_stock").update({[field]:v}).eq("id",id);if(error){showToast("Не удалось обновить склад.","bad");return;}await init();showToast("Склад обновлён.");}
+
+function prepareExpenseControls(){
+  const today=dateInputValue();const date=document.getElementById("exp_date");if(!date.value)date.value=today;date.max=today;
+  const filter=document.getElementById("exp_month_filter");if(!filter.options.length){for(let i=0;i<24;i++){const d=new Date();d.setMonth(d.getMonth()-i);const key=monthKey(d);filter.add(new Option(monthLabel(key),key));}filter.value=monthKey();}}
+async function saveExp(){
+  const expenseDate=document.getElementById("exp_date").value,category=document.getElementById("exp_category").value,amount=Number(document.getElementById("exp_amount").value)||0,comment=document.getElementById("exp_comment").value.trim();
+  if(!expenseDate||amount<=0){showToast("Укажите дату и сумму расхода.","bad");return;}
+  if(expenseDate>dateInputValue()){showToast("Нельзя добавить расход в будущую дату.","bad");return;}
+  const {error}=await _supabase.from("tp_expenses").insert([{expense_date:expenseDate,category,amount,comment:comment||category}]);
+  if(error){showToast("Не удалось сохранить расход.","bad");return;}
+  document.getElementById("exp_amount").value="";document.getElementById("exp_comment").value="";await loadExpensesHistory();await loadAdminDashboard();showToast("Расход добавлен за "+new Date(expenseDate+"T12:00:00").toLocaleDateString("ru-RU")+".");
+}
+async function loadExpensesHistory(){
+  prepareExpenseControls();const month=document.getElementById("exp_month_filter").value||monthKey();const {start,end}=monthRange(month);
+  const {data,error}=await _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(start)).lt("expense_date",dateInputValue(end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false});
+  if(error){showToast("Не удалось загрузить расходы.","bad");return;}
+  db.expenses=data||[];const total=db.expenses.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById("expense_total").innerHTML='<div class="kpi"><span>Расходов</span><b>'+db.expenses.length+'</b></div><div class="kpi"><span>Сумма</span><b class="negative">'+money(total)+'</b></div>';
+  document.getElementById("exp_history_list").innerHTML=db.expenses.map(e=>`<div class="expense-row"><div class="expense-main"><b>${esc(e.category||"Прочее")} · ${esc(e.comment||"")}</b><small>${new Date(e.expense_date+"T12:00:00").toLocaleDateString("ru-RU")} · внесено ${new Date(e.created_at).toLocaleDateString("ru-RU")}</small></div><div><div class="expense-amount">− ${money(e.amount)}</div><div class="expense-actions"><button class="icon-btn" onclick="deleteExpense(${e.id})">🗑</button></div></div></div>`).join("")||'<div class="empty">За выбранный месяц расходов нет</div>';
+}
+async function deleteExpense(id){if(!confirm("Удалить этот расход?"))return;const {error}=await _supabase.from("tp_expenses").delete().eq("id",id);if(error){showToast("Не удалось удалить расход.","bad");return;}await loadExpensesHistory();await loadAdminDashboard();showToast("Расход удалён.");}
+
+function prepareReportControls(){
+  const today=dateInputValue();const day=document.getElementById("rep_day");if(!day.value)day.value=today;day.max=today;
+  const select=document.getElementById("rep_month");if(!select.options.length){for(let i=0;i<24;i++){const d=new Date();d.setMonth(d.getMonth()-i);const key=monthKey(d);select.add(new Option(monthLabel(key),key));}select.value=monthKey();}
+  selectPeriodButton();
+}
+function setReportPeriod(p){reportPeriod=p;selectPeriodButton();loadReports(p);}
+async function getReportData(start,end){
+  const [sessRes,salesRes,expRes]=await Promise.all([
+    _supabase.from("tp_sessions").select("*").gte("created_at",start.toISOString()).lt("created_at",end.toISOString()),
+    _supabase.from("tp_sales").select("*").gte("created_at",start.toISOString()).lt("created_at",end.toISOString()),
+    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(start)).lt("expense_date",dateInputValue(end))
+  ]);
+  if(sessRes.error||salesRes.error||expRes.error)throw new Error("Не удалось получить финансовые данные.");
+  return {sessions:sessRes.data||[],sales:salesRes.data||[],expenses:expRes.data||[]};
+}
+function calculate(data){
+  let rent=0,rentCount=0,rentMins=0,fest=0,festCount=0,festMins=0,goods=0,cost=0;
+  const services={},products={},expenses={};
+  data.sessions.forEach(s=>{const p=Number(s.price)||0,m=Number(s.duration)||0;if(s.type==="fest"){fest+=p;festCount++;festMins+=m;}else{rent+=p;rentCount++;rentMins+=m;const name=detectService(s);services[name]??={count:0,mins:0,revenue:0};services[name].count++;services[name].mins+=m;services[name].revenue+=p;}});
+  data.sales.forEach(s=>{const p=Number(s.price)||0,c=Number(s.cost)||0;goods+=p;cost+=c;products[s.name]??={count:0,revenue:0,cost:0};products[s.name].count++;products[s.name].revenue+=p;products[s.name].cost+=c;});
+  data.expenses.forEach(e=>{const p=Number(e.amount)||0;const k=e.category||"Прочее";expenses[k]=(expenses[k]||0)+p;});
+  const allRev=rent+fest+goods,totalExp=data.expenses.reduce((s,x)=>s+Number(x.amount||0),0),net=allRev-cost-totalExp,ops=rentCount+festCount+data.sales.length+festCount;
+  return {rent,rentCount,rentMins,fest,festCount,festMins,goods,cost,services,products,expenses,totalExp,allRev,net,ops,avg:ops?allRev/ops:0};
+}
+function renderReport(title,data,periodStart,periodEnd){
+  const c=calculate(data);
+  const serviceRows=Object.keys(c.services).sort((a,b)=>c.services[b].revenue-c.services[a].revenue).map(k=>{const x=c.services[k];return `<div class="data-row"><div><b>${esc(k)}</b><small>${x.count} сеанс. · ${(x.mins/60).toFixed(1)} ч.</small></div><strong>${money(x.revenue)}</strong></div>`}).join("");
+  const productRows=Object.keys(c.products).sort((a,b)=>c.products[b].revenue-c.products[a].revenue).map(k=>{const x=c.products[k];return `<div class="data-row"><div><b>${esc(k)}</b><small>${x.count} шт. · прибыль ${money(x.revenue-x.cost)}</small></div><strong>${money(x.revenue)}</strong></div>`}).join("");
+  const expenseRows=Object.keys(c.expenses).sort((a,b)=>c.expenses[b]-c.expenses[a]).map(k=>`<div class="data-row"><div><b>${esc(k)}</b></div><strong class="negative">− ${money(c.expenses[k])}</strong></div>`).join("");
+  let daily="";
+  if(reportPeriod==="month"){
+    const dayMap={};
+    for(let d=new Date(periodStart);d<periodEnd;d.setDate(d.getDate()+1)){const key=dateInputValue(d);dayMap[key]={rev:0,exp:0,profit:0};}
+    data.sessions.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;});
+    data.sales.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;});
+    data.expenses.forEach(e=>{const k=e.expense_date;dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].exp+=Number(e.amount)||0;});
+    Object.keys(dayMap).sort().reverse().forEach(k=>{const x=dayMap[k];const profit=x.rev-x.exp;daily+=`<div class="day-row"><small>${new Date(k+"T12:00:00").toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})}</small><b>${money(x.rev)}</b><span class="profit ${profit>=0?"positive":"negative"}">${money(profit)}</span></div>`;});
+  }
+  document.getElementById("report_content").innerHTML=`
+    <div class="report-caption">${esc(title)}</div>
+    <div class="kpi-grid" style="margin-bottom:9px">
+      <div class="kpi"><span>Выручка</span><b>${money(c.allRev)}</b></div>
+      <div class="kpi"><span>Чистая прибыль</span><b class="${c.net>=0?"positive":"negative"}">${money(c.net)}</b></div>
+      <div class="kpi"><span>Операций</span><b>${c.ops}</b></div>
+      <div class="kpi"><span>Средний чек</span><b>${money(c.avg)}</b></div>
     </div>
+    <div class="panel report-box"><div class="section-title">АРЕНДЫ</div><div class="highlight"><span>Выручка аренды</span><b>${money(c.rent)}</b></div><div class="rep-line"><span>Сеансов</span><span>${c.rentCount}</span></div><div class="rep-line"><span>Всего времени</span><span>${(c.rentMins/60).toFixed(1)} ч.</span></div><div style="margin-top:5px">${serviceRows||'<div class="empty">Нет аренд</div>'}</div></div>
+    <div class="panel report-box"><div class="section-title">ПРАЗДНИКИ</div><div class="highlight"><span>Выручка</span><b>${money(c.fest)}</b></div><div class="rep-line"><span>Проведено</span><span>${c.festCount}</span></div><div class="rep-line"><span>Всего часов</span><span>${(c.festMins/60).toFixed(1)} ч.</span></div></div>
+    <div class="panel report-box"><div class="section-title">ТОВАРЫ</div><div class="rep-line"><span>Выручка</span><span>${money(c.goods)}</span></div><div class="rep-line"><span>Себестоимость</span><span class="negative">− ${money(c.cost)}</span></div><div class="rep-line"><span>Прибыль товаров</span><span class="positive">${money(c.goods-c.cost)}</span></div><div style="margin-top:5px">${productRows||'<div class="empty">Продаж нет</div>'}</div></div>
+    <div class="panel report-box"><div class="section-title">РАСХОДЫ</div><div class="highlight"><span>Всего расходов</span><b class="negative">− ${money(c.totalExp)}</b></div><div style="margin-top:5px">${expenseRows||'<div class="empty">Расходов нет</div>'}</div></div>
+    <div class="panel report-box total-box"><div class="section-title">ЭКОНОМИКА</div><div class="rep-line"><span>Выручка</span><span>${money(c.allRev)}</span></div><div class="rep-line"><span>Себестоимость</span><span class="negative">− ${money(c.cost)}</span></div><div class="rep-line"><span>Расходы</span><span class="negative">− ${money(c.totalExp)}</span></div><div class="rep-line" style="font-size:15px;font-weight:950;border-top:1px dashed #333;margin-top:5px;padding-top:12px"><span>ЧИСТАЯ ПРИБЫЛЬ</span><span class="${c.net>=0?"positive":"negative"}">${money(c.net)}</span></div></div>
+    ${reportPeriod==="month"?'<div class="panel report-box"><div class="section-title">ДЕНЬ ЗА ДНЁМ</div><div class="day-list">'+(daily||'<div class="empty">Нет данных</div>')+'</div></div>':""}
+  `;
+}
+async function loadReports(period){
+  try{
+    prepareReportControls();
+    let start,end,title;
+    if(period==="day"){const d=document.getElementById("rep_day").value||dateInputValue();start=new Date(d+"T00:00:00");end=new Date(start);end.setDate(end.getDate()+1);title=start.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});}
+    else{const key=document.getElementById("rep_month").value||monthKey();const r=monthRange(key);start=r.start;end=r.end;title=monthLabel(key);}
+    const data=await getReportData(start,end);reportPeriod=period;renderReport(title,data,start,end);
+  }catch(e){showToast(e.message||"Ошибка отчёта.","bad");}
+}
+async function loadAdminDashboard(){
+  const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
 
-    <div id="poly" class="page active">
-        
-        <input type="text" id="p_name" placeholder="Имя клиента / ребёнка" class="client-name-input">
-        
-        <div class="section-title">ПОЛИГОН (МАШИНКИ)</div>
-        <div class="service-grid">
-            <button class="btn btn-time service-tile" id="t_poly_30" onclick="selT(30, 300, 't_poly_30', 'Полигон')"><span class="service-icon">🏎️</span><span>30 мин</span><b>300 ₽</b></button>
-            <button class="btn btn-time service-tile" id="t_poly_60" onclick="selT(60, 500, 't_poly_60', 'Полигон')"><span class="service-icon">🏁</span><span>1 час</span><b>500 ₽</b></button>
-        </div>
-
-        <div class="section-title">VR ШЛЕМЫ (OCULUS)</div>
-        <div class="service-grid">
-            <button class="btn btn-time service-tile" id="t_vr_30" onclick="selT(30, 300, 't_vr_30', 'VR')"><span class="service-icon">🥽</span><span>30 мин</span><b>300 ₽</b></button>
-            <button class="btn btn-time service-tile" id="t_vr_60" onclick="selT(60, 500, 't_vr_60', 'VR')"><span class="service-icon">🌐</span><span>1 час</span><b>500 ₽</b></button>
-        </div>
-
-        <div class="section-title">ДРУГИЕ АТТРАКЦИОНЫ</div>
-        <div class="service-grid">
-            <button class="btn btn-time service-tile" id="t_ps_60" onclick="selT(60, 400, 't_ps_60', 'PS4')"><span class="service-icon">🎮</span><span>1 час</span><b>400 ₽</b></button>
-            <button class="btn btn-time service-tile" id="t_drift_10" onclick="selT(10, 150, 't_drift_10', 'Дрифт/Вело')"><span class="service-icon">🚲</span><span>10 мин</span><b>150 ₽</b></button>
-            <button class="btn btn-time service-tile" id="t_range_5" onclick="selT(5, 150, 't_range_5', 'Мини-тир')"><span class="service-icon">🎯</span><span>5 мин</span><b>150 ₽</b></button>
-        </div>
-        <button class="btn btn-main" onclick="startSession()">🚀 Запустить аренду</button>
-        <div class="section-title">СЕЙЧАС АРЕНДУЮТ</div>
-        <div id="online_list"></div>
-    </div>
-
-    <div id="fest" class="page">
-        <div class="section-title">Оформление праздника</div>
-        <input type="text" id="f_name" placeholder="Имя именинника">
-        <input type="tel" id="f_tel" placeholder="Телефон">
-        <div class="grid-2">
-            <input type="number" id="f_people" placeholder="Гостей">
-            <input type="number" id="f_hours" placeholder="Часов">
-        </div>
-        <input type="number" id="f_sum" placeholder="Итоговая сумма (₽)">
-        <button class="btn btn-main" onclick="saveParty()">💳 Зафиксировать праздник</button>
-    </div>
-
-    <div id="goods" class="page">
-        <div class="grid-2" id="goods_grid">
-            <div class="tile-card" onclick="sellItem('coffee')">☕<b>КОФЕ</b><br><small id="lbl_coffee">--</small></div>
-            <div class="tile-card" onclick="sellItem('water')">💧<b>ВОДА</b><br><small id="lbl_water">--</small></div>
-            <div class="tile-card" onclick="sellItem('juice')">🥤<b>СОК</b><br><small id="lbl_juice">--</small></div>
-            <div class="tile-card" onclick="sellItem('popcorn')">🍿<b>ПОПКОРН</b><br><small id="lbl_popcorn">--</small></div>
-        </div>
-        <div class="section-title">История продаж за сегодня</div>
-        <div id="sales_history"></div>
-    </div>
-
-    <div id="adm_page" class="page">
-        <div class="admin-hero">
-            <div class="admin-hero-top">
-                <div><div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div><h2>Администратор</h2></div>
-                <button class="logout-btn" onclick="adminLogout()">Выйти</button>
-            </div>
-            <p>Финансы, склад и расходы — в одном месте.</p>
-        </div>
-        <div class="admin-grid">
-            <div class="admin-card admin-card-wide" onclick="openWin('win_reports')"><span class="admin-icon">📊</span><div><b>Финансы и отчёты</b><small>Сегодня, текущий и прошлые месяцы</small></div><span class="admin-arrow">→</span></div>
-            <div class="admin-card" onclick="openWin('win_stock')"><span class="admin-icon">📦</span><b>Склад</b><small>Остатки и цены</small></div>
-            <div class="admin-card" onclick="openWin('win_exp')"><span class="admin-icon">💸</span><b>Расходы</b><small>Последние 30 дней</small></div>
-        </div>
-    </div>
-
-    <div id="win_stock" class="full-window">
-        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
-        <div id="stock_manager_list"></div>
-    </div>
-
-    <div id="win_exp" class="full-window">
-        <button class="btn btn-time" style="margin-bottom:20px;" onclick="closeWin()">← Назад</button>
-        <div class="section-title">Новый расход</div>
-        <input type="text" id="exp_comment" placeholder="На что расход? (Зарплата, аренда...)">
-        <input type="number" id="exp_amount" placeholder="Сумма (₽)">
-        <button class="btn btn-main" onclick="saveExp()">💾 Сохранить расход</button>
-        
-        <div class="section-title" style="margin-top: 30px;">ЛЕНТА РАСХОДОВ (ЗА 30 ДНЕЙ)</div>
-        <div id="exp_history_list"></div>
-    </div>
-
-    <div id="win_reports" class="full-window">
-        <div class="window-head">
-            <button class="back-btn" onclick="closeWin()">←</button>
-            <div><div class="eyebrow">АНАЛИТИКА</div><h2>Финансы</h2></div>
-        </div>
-        <div class="report-period-grid">
-            <button class="period-btn active" id="btn_rep_day" onclick="loadReports('day')">Сегодня</button>
-            <button class="period-btn" id="btn_rep_month" onclick="loadReports('month')">Этот месяц</button>
-        </div>
-        <div class="month-select-card">
-            <label for="rep_month">Выбрать месяц</label>
-            <select id="rep_month" onchange="loadReports('custom')"></select>
-        </div>
-        <div id="report_content"></div>
-    </div>
-
-    <script>
-        const S_URL = "https://ereiiidezagburttpxtn.supabase.co";
-        const S_KEY = "sb_publishable_YuQ8s49c1LvkCTmoBPQ0hA_7EJ3Z1cj";
-        const _supabase = supabase.createClient(S_URL, S_KEY);
-
-        let db = { players: [], stock: {}, expenses: [] };
-        let selMins = 0, selPrice = 0, selService = '', openCardId = null;
-
-        async function init() {
-            const { data: st } = await _supabase.from('tp_stock').select('*');
-            if(st) st.forEach(i => {
-                db.stock[i.id] = i;
-                if(document.getElementById(`lbl_${i.id}`)) document.getElementById(`lbl_${i.id}`).innerText = `Ост: ${i.qty}`;
-            });
-            
-            const { data: sess } = await _supabase.from('tp_sessions').select('*').or('finished.is.null,finished.eq.false').eq('type','poly').order('created_at', {ascending: false});
-            db.players = sess || [];
-            
-            const today = new Date(); today.setHours(0,0,0,0);
-            const { data: sls } = await _supabase.from('tp_sales').select('*').gte('created_at', today.toISOString()).order('created_at', {ascending: false});
-            
-            const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const { data: exps } = await _supabase.from('tp_expenses').select('*').gte('created_at', thirtyDaysAgo.toISOString()).order('created_at', {ascending: false});
-            db.expenses = exps || [];
-
-            renderSales(sls || []);
-            renderPlayers();
-            renderStockEdit();
-            renderExpenses();
-        }
-
-        function selT(m, p, id, serviceName) {
-            selMins = m; 
-            selPrice = p; 
-            selService = serviceName;
-            document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
-        }
-
-        async function startSession() {
-            let name = document.getElementById('p_name').value;
-            if(!name || !selMins) return alert("Выберите услугу, время и введите имя!");
-            
-            if (selService) {
-                name = `${name} (${selService})`;
-            }
-
-            const { error: startErr } = await _supabase.from('tp_sessions').insert([{ client_name: name, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
-            if(startErr) return alert('Не удалось запустить аренду: '+startErr.message);
-            document.getElementById('p_name').value = ''; 
-            
-            selMins = 0; selPrice = 0; selService = '';
-            document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active'));
-            init();
-        }
-
-        function getServiceFromSession(p) {
-            const n = String(p.client_name || '');
-            const m = n.match(/\(([^)]+)\)\s*$/);
-            if (m) return m[1];
-            if (p.price === 400 && p.duration >= 60) return 'PS4';
-            if (p.price === 150 && p.duration === 5) return 'Мини-тир';
-            if (p.price === 150 && p.duration === 10) return 'Дрифт/Вело';
-            if (p.price === 300 && p.duration === 30) return 'VR';
-            return 'Полигон';
-        }
-
-        function extensionButtons(service, id, p) {
-            const items = {
-                'PS4': [[30,200,'+30 мин','200 ₽'],[60,400,'+1 час','400 ₽']],
-                'Дрифт/Вело': [[10,150,'+10 мин','150 ₽']],
-                'Мини-тир': [[5,150,'+5 мин','150 ₽']],
-                'VR': [[30,300,'+30 мин','300 ₽'],[60,500,'+1 час','500 ₽']],
-                'Полигон': [[30,300,'+30 мин','300 ₽'],[60,500,'+1 час','500 ₽']]
-            };
-            return (items[service] || items['Полигон']).map(x =>
-                '<button class="btn btn-time extend-btn" onclick="extendS(' + id + ',' + p.duration + ',' + p.price + ',' + x[0] + ',' + x[1] + ')">' + x[2] + ' <span>' + x[3] + '</span></button>'
-            ).join('');
-        }
-
-        function renderPlayers() {
-            let html = '';
-            const now = new Date().getTime();
-            db.players.forEach(p => {
-                const startObj = new Date(p.created_at);
-                const end = startObj.getTime() + (p.duration * 60000);
-                const diff = end - now;
-                const m = Math.floor(Math.abs(diff)/60000);
-                const s = Math.floor((Math.abs(diff)%60000)/1000);
-                const isOp = openCardId === p.id;
-                const service = getServiceFromSession(p);
-                const displayName = String(p.client_name || '').replace(/\s*\([^)]+\)\s*$/, '');
-
-                html += '<div class="player-card ' + (isOp ? 'open' : '') + '" onclick="toggleC(' + p.id + ')">' +
-                    '<div class="player-main-row">' +
-                        '<div class="player-meta"><b>' + displayName + '</b><span class="service-badge">' + service + '</span><small>Старт ' + startObj.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' · ' + p.duration + ' мин</small></div>' +
-                        '<div class="player-timer" style="color:' + (diff < 0 ? 'var(--red)' : 'var(--orange)') + '">' + (diff < 0 ? '-' : '') + m + ':' + s.toString().padStart(2,'0') + '</div>' +
-                    '</div>' +
-                    '<div class="player-actions" onclick="event.stopPropagation()">' +
-                        '<button class="btn finish-btn" onclick="finishS(' + p.id + ')">🛑 Завершить аренду</button>' +
-                        '<div class="extend-grid">' + extensionButtons(service, p.id, p) + '</div>' +
-                    '</div>' +
-                '</div>';
-            });
-            document.getElementById('online_list').innerHTML = html || '<div class="empty-state">Активных аренд нет</div>';
-        }
-
-        function toggleC(id) { openCardId = openCardId === id ? null : id; renderPlayers(); }
-        async function finishS(id) { if(confirm("Завершить аренду? Клиент уйдет в историю.")) { await _supabase.from('tp_sessions').update({finished:true}).eq('id', id); init(); } }
-        async function extendS(id, currD, currP, addD, addP) {
-            const { error } = await _supabase.from('tp_sessions').update({
-                duration: currD + addD,
-                price: currP + addP
-            }).eq('id', id);
-            if (error) return alert('Не удалось продлить аренду: ' + error.message);
-            init();
-        }
-
-        // --- ПРАЗДНИК ---
-        async function saveParty() {
-            const n = document.getElementById('f_name').value;
-            const ph = document.getElementById('f_tel').value;
-            const h = document.getElementById('f_hours').value || 0;
-            const s = document.getElementById('f_sum').value;
-            if(!n || !s) return alert("Имя и сумма обязательны!");
-            const { error: festErr } = await _supabase.from('tp_sessions').insert([{ client_name: n, phone: ph, duration: h*60, price: parseFloat(s), type: 'fest', finished: true }]);
-            if(festErr) return alert('Не удалось сохранить праздник: '+festErr.message);
-            alert("Праздник зафиксирован!");
-            document.querySelectorAll('#fest input').forEach(i => i.value = '');
-            init();
-        }
-
-        // --- ТОВАРЫ И ИСТОРИЯ ---
-        async function sellItem(id) {
-            const item = db.stock[id];
-            if(item.qty <= 0) return alert("Нет на складе!");
-            document.getElementById(`lbl_${id}`).innerText = `Ост: ${item.qty - 1}`;
-            await _supabase.from('tp_sales').insert([{item_id: id, name: item.name, price: item.price, cost: item.cost}]);
-            await _supabase.from('tp_stock').update({qty: item.qty - 1}).eq('id', id);
-            init();
-        }
-
-        function renderSales(list) {
-            let html = '';
-            list.forEach(s => {
-                const time = new Date(s.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-                html += `<div class="stat-row">
-                    <div><b>${s.name}</b><br><small style="color:var(--gray)">${time} — ${s.price}₽</small></div>
-                    <button class="del-btn" onclick="deleteSale(${s.id}, '${s.item_id}')">🗑</button>
-                </div>`;
-            });
-            document.getElementById('sales_history').innerHTML = html || '<center style="color:var(--gray)">Продаж пока нет</center>';
-        }
-
-        async function deleteSale(id, item_id) {
-            if(confirm("Отменить продажу? Товар вернется на склад.")) {
-                await _supabase.from('tp_stock').update({qty: db.stock[item_id].qty + 1}).eq('id', item_id);
-                await _supabase.from('tp_sales').delete().eq('id', id);
-                init();
-            }
-        }
-
-        // --- СКЛАД И РАСХОДЫ ---
-        function renderStockEdit() {
-            let html = '';
-            Object.values(db.stock).forEach(i => {
-                html += `<div class="stock-item"><b>${i.name}</b>
-                    <div class="stock-inputs">
-                        <div>Приход<input type="number" value="${i.cost}" onchange="updSt('${i.id}','cost',this.value)"></div>
-                        <div>Продажа<input type="number" value="${i.price}" onchange="updSt('${i.id}','price',this.value)"></div>
-                        <div>Остаток<input type="number" value="${i.qty}" onchange="updSt('${i.id}','qty',this.value)"></div>
-                    </div></div>`;
-            });
-            document.getElementById('stock_manager_list').innerHTML = html;
-        }
-        async function updSt(id, f, v) { await _supabase.from('tp_stock').update({[f]: parseFloat(v)}).eq('id', id); init(); }
-
-        async function saveExp() {
-            const comm = document.getElementById('exp_comment').value;
-            const amt = document.getElementById('exp_amount').value;
-            if(!comm || !amt) return alert("Заполните оба поля!");
-            
-            const { error: expErr } = await _supabase.from('tp_expenses').insert([{ comment: comm, amount: parseFloat(amt) }]);
-            if(expErr) return alert('Не удалось сохранить расход: '+expErr.message);
-            
-            document.getElementById('exp_comment').value = ''; 
-            document.getElementById('exp_amount').value = '';
-            
-            init(); 
-        }
-
-        function renderExpenses() {
-            let html = '';
-            db.expenses.forEach(e => {
-                const dateObj = new Date(e.created_at);
-                const dateStr = dateObj.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'});
-                const timeStr = dateObj.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-                html += `<div class="stat-row">
-                    <div><b>${e.comment}</b><br><small style="color:var(--gray)">${dateStr} в ${timeStr}</small></div>
-                    <div style="color:var(--red); font-weight:bold; font-size:16px;">- ${e.amount} ₽</div>
-                </div>`;
-            });
-            document.getElementById('exp_history_list').innerHTML = html || '<center style="color:var(--gray)">За последние 30 дней расходов не было</center>';
-        }
-
-      // --- ДЕТАЛЬНЫЕ ОТЧЕТЫ ---
-        function pad2(v) { return String(v).padStart(2,'0'); }
-
-        function formatRub(v) {
-            return Math.round(Number(v) || 0).toLocaleString('ru-RU') + ' ₽';
-        }
-
-        function getMonthKey(d) {
-            return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
-        }
-
-        function setupMonthSelector() {
-            const select = document.getElementById('rep_month');
-            if (!select || select.options.length) return;
-            const now = new Date();
-            for (let i = 0; i < 12; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = getMonthKey(d);
-                const label = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = label.charAt(0).toUpperCase() + label.slice(1);
-                select.appendChild(opt);
-            }
-            select.value = getMonthKey(now);
-        }
-
-        function setReportButtons(period) {
-            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-            const el = document.getElementById(period === 'day' ? 'btn_rep_day' : 'btn_rep_month');
-            if (el) el.classList.add('active');
-        }
-
-        function getRangeForReport(period) {
-            const now = new Date();
-            let start, end;
-            if (period === 'day') {
-                start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-            } else {
-                let year = now.getFullYear(), month = now.getMonth();
-                if (period === 'custom') {
-                    const value = document.getElementById('rep_month').value;
-                    const parts = value.split('-');
-                    year = Number(parts[0]);
-                    month = Number(parts[1]) - 1;
-                }
-                start = new Date(year, month, 1);
-                end = new Date(year, month + 1, 1);
-            }
-            return {start, end};
-        }
-
-        function serviceNameFromSession(s) {
-            const name = String(s.client_name || '');
-            const match = name.match(/\(([^)]+)\)\s*$/);
-            if (match) return match[1];
-            if (s.type !== 'poly') return 'Праздники';
-            if (s.price === 400 && s.duration >= 60) return 'PS4';
-            if (s.price === 150 && s.duration === 5) return 'Мини-тир';
-            if (s.price === 150 && s.duration === 10) return 'Дрифт/Вело';
-            if (s.price === 300 && s.duration === 30) return 'VR';
-            return 'Полигон';
-        }
-
-        async function loadReports(period) {
-            setupMonthSelector();
-            setReportButtons(period);
-
-            const range = getRangeForReport(period);
-            const fromIso = range.start.toISOString();
-            const toIso = range.end.toISOString();
-
-            const [sessRes, salesRes, expRes] = await Promise.all([
-                _supabase.from('tp_sessions').select('*').gte('created_at', fromIso).lt('created_at', toIso),
-                _supabase.from('tp_sales').select('*').gte('created_at', fromIso).lt('created_at', toIso),
-                _supabase.from('tp_expenses').select('*').gte('created_at', fromIso).lt('created_at', toIso)
-            ]);
-
-            if (sessRes.error || salesRes.error || expRes.error) {
-                const msg = [sessRes.error?.message, salesRes.error?.message, expRes.error?.message].filter(Boolean).join(' • ');
-                document.getElementById('report_content').innerHTML =
-                    '<div class="report-box"><b style="color:var(--red)">Не удалось загрузить отчёт</b><div class="muted" style="margin-top:8px;">' + msg + '</div></div>';
-                return;
-            }
-
-            const sess = sessRes.data || [];
-            const sales = salesRes.data || [];
-            const exps = expRes.data || [];
-
-            let rentRevenue = 0, rentCount = 0, rentMins = 0;
-            let festRevenue = 0, festCount = 0, festMins = 0;
-            const serviceMap = {};
-            sess.forEach(s => {
-                const price = Number(s.price) || 0;
-                const mins = Number(s.duration) || 0;
-                if (s.type === 'fest') {
-                    festRevenue += price;
-                    festCount++;
-                    festMins += mins;
-                } else {
-                    rentRevenue += price;
-                    rentCount++;
-                    rentMins += mins;
-                    const service = serviceNameFromSession(s);
-                    if (!serviceMap[service]) serviceMap[service] = {count:0, mins:0, revenue:0};
-                    serviceMap[service].count++;
-                    serviceMap[service].mins += mins;
-                    serviceMap[service].revenue += price;
-                }
-            });
-
-            let goodsRevenue = 0, goodsCost = 0, goodsCount = 0;
-            const goodsMap = {};
-            sales.forEach(s => {
-                const revenue = Number(s.price) || 0;
-                const cost = Number(s.cost) || 0;
-                goodsRevenue += revenue;
-                goodsCost += cost;
-                goodsCount++;
-                if (!goodsMap[s.name]) goodsMap[s.name] = {count:0, revenue:0, cost:0};
-                goodsMap[s.name].count++;
-                goodsMap[s.name].revenue += revenue;
-                goodsMap[s.name].cost += cost;
-            });
-
-            let expensesTotal = 0;
-            const expenseMap = {};
-            exps.forEach(e => {
-                const amount = Number(e.amount) || 0;
-                expensesTotal += amount;
-                const category = String(e.comment || 'Без категории').trim() || 'Без категории';
-                if (!expenseMap[category]) expenseMap[category] = 0;
-                expenseMap[category] += amount;
-            });
-
-            const totalRevenue = rentRevenue + festRevenue + goodsRevenue;
-            const netProfit = totalRevenue - expensesTotal - goodsCost;
-            const transactions = rentCount + festCount + goodsCount;
-            const avgCheck = transactions ? totalRevenue / transactions : 0;
-
-            const serviceRows = Object.keys(serviceMap).sort((a,b) => serviceMap[b].revenue - serviceMap[a].revenue).map(name => {
-                const x = serviceMap[name];
-                return '<div class="data-row"><div><b>' + name + '</b><small>' + x.count + ' сеанс. · ' + (x.mins/60).toFixed(1) + ' ч.</small></div><strong>' + formatRub(x.revenue) + '</strong></div>';
-            }).join('');
-
-            const goodsRows = Object.keys(goodsMap).sort((a,b) => goodsMap[b].revenue - goodsMap[a].revenue).map(name => {
-                const x = goodsMap[name];
-                return '<div class="data-row"><div><b>' + name + '</b><small>' + x.count + ' шт. · прибыль ' + formatRub(x.revenue - x.cost) + '</small></div><strong>' + formatRub(x.revenue) + '</strong></div>';
-            }).join('');
-
-            const expenseRows = Object.keys(expenseMap).sort((a,b) => expenseMap[b] - expenseMap[a]).map(name => {
-                return '<div class="data-row"><div><b>' + name + '</b></div><strong class="negative">− ' + formatRub(expenseMap[name]) + '</strong></div>';
-            }).join('');
-
-            const title = period === 'day'
-                ? range.start.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'})
-                : range.start.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
-
-            document.getElementById('report_content').innerHTML =
-                '<div class="report-period-caption">' + title + '</div>' +
-                '<div class="finance-grid">' +
-                    '<div class="metric-card"><span>Выручка</span><b>' + formatRub(totalRevenue) + '</b></div>' +
-                    '<div class="metric-card"><span>Чистая прибыль</span><b class="' + (netProfit >= 0 ? 'positive' : 'negative') + '">' + formatRub(netProfit) + '</b></div>' +
-                    '<div class="metric-card"><span>Операций</span><b>' + transactions + '</b></div>' +
-                    '<div class="metric-card"><span>Средний чек</span><b>' + formatRub(avgCheck) + '</b></div>' +
-                '</div>' +
-
-                '<div class="report-box"><div class="section-title">АРЕНДА</div>' +
-                    '<div class="report-highlight"><span>Выручка аренды</span><b>' + formatRub(rentRevenue) + '</b></div>' +
-                    '<div class="rep-line"><span>Сеансов</span><span class="rep-val">' + rentCount + '</span></div>' +
-                    '<div class="rep-line"><span>Всего времени</span><span class="rep-val">' + (rentMins/60).toFixed(1) + ' ч.</span></div>' +
-                    '<div class="subsection">' + (serviceRows || '<div class="muted">Нет данных за период</div>') + '</div>' +
-                '</div>' +
-
-                '<div class="report-box"><div class="section-title">ПРАЗДНИКИ</div>' +
-                    '<div class="report-highlight"><span>Выручка</span><b>' + formatRub(festRevenue) + '</b></div>' +
-                    '<div class="rep-line"><span>Проведено праздников</span><span class="rep-val">' + festCount + '</span></div>' +
-                    '<div class="rep-line"><span>Всего часов</span><span class="rep-val">' + (festMins/60).toFixed(1) + ' ч.</span></div>' +
-                '</div>' +
-
-                '<div class="report-box"><div class="section-title">ТОВАРЫ</div>' +
-                    '<div class="rep-line"><span>Выручка</span><span class="rep-val">' + formatRub(goodsRevenue) + '</span></div>' +
-                    '<div class="rep-line"><span>Себестоимость</span><span class="rep-val negative">− ' + formatRub(goodsCost) + '</span></div>' +
-                    '<div class="rep-line"><span>Прибыль с товаров</span><span class="rep-val positive">' + formatRub(goodsRevenue - goodsCost) + '</span></div>' +
-                    '<div class="subsection">' + (goodsRows || '<div class="muted">Продаж нет</div>') + '</div>' +
-                '</div>' +
-
-                '<div class="report-box"><div class="section-title">РАСХОДЫ</div>' +
-                    '<div class="report-highlight"><span>Всего расходов</span><b class="negative">− ' + formatRub(expensesTotal) + '</b></div>' +
-                    '<div class="subsection">' + (expenseRows || '<div class="muted">Расходов нет</div>') + '</div>' +
-                '</div>' +
-
-                '<div class="report-box finance-total-box"><div class="section-title">ЭКОНОМИКА</div>' +
-                    '<div class="rep-line"><span>Общая выручка</span><span class="rep-val">' + formatRub(totalRevenue) + '</span></div>' +
-                    '<div class="rep-line"><span>Себестоимость товаров</span><span class="rep-val negative">− ' + formatRub(goodsCost) + '</span></div>' +
-                    '<div class="rep-line"><span>Прочие расходы</span><span class="rep-val negative">− ' + formatRub(expensesTotal) + '</span></div>' +
-                    '<div class="total-line"><span>ЧИСТАЯ ПРИБЫЛЬ</span><b class="' + (netProfit >= 0 ? 'positive' : 'negative') + '">' + formatRub(netProfit) + '</b></div>' +
-                '</div>';
-        }
-
-        function showPage(id, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(el) el.classList.add('active');
-        }
-        function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('month'); }
-        function closeWin() { document.querySelectorAll('.full-window').forEach(w => w.classList.remove('active')); }
-
-        async function adminLogin() {
-            const email = document.getElementById('auth_email').value.trim();
-            const password = document.getElementById('auth_password').value;
-            const err = document.getElementById('auth_error');
-            err.textContent = '';
-            if (!email || !password) { err.textContent = 'Введите email и пароль.'; return; }
-
-            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-            if (error) { err.textContent = 'Не удалось войти. Проверьте email и пароль.'; return; }
-            if (data.user?.app_metadata?.role !== 'admin') {
-                await _supabase.auth.signOut();
-                err.textContent = 'У аккаунта нет прав администратора.';
-                return;
-            }
-
-            document.getElementById('auth_gate').style.display = 'none';
-            document.getElementById('auth_password').value = '';
-            await init();
-        }
-
-        async function adminLogout() {
-            await _supabase.auth.signOut();
-            closeWin();
-            showPage('poly', document.querySelector('.nav-item'));
-            document.getElementById('auth_gate').style.display = 'flex';
-        }
-
-        async function checkAdmin(el) {
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (session?.user?.app_metadata?.role === 'admin') showPage('adm_page', el);
-            else document.getElementById('auth_gate').style.display = 'flex';
-        }
-
-        async function boot() {
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (session?.user?.app_metadata?.role === 'admin') {
-                document.getElementById('auth_gate').style.display = 'none';
-                await init();
-            } else {
-                document.getElementById('auth_gate').style.display = 'flex';
-            }
-            _supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT' || !session) document.getElementById('auth_gate').style.display = 'flex';
-            });
-        }
-
-        setInterval(renderPlayers, 1000);
-        boot();
-        window.Telegram.WebApp.expand();
-    </script>
+async function boot(){
+  const {data:{session}}=await _supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role==="admin"){document.getElementById("auth_gate").style.display="none";await init();}
+  else document.getElementById("auth_gate").style.display="flex";
+  _supabase.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"||!session)document.getElementById("auth_gate").style.display="flex";});
+  prepareExpenseControls();prepareReportControls();
+  if(window.Telegram?.WebApp)window.Telegram.WebApp.expand();
+}
+setInterval(renderPlayers,1000);
+boot();
+</script>
 </body>
 </html>
