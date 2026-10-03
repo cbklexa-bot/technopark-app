@@ -91,7 +91,12 @@
 .live-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 14px}.live-summary>div{background:rgba(19,23,29,.9);border:1px solid var(--line);border-radius:17px;padding:11px 9px;min-width:0}.live-summary span{display:block;color:var(--gray);font-size:8px;letter-spacing:.6px;font-weight:900;margin-bottom:5px}.live-summary b{font-size:15px;line-height:1.1;white-space:nowrap}.online-dot{color:var(--green)!important;font-size:10px!important}
         .client-name-input{margin-bottom:4px}
 
-        /* --- НОВЫЙ UI 2026 --- */
+        .auth-gate{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 85% 0%,rgba(255,122,0,.20),transparent 32%),#07090c}
+        .auth-card{width:min(100%,390px);padding:22px;border-radius:26px;background:linear-gradient(145deg,rgba(24,29,36,.98),rgba(13,16,21,.98));border:1px solid rgba(255,255,255,.09);box-shadow:0 25px 70px rgba(0,0,0,.48)}
+        .auth-card h2{margin:6px 0 7px;font-size:25px}.auth-card p{margin:0 0 17px;color:var(--gray);font-size:12px;line-height:1.5}
+        .auth-brand{display:inline-block}.auth-error{min-height:18px;margin-top:10px;color:var(--red);font-size:11px;line-height:1.4}
+        .admin-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.logout-btn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--gray);border-radius:12px;padding:9px 11px;font-size:10px;font-weight:900}
+                /* --- НОВЫЙ UI 2026 --- */
         .service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
         .service-tile{min-height:108px!important;padding:14px 10px!important;display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;align-items:center;gap:4px 8px;text-transform:none!important;text-align:left}
         .service-tile .service-icon{grid-row:1 / span 2;width:42px;height:42px}
@@ -153,6 +158,18 @@
 </style>
 </head>
 <body>
+    <div id="auth_gate" class="auth-gate">
+        <div class="auth-card">
+            <div class="brand-badge auth-brand">ТЕХНОПАРК PRO</div>
+            <div class="eyebrow" style="margin-top:18px;">ЗАКРЫТАЯ ЗОНА</div>
+            <h2>Вход администратора</h2>
+            <p>Доступ к управлению центром защищён Supabase Auth.</p>
+            <input type="email" id="auth_email" placeholder="Email администратора" autocomplete="username">
+            <input type="password" id="auth_password" placeholder="Пароль" autocomplete="current-password">
+            <button class="btn btn-main" onclick="adminLogin()">🔐 Войти</button>
+            <div id="auth_error" class="auth-error"></div>
+        </div>
+    </div>
     <div class="app-header"><div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div><div class="brand-badge">PRO</div></div>
 
     <div class="nav">
@@ -214,8 +231,10 @@
 
     <div id="adm_page" class="page">
         <div class="admin-hero">
-            <div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div>
-            <h2>Администратор</h2>
+            <div class="admin-hero-top">
+                <div><div class="eyebrow">КОНТРОЛЬ БИЗНЕСА</div><h2>Администратор</h2></div>
+                <button class="logout-btn" onclick="adminLogout()">Выйти</button>
+            </div>
             <p>Финансы, склад и расходы — в одном месте.</p>
         </div>
         <div class="admin-grid">
@@ -671,10 +690,55 @@
         }
         function openWin(id) { document.getElementById(id).classList.add('active'); if(id==='win_reports') loadReports('month'); }
         function closeWin() { document.querySelectorAll('.full-window').forEach(w => w.classList.remove('active')); }
-        function checkAdmin(el) { if(prompt("Пароль:") === "7826") showPage('adm_page', el); }
-        
+
+        async function adminLogin() {
+            const email = document.getElementById('auth_email').value.trim();
+            const password = document.getElementById('auth_password').value;
+            const err = document.getElementById('auth_error');
+            err.textContent = '';
+            if (!email || !password) { err.textContent = 'Введите email и пароль.'; return; }
+
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            if (error) { err.textContent = 'Не удалось войти. Проверьте email и пароль.'; return; }
+            if (data.user?.app_metadata?.role !== 'admin') {
+                await _supabase.auth.signOut();
+                err.textContent = 'У аккаунта нет прав администратора.';
+                return;
+            }
+
+            document.getElementById('auth_gate').style.display = 'none';
+            document.getElementById('auth_password').value = '';
+            await init();
+        }
+
+        async function adminLogout() {
+            await _supabase.auth.signOut();
+            closeWin();
+            showPage('poly', document.querySelector('.nav-item'));
+            document.getElementById('auth_gate').style.display = 'flex';
+        }
+
+        async function checkAdmin(el) {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session?.user?.app_metadata?.role === 'admin') showPage('adm_page', el);
+            else document.getElementById('auth_gate').style.display = 'flex';
+        }
+
+        async function boot() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session?.user?.app_metadata?.role === 'admin') {
+                document.getElementById('auth_gate').style.display = 'none';
+                await init();
+            } else {
+                document.getElementById('auth_gate').style.display = 'flex';
+            }
+            _supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' || !session) document.getElementById('auth_gate').style.display = 'flex';
+            });
+        }
+
         setInterval(renderPlayers, 1000);
-        init();
+        boot();
         window.Telegram.WebApp.expand();
     </script>
 </body>
