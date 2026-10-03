@@ -314,7 +314,7 @@ function selT(m,p,id,service){selMins=m;selPrice=p;selService=service;document.q
 async function startSession(){
   const name=document.getElementById("p_name").value.trim();
   if(!name||!selMins){showToast("Введите имя и выберите услугу.","bad");return;}
-  const {error}=await _supabase.from("tp_sessions").insert([{client_name:name,duration:selMins,price:selPrice,type:"poly",service_code:selService,finished:false}]);
+  const {error}=await _supabase.rpc("tp_start_session",{p_client_name:name,p_service_code:selService,p_duration:selMins,p_price:selPrice});
   if(error){showToast("Не удалось запустить аренду.","bad");return;}
   document.getElementById("p_name").value="";selMins=0;selPrice=0;selService="";
   document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
@@ -376,7 +376,7 @@ function renderSales(list){
   const html=list.map(s=>`<div class="list-row"><div><b>${esc(s.name)}</b><small>${new Date(s.created_at).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})} · ${money(s.price)}</small></div><button class="icon-btn" onclick="deleteSale(${s.id},'${esc(s.item_id)}')">🗑</button></div>`).join("");
   document.getElementById("sales_history").innerHTML=html||'<div class="empty">Продаж сегодня не было</div>';
 }
-async function deleteSale(id,itemId){if(!confirm("Отменить продажу и вернуть товар на склад?"))return;const item=db.stock[itemId];if(!item)return;const {error:e1}=await _supabase.from("tp_sales").delete().eq("id",id);if(e1){showToast("Не удалось отменить продажу.","bad");return;}await _supabase.from("tp_stock").update({qty:Number(item.qty)+1}).eq("id",itemId);await init();showToast("Продажа отменена.");}
+async function deleteSale(id,itemId){if(!confirm("Отменить продажу и вернуть товар на склад?"))return;const {error}=await _supabase.rpc("tp_cancel_sale",{p_sale_id:id});if(error){showToast(error.message||"Не удалось отменить продажу.","bad");return;}await init();showToast("Продажа отменена.");}
 
 function renderStockEdit(){
   const rows=Object.values(db.stock).map(i=>`<div class="panel stock-card">
