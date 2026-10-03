@@ -88,7 +88,7 @@
         .player-card,.report-box,.stock-item{box-shadow:var(--shadow);border-color:var(--line)}
         .full-window{background:radial-gradient(circle at 85% 0%,rgba(255,122,0,.12),transparent 28%),var(--dark);padding:18px 14px 30px}
         .report-box{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.95));border-radius:21px}
-</style>
+.live-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 14px}.live-summary>div{background:rgba(19,23,29,.9);border:1px solid var(--line);border-radius:17px;padding:11px 9px;min-width:0}.live-summary span{display:block;color:var(--gray);font-size:8px;letter-spacing:.6px;font-weight:900;margin-bottom:5px}.live-summary b{font-size:15px;line-height:1.1;white-space:nowrap}.online-dot{color:var(--green)!important;font-size:10px!important}</style>
 </head>
 <body>
     <div class="app-header"><div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div><div class="brand-badge">PRO</div></div>
@@ -102,7 +102,8 @@
 
     <div id="poly" class="page active">
         <div class="hero-card"><b>Новая аренда</b><span>Выберите услугу и тариф, затем запустите таймер. Аренды автоматически попадают в отчёты.</span></div>
-        <div class="form-card"><input type="text" id="p_name" placeholder="Имя клиента / ребёнка"><input type="tel" id="p_tel" placeholder="Номер телефона" style="margin-bottom:0;"></div>
+        <div class="live-summary" id="live_summary"><div><span>АКТИВНЫЕ</span><b id="live_count">0</b></div><div><span>В СЕЙЧАС</span><b id="live_revenue">0 ₽</b></div><div><span>СТАТУС</span><b class="online-dot">● ОТКРЫТО</b></div></div>
+        <div class="form-card"><input type="text" id="p_name" placeholder="Имя клиента / ребёнка" style="margin-bottom:0;"></div>
         
         <div class="section-title">ПОЛИГОН (МАШИНКИ)</div>
         <div class="grid-2" style="margin-bottom: 15px;">
@@ -229,17 +230,15 @@
 
         async function startSession() {
             let name = document.getElementById('p_name').value;
-            const phone = document.getElementById('p_tel').value;
             if(!name || !selMins) return alert("Выберите услугу, время и введите имя!");
             
             if (selService) {
                 name = `${name} (${selService})`;
             }
 
-            const { error: startErr } = await _supabase.from('tp_sessions').insert([{ client_name: name, phone: phone, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
+            const { error: startErr } = await _supabase.from('tp_sessions').insert([{ client_name: name, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
             if(startErr) return alert('Не удалось запустить аренду: '+startErr.message);
             document.getElementById('p_name').value = ''; 
-            document.getElementById('p_tel').value = ''; 
             
             selMins = 0; selPrice = 0; selService = '';
             document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active'));
@@ -280,6 +279,10 @@
                 </div>`;
             });
             document.getElementById('online_list').innerHTML = html || '<center style="color:var(--gray)">Активных аренд нет</center>';
+            const liveCount = db.players.length;
+            const liveRevenue = db.players.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+            document.getElementById('live_count').innerText = liveCount;
+            document.getElementById('live_revenue').innerText = liveRevenue + ' ₽';
         }
 
         function toggleC(id) { openCardId = openCardId === id ? null : id; renderPlayers(); }
