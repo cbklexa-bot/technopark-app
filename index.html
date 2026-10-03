@@ -22,7 +22,7 @@
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .section-title { color: var(--gray); font-size: 11px; margin: 25px 0 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .section-title { color:#9da6b3; font-size:10px; margin:20px 2px 9px; text-transform:uppercase; font-weight:900; letter-spacing:1.3px; display:flex; align-items:center; gap:8px; }
         .section-title::after { content: ""; height: 1px; background: #222; flex: 1; }
 
         input { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid #222; background: var(--input); color: white; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
@@ -64,9 +64,34 @@
         .stock-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
         .stock-inputs div { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-bottom: 4px; }
         .stock-inputs input { padding: 10px; text-align: center; margin-bottom: 0; }
-    </style>
+    
+        :root{--orange:#ff7a00;--orange-2:#ffb347;--dark:#07090c;--card:rgba(19,23,29,.94);--input:rgba(255,255,255,.06);--white:#f6f7f9;--red:#ff4d5f;--green:#32e28b;--gray:#8f98a6;--line:rgba(255,255,255,.08);--shadow:0 14px 35px rgba(0,0,0,.26)}
+        body{background:radial-gradient(circle at 85% -10%,rgba(255,122,0,.18),transparent 32%),radial-gradient(circle at -10% 35%,rgba(56,93,140,.14),transparent 28%),var(--dark);padding:16px 14px 110px}
+        .app-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 2px 16px}
+        .eyebrow{font-size:10px;letter-spacing:2px;color:var(--orange-2);font-weight:900;margin-bottom:4px}
+        .app-title{margin:0;font-size:24px;line-height:1.05;font-weight:950;letter-spacing:-.7px}
+        .brand-badge{padding:9px 11px;border-radius:14px;background:linear-gradient(135deg,var(--orange),#ff5300);color:#111;font-weight:950;font-size:11px;box-shadow:0 8px 22px rgba(255,122,0,.23)}
+        .nav{display:flex;position:sticky;top:10px;background:rgba(9,12,16,.82);backdrop-filter:blur(18px);z-index:1000;padding:6px;gap:6px;border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.22);margin-bottom:14px}
+        .nav-item{flex:1;min-width:0;padding:12px 7px;font-size:10px;font-weight:850;border-radius:13px}
+        .nav-item.active{background:linear-gradient(135deg,var(--orange),#ff5b00);color:#111;box-shadow:0 6px 18px rgba(255,122,0,.28)}
+        .page{padding:2px 0 0}
+        .hero-card{background:linear-gradient(145deg,rgba(255,122,0,.18),rgba(255,255,255,.035));border:1px solid rgba(255,170,85,.16);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+        .hero-card b{display:block;font-size:17px;margin-bottom:5px}.hero-card span{color:var(--gray);font-size:12px;line-height:1.45}
+        .form-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:var(--shadow);margin-bottom:14px}
+        input{border-color:var(--line);background:var(--input);padding:15px;border-radius:15px}
+        input:focus{border-color:rgba(255,122,0,.72);box-shadow:0 0 0 3px rgba(255,122,0,.10)}
+        .btn{border-radius:16px;font-weight:900}.btn-main{background:linear-gradient(135deg,var(--orange),#ff5b00);box-shadow:0 10px 24px rgba(255,122,0,.20)}
+        .btn-time{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(17,20,25,.92));border-color:var(--line);box-shadow:0 7px 22px rgba(0,0,0,.14)}
+        .btn-time.active{border-color:rgba(255,122,0,.78);color:#fff;background:linear-gradient(145deg,rgba(255,122,0,.18),rgba(255,122,0,.06));box-shadow:inset 0 0 0 1px rgba(255,122,0,.12),0 8px 24px rgba(255,122,0,.11)}
+        .service-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:rgba(255,255,255,.07);font-size:20px}
+        .tile-card{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.94));border-color:var(--line);box-shadow:var(--shadow);padding:21px 14px}
+        .player-card,.report-box,.stock-item{box-shadow:var(--shadow);border-color:var(--line)}
+        .full-window{background:radial-gradient(circle at 85% 0%,rgba(255,122,0,.12),transparent 28%),var(--dark);padding:18px 14px 30px}
+        .report-box{background:linear-gradient(145deg,rgba(24,29,36,.92),rgba(16,19,24,.95));border-radius:21px}
+</style>
 </head>
 <body>
+    <div class="app-header"><div><div class="eyebrow">ТЕХНОПАРК</div><h1 class="app-title">Управление центром</h1></div><div class="brand-badge">PRO</div></div>
 
     <div class="nav">
         <div class="nav-item active" onclick="showPage('poly', this)">Аренда</div>
@@ -76,27 +101,29 @@
     </div>
 
     <div id="poly" class="page active">
-        <input type="text" id="p_name" placeholder="Имя клиента/ребенка">
-        <input type="tel" id="p_tel" placeholder="Номер телефона">
+        <div class="hero-card"><b>Новая аренда</b><span>Выберите услугу и тариф, затем запустите таймер. Аренды автоматически попадают в отчёты.</span></div>
+        <div class="form-card"><input type="text" id="p_name" placeholder="Имя клиента / ребёнка"><input type="tel" id="p_tel" placeholder="Номер телефона" style="margin-bottom:0;"></div>
         
         <div class="section-title">ПОЛИГОН (МАШИНКИ)</div>
         <div class="grid-2" style="margin-bottom: 15px;">
-            <button class="btn btn-time" id="t_poly_30" onclick="selT(30, 300, 't_poly_30', 'Полигон')">30 МИН / 300₽</button>
-            <button class="btn btn-time" id="t_poly_60" onclick="selT(60, 500, 't_poly_60', 'Полигон')">1 ЧАС / 500₽</button>
+            <button class="btn btn-time" id="t_poly_30" onclick="selT(30, 300, 't_poly_30', 'Полигон')"><span class="service-icon">🏎️</span><span>30 МИН<br><b>300 ₽</b></span></button>
+            <button class="btn btn-time" id="t_poly_60" onclick="selT(60, 500, 't_poly_60', 'Полигон')"><span class="service-icon">🏁</span><span>1 ЧАС<br><b>500 ₽</b></span></button>
         </div>
 
         <div class="section-title">VR ШЛЕМЫ (OCULUS)</div>
         <div class="grid-2" style="margin-bottom: 15px;">
-            <button class="btn btn-time" id="t_vr_30" onclick="selT(30, 300, 't_vr_30', 'VR')">30 МИН / 300₽</button>
-            <button class="btn btn-time" id="t_vr_60" onclick="selT(60, 500, 't_vr_60', 'VR')">1 ЧАС / 500₽</button>
+            <button class="btn btn-time" id="t_vr_30" onclick="selT(30, 300, 't_vr_30', 'VR')"><span class="service-icon">🥽</span><span>30 МИН<br><b>300 ₽</b></span></button>
+            <button class="btn btn-time" id="t_vr_60" onclick="selT(60, 500, 't_vr_60', 'VR')"><span class="service-icon">🌐</span><span>1 ЧАС<br><b>500 ₽</b></span></button>
         </div>
 
         <div class="section-title">SONY PLAYSTATION 4</div>
-        <button class="btn btn-time" id="t_ps_60" style="margin-bottom: 15px;" onclick="selT(60, 400, 't_ps_60', 'PS4')">1 ЧАС / 400₽</button>
+        <button class="btn btn-time" id="t_ps_60" style="margin-bottom:10px;" onclick="selT(60, 400, 't_ps_60', 'PS4')"><span class="service-icon">🎮</span><span>1 ЧАС<br><b>400 ₽</b></span></button>
 
         <div class="section-title">DRIFT CAR / ВЕЛОСИПЕД</div>
-        <button class="btn btn-time" id="t_drift_10" style="margin-bottom: 20px;" onclick="selT(10, 150, 't_drift_10', 'Дрифт/Вело')">10 МИН / 150₽</button>
+        <button class="btn btn-time" id="t_drift_10" style="margin-bottom:10px;" onclick="selT(10, 150, 't_drift_10', 'Дрифт/Вело')"><span class="service-icon">🚲</span><span>10 МИН<br><b>150 ₽</b></span></button>
 
+        <div class="section-title">МИНИ-ТИР</div>
+        <button class="btn btn-time" id="t_range_5" style="margin-bottom:18px;" onclick="selT(5, 150, 't_range_5', 'Мини-тир')"><span class="service-icon">🎯</span><span>5 МИН<br><b>150 ₽</b></span></button>
         <button class="btn btn-main" onclick="startSession()">🚀 Запустить аренду</button>
         <div class="section-title">СЕЙЧАС АРЕНДУЮТ</div>
         <div id="online_list"></div>
@@ -206,7 +233,8 @@
                 name = `${name} (${selService})`;
             }
 
-            await _supabase.from('tp_sessions').insert([{ client_name: name, phone: phone, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
+            const { error: startErr } = await _supabase.from('tp_sessions').insert([{ client_name: name, phone: phone, duration: selMins, price: selPrice, type: 'poly', finished: false }]);
+            if(startErr) return alert('Не удалось запустить аренду: '+startErr.message);
             document.getElementById('p_name').value = ''; 
             document.getElementById('p_tel').value = ''; 
             
@@ -262,7 +290,8 @@
             const h = document.getElementById('f_hours').value || 0;
             const s = document.getElementById('f_sum').value;
             if(!n || !s) return alert("Имя и сумма обязательны!");
-            await _supabase.from('tp_sessions').insert([{ client_name: n, phone: ph, duration: h*60, price: parseFloat(s), type: 'fest', finished: true }]);
+            const { error: festErr } = await _supabase.from('tp_sessions').insert([{ client_name: n, phone: ph, duration: h*60, price: parseFloat(s), type: 'fest', finished: true }]);
+            if(festErr) return alert('Не удалось сохранить праздник: '+festErr.message);
             alert("Праздник зафиксирован!");
             document.querySelectorAll('#fest input').forEach(i => i.value = '');
             init();
@@ -318,7 +347,8 @@
             const amt = document.getElementById('exp_amount').value;
             if(!comm || !amt) return alert("Заполните оба поля!");
             
-            await _supabase.from('tp_expenses').insert([{ comment: comm, amount: parseFloat(amt) }]);
+            const { error: expErr } = await _supabase.from('tp_expenses').insert([{ comment: comm, amount: parseFloat(amt) }]);
+            if(expErr) return alert('Не удалось сохранить расход: '+expErr.message);
             
             document.getElementById('exp_comment').value = ''; 
             document.getElementById('exp_amount').value = '';
@@ -352,9 +382,17 @@
             if(period === 'month') df.setDate(1); 
             
             const iso = df.toISOString();
-            const { data: sess } = await _supabase.from('tp_sessions').select('*').gte('created_at', iso);
-            const { data: sales } = await _supabase.from('tp_sales').select('*').gte('created_at', iso);
-            const { data: exps } = await _supabase.from('tp_expenses').select('*').gte('created_at', iso);
+            const [sessRes, salesRes, expRes] = await Promise.all([
+                _supabase.from('tp_sessions').select('*').gte('created_at', iso),
+                _supabase.from('tp_sales').select('*').gte('created_at', iso),
+                _supabase.from('tp_expenses').select('*').gte('created_at', iso)
+            ]);
+            if(sessRes.error || salesRes.error || expRes.error) {
+                const msg = [sessRes.error?.message, salesRes.error?.message, expRes.error?.message].filter(Boolean).join(' • ');
+                document.getElementById('report_content').innerHTML = '<div class="report-box"><b style="color:var(--red)">Не удалось загрузить отчёт</b><div style="color:var(--gray);font-size:12px;margin-top:8px;">'+msg+'</div></div>';
+                return;
+            }
+            const sess = sessRes.data || [], sales = salesRes.data || [], exps = expRes.data || [];
 
             let pRev=0, pCount=0, pMins=0;
             let fRev=0, fCount=0, fMins=0;
