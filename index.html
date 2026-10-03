@@ -88,6 +88,7 @@ input::placeholder{color:#68717d}
 .exp-head{display:grid;grid-template-columns:1fr 1fr;gap:8px}.expense-form{padding:13px;margin-bottom:10px}.expense-form select{margin-bottom:8px}.expense-form input{margin-bottom:8px}
 .expense-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:13px}.expense-main{display:flex;flex-direction:column;gap:4px}.expense-main b{font-size:12px}.expense-main small{color:var(--muted);font-size:9px}.expense-amount{color:var(--red);font-weight:950;white-space:nowrap;font-size:12px}.expense-actions{display:flex;gap:5px;margin-top:6px}.icon-btn{width:34px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#aeb5bf}
 .toast{position:fixed;left:14px;right:14px;bottom:18px;z-index:6000;display:none;padding:12px 14px;border-radius:14px;background:rgba(20,24,31,.97);border:1px solid var(--line);box-shadow:var(--shadow);font-size:11px;font-weight:800}.toast.show{display:block}.toast.good{border-color:rgba(52,223,145,.3)}.toast.bad{border-color:rgba(255,83,102,.35);color:#ffd2d8}
+.auth-error{min-height:18px;margin-top:9px;color:var(--red);font-size:10px}
 .journal-type{font-size:9px;padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .journal-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:center;padding:11px 10px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
 .journal-date{color:var(--muted);font-size:9px}.journal-main{display:flex;flex-direction:column;gap:4px;min-width:0}.journal-main b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.journal-main small{font-size:9px;color:var(--muted)}.journal-amount{font-weight:950;font-size:11px;white-space:nowrap}
@@ -104,7 +105,21 @@ input::placeholder{color:#68717d}
   <button class="nav-item active" onclick="showPage('poly',this)">Аренда</button>
   <button class="nav-item" onclick="showPage('fest',this)">Праздник</button>
   <button class="nav-item" onclick="showPage('goods',this)">Товары</button>
-  <button class="nav-item" onclick="showPage('adm_page',this);loadAdminDashboard()">Админ</button>
+  <button class="nav-item" onclick="requestAdminAccess(this)">Админ</button>
+</div>
+
+<div id="admin_pin_gate" class="window">
+  <div class="window-head">
+    <button class="back" onclick="closeAdminPin()">←</button>
+    <div><div class="eyebrow">ЗАКРЫТАЯ ЗОНА</div><h2>Администратор</h2></div>
+  </div>
+  <div class="panel form-panel">
+    <div class="section-title" style="margin-top:0">Доступ</div>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:11px;line-height:1.5">Введите пароль администратора, чтобы открыть раздел.</p>
+    <input id="admin_pin" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Пароль" onkeydown="if(event.key==='Enter')unlockAdmin()">
+    <button class="btn btn-main" style="margin-top:8px" onclick="unlockAdmin()">🔐 Открыть админ</button>
+    <div id="admin_pin_error" class="auth-error"></div>
+  </div>
 </div>
 
 <section id="poly" class="page active">
@@ -249,9 +264,60 @@ function monthLabel(key){const [y,m]=key.split("-").map(Number);const d=new Date
 function monthRange(key){const [y,m]=key.split("-").map(Number);return {start:new Date(y,m-1,1),end:new Date(y,m,1)};}
 function showToast(msg,kind="good"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+(kind==="bad"?"bad":"good");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2600);}
 function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");}
-function openWin(id){document.getElementById(id)?.classList.add("active");if(id==="win_reports"){prepareReportControls();loadReports(reportPeriod);}if(id==="win_exp"){prepareExpenseControls();loadExpensesHistory();}if(id==="win_stock")renderStockEdit();if(id==="win_journal"){prepareJournalControls();loadJournal();}}
+function openWin(id){
+  const adminWindows=["win_reports","win_journal","win_exp","win_stock"];
+  if(adminWindows.includes(id)&&!adminUnlocked){
+    requestAdminAccess(adminNavButton||document.querySelector(".nav-item:last-child"));
+    return;
+  }
+  document.getElementById(id)?.classList.add("active");
+  if(id==="win_reports"){prepareReportControls();loadReports(reportPeriod);}
+  if(id==="win_exp"){prepareExpenseControls();loadExpensesHistory();}
+  if(id==="win_stock")renderStockEdit();
+  if(id==="win_journal"){prepareJournalControls();loadJournal();}
+}
 function closeWin(){document.querySelectorAll(".window").forEach(x=>x.classList.remove("active"));}
 function selectPeriodButton(){document.querySelectorAll(".period").forEach(x=>x.classList.remove("active"));document.getElementById(reportPeriod==="day"?"btn_rep_day":"btn_rep_month")?.classList.add("active");document.getElementById("report_day_controls")?.classList.toggle("hidden",reportPeriod!=="day");document.getElementById("report_month_controls")?.classList.toggle("hidden",reportPeriod==="day");}
+
+const ADMIN_PASSWORD="7826";
+let adminUnlocked=false;
+let adminNavButton=null;
+
+function requestAdminAccess(el){
+  adminNavButton=el;
+  if(adminUnlocked){
+    showPage("adm_page",el);
+    loadAdminDashboard();
+    return;
+  }
+  const w=document.getElementById("admin_pin_gate");
+  w?.classList.add("active");
+  const input=document.getElementById("admin_pin");
+  const err=document.getElementById("admin_pin_error");
+  if(input){input.value="";setTimeout(()=>input.focus(),50);}
+  if(err)err.textContent="";
+}
+function unlockAdmin(){
+  const input=document.getElementById("admin_pin");
+  const err=document.getElementById("admin_pin_error");
+  const value=input?.value||"";
+  if(value!==ADMIN_PASSWORD){
+    if(err)err.textContent="Неверный пароль.";
+    if(input){input.select();input.focus();}
+    return;
+  }
+  adminUnlocked=true;
+  if(input)input.value="";
+  if(err)err.textContent="";
+  document.getElementById("admin_pin_gate")?.classList.remove("active");
+  showPage("adm_page",adminNavButton);
+  loadAdminDashboard();
+}
+function closeAdminPin(){
+  document.getElementById("admin_pin_gate")?.classList.remove("active");
+  const input=document.getElementById("admin_pin");
+  if(input)input.value="";
+}
 
 async function init(){
   const [stRes,sessRes,salesRes]=await Promise.all([
