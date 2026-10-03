@@ -484,12 +484,31 @@ function prepareReportControls(){
 function setReportPeriod(p){reportPeriod=p;selectPeriodButton();loadReports(p);}
 async function getReportData(start,end){
   const [sessRes,salesRes,expRes]=await Promise.all([
-    _supabase.from("tp_sessions").select("*").gte("created_at",start.toISOString()).lt("created_at",end.toISOString()),
-    _supabase.from("tp_sales").select("*").gte("created_at",start.toISOString()).lt("created_at",end.toISOString()),
-    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(start)).lt("expense_date",dateInputValue(end))
+    _supabase.from("tp_sessions").select("*").order("created_at",{ascending:false}),
+    _supabase.from("tp_sales").select("*").order("created_at",{ascending:false}),
+    _supabase.from("tp_expenses").select("*").order("expense_date",{ascending:false}).order("created_at",{ascending:false})
   ]);
-  if(sessRes.error||salesRes.error||expRes.error)throw new Error("Не удалось получить финансовые данные.");
-  return {sessions:sessRes.data||[],sales:salesRes.data||[],expenses:expRes.data||[]};
+  const errors=[];
+  if(sessRes.error)errors.push("аренды: "+(sessRes.error.message||"ошибка"));
+  if(salesRes.error)errors.push("товары: "+(salesRes.error.message||"ошибка"));
+  if(expRes.error)errors.push("расходы: "+(expRes.error.message||"ошибка"));
+  console.error("[ФИНАНСЫ]",{start,end,sessions:sessRes.error,sales:salesRes.error,expenses:expRes.error});
+  if(sessRes.error||salesRes.error){
+    throw new Error("Не удалось загрузить финансовые данные: "+errors.filter(x=>!x.startsWith("расходы:")).join("; "));
+  }
+
+  const inRange=(iso)=>{const d=new Date(iso);return d>=start&&d<end;};
+  const sessions=(sessRes.data||[]).filter(x=>inRange(x.created_at));
+  const sales=(salesRes.data||[]).filter(x=>inRange(x.created_at));
+  const expenses=(expRes.data||[]).filter(x=>{
+    const d=new Date(String(x.expense_date)+"T00:00:00");
+    return d>=new Date(dateInputValue(start)+"T00:00:00")&&d<new Date(dateInputValue(end)+"T00:00:00");
+  });
+
+  if(expRes.error){
+    showToast("Финансы загружены, но расходы недоступны: "+(expRes.error.message||"ошибка"),"bad");
+  }
+  return {sessions,sales,expenses};
 }
 function calculate(data){
   let rent=0,rentCount=0,rentMins=0,fest=0,festCount=0,festMins=0,goods=0,cost=0;
