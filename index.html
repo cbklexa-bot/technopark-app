@@ -418,7 +418,7 @@ function calculate(data){
   data.sessions.forEach(s=>{const p=Number(s.price)||0,m=Number(s.duration)||0;if(s.type==="fest"){fest+=p;festCount++;festMins+=m;}else{rent+=p;rentCount++;rentMins+=m;const name=detectService(s);services[name]??={count:0,mins:0,revenue:0};services[name].count++;services[name].mins+=m;services[name].revenue+=p;}});
   data.sales.forEach(s=>{const p=Number(s.price)||0,c=Number(s.cost)||0;goods+=p;cost+=c;products[s.name]??={count:0,revenue:0,cost:0};products[s.name].count++;products[s.name].revenue+=p;products[s.name].cost+=c;});
   data.expenses.forEach(e=>{const p=Number(e.amount)||0;const k=e.category||"Прочее";expenses[k]=(expenses[k]||0)+p;});
-  const allRev=rent+fest+goods,totalExp=data.expenses.reduce((s,x)=>s+Number(x.amount||0),0),net=allRev-cost-totalExp,ops=rentCount+festCount+data.sales.length+festCount;
+  const allRev=rent+fest+goods,totalExp=data.expenses.reduce((s,x)=>s+Number(x.amount||0),0),net=allRev-cost-totalExp,ops=rentCount+festCount+data.sales.length;
   return {rent,rentCount,rentMins,fest,festCount,festMins,goods,cost,services,products,expenses,totalExp,allRev,net,ops,avg:ops?allRev/ops:0};
 }
 function renderReport(title,data,periodStart,periodEnd){
@@ -429,11 +429,11 @@ function renderReport(title,data,periodStart,periodEnd){
   let daily="";
   if(reportPeriod==="month"){
     const dayMap={};
-    for(let d=new Date(periodStart);d<periodEnd;d.setDate(d.getDate()+1)){const key=dateInputValue(d);dayMap[key]={rev:0,exp:0,profit:0};}
-    data.sessions.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;});
-    data.sales.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;});
-    data.expenses.forEach(e=>{const k=e.expense_date;dayMap[k]??={rev:0,exp:0,profit:0};dayMap[k].exp+=Number(e.amount)||0;});
-    Object.keys(dayMap).sort().reverse().forEach(k=>{const x=dayMap[k];const profit=x.rev-x.exp;daily+=`<div class="day-row"><small>${new Date(k+"T12:00:00").toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})}</small><b>${money(x.rev)}</b><span class="profit ${profit>=0?"positive":"negative"}">${money(profit)}</span></div>`;});
+    for(let d=new Date(periodStart);d<periodEnd;d.setDate(d.getDate()+1)){const key=dateInputValue(d);dayMap[key]={rev:0,cost:0,exp:0,profit:0};}
+    data.sessions.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,cost:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;});
+    data.sales.forEach(s=>{const k=dateInputValue(new Date(s.created_at));dayMap[k]??={rev:0,cost:0,exp:0,profit:0};dayMap[k].rev+=Number(s.price)||0;dayMap[k].cost+=Number(s.cost)||0;});
+    data.expenses.forEach(e=>{const k=e.expense_date;dayMap[k]??={rev:0,cost:0,exp:0,profit:0};dayMap[k].exp+=Number(e.amount)||0;});
+    Object.keys(dayMap).sort().reverse().forEach(k=>{const x=dayMap[k];const profit=x.rev-x.cost-x.exp;daily+=`<div class="day-row"><small>${new Date(k+"T12:00:00").toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})}</small><b>${money(x.rev)}</b><span class="profit ${profit>=0?"positive":"negative"}">${money(profit)}</span></div>`;});
   }
   document.getElementById("report_content").innerHTML=`
     <div class="report-caption">${esc(title)}</div>
