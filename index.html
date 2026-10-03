@@ -477,6 +477,11 @@ async function loadAdminDashboard(){
   const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
 
 async function boot(){
+  const {data:{session}}=await _supabase.auth.getSession();
+  if(!session){
+    const {error}=await _supabase.auth.signInAnonymously();
+    if(error){showToast("Не удалось открыть приложение.","bad");return;}
+  }
   await init();
   prepareExpenseControls();prepareReportControls();
   if(window.Telegram?.WebApp)window.Telegram.WebApp.expand();
