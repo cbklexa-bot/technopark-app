@@ -47,6 +47,9 @@ jobs:
       - name: Install JavaScript dependencies
         working-directory: smokehouse-android
         run: npm install --no-audit --no-fund
+      - name: Validate critical app features and JavaScript syntax
+        working-directory: smokehouse-android
+        run: npm test
       - name: Build bundled web assets
         working-directory: smokehouse-android
         run: npm run build
