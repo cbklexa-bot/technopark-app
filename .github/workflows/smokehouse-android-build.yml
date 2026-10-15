@@ -14,7 +14,7 @@ permissions:
 
 
 concurrency:
-  group: smokehouse-android-ci-${{ github.ref }}
+  group: smokehouse-android-validation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
