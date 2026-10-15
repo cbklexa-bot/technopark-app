@@ -59,3 +59,11 @@ The ZIP/Excel export is local to this test device. It does not replace the futur
 - [Capacitor setup](https://capacitorjs.com/docs/getting-started)
 - [Filesystem API](https://next.capacitorjs.com/docs/apis/filesystem)
 - [Share API](https://capacitor-site.vercel.app/docs/apis/share)
+
+## Manual validation after installing the APK
+
+- Exercise the core flows with sample data: product card, multi-line receipt and sale, customer service with a phone number, client edit/delete, payments, expenses and date-filtered reports.
+- In Clients, test the client CSV export. In Reports, test the selected-period CSV export.
+- Use **Download archive**, select a save destination from the Android share sheet, and inspect the ZIP. It should contain `data/database.json`, `reports/koptilnya-financial-reports.xlsx`, `photos/` and/or `attachments/` as applicable, plus a manifest/readme.
+- Test restoring from that ZIP, then verify product photos, attachment previews, document totals, balances and stock. Keep a copy of the test data before restore because restore replaces the current local data.
+- Repeat after fully closing and reopening the app. The CI build verifies compilation and packaging, not this complete device-level flow.
