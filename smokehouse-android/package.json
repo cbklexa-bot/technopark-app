@@ -1,0 +1,21 @@
+{
+  "name": "koptilnya-android",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android development build for Koptilnya production accounting app",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "android:add": "cap add android",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

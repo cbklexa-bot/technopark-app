@@ -1,0 +1,64 @@
+name: Android development build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - smokehouse-android
+    paths:
+      - 'smokehouse-android/**'
+      - '.github/workflows/smokehouse-android-build.yml'
+
+permissions:
+  contents: read
+
+auto-cancel-in-progress: true
+
+concurrency:
+  group: smokehouse-android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK API 36
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Install JavaScript dependencies
+        working-directory: smokehouse-android
+        run: npm install --no-audit --no-fund
+      - name: Generate native Android project
+        working-directory: smokehouse-android
+        run: npx cap add android
+      - name: Sync web assets to Android
+        working-directory: smokehouse-android
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: smokehouse-android/android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Build unsigned release bundle for CI validation
+        working-directory: smokehouse-android/android
+        run: ./gradlew bundleRelease --no-daemon
+      - name: Upload debug APK and unsigned AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: koptilnya-android-test-build
+          if-no-files-found: error
+          path: |
+            smokehouse-android/android/app/build/outputs/apk/debug/app-debug.apk
+            smokehouse-android/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14

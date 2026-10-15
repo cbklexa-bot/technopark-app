@@ -1,0 +1,9 @@
+{
+  "appId": "ru.koptilnya.app",
+  "appName": "Коптильня",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
