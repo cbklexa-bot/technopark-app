@@ -47,6 +47,9 @@ jobs:
       - name: Install JavaScript dependencies
         working-directory: smokehouse-android
         run: npm install --no-audit --no-fund
+      - name: Build bundled web assets
+        working-directory: smokehouse-android
+        run: npm run build
       - name: Generate native Android project
         working-directory: smokehouse-android
         run: npx cap add android

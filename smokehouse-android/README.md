@@ -1,20 +1,27 @@
-# Коптильня — Android build track
+# Коптильня — Android test build
 
-This folder contains a Capacitor Android wrapper for the current mobile-first prototype. It is a **development build track**, not yet a production or Play Store release.
+This branch builds an installable **debug APK** for functional testing. It is not a production release.
 
-## Build locally
+## Get and install the test APK
 
-Requirements: Node.js 22+, Android Studio 2025.2.1 or newer, Android SDK Platform 36, and a JDK compatible with the generated Gradle project. Capacitor 8 currently requires Node.js 22+ and Android Studio 2025.2.1+; Google Play requires new apps and updates to target API 36 as of 31 August 2026. See the official guides linked below.
+1. Download `Koptilnya-Android-Test.apk` from the conversation attachment, or open the latest successful [Android build workflow](https://github.com/cbklexa-bot/technopark-app/actions/workflows/smokehouse-android-build.yml?query=branch%3Asmokehouse-android) and download the artifact named `koptilnya-android-test-build`.
+2. Transfer the APK to an Android phone and open it. Android may ask to allow installation from the app used to open the file; enable this only for the install and then turn it off if desired.
+3. This is a debug-signed test build. It is not the signed Play Store release package.
+
+## Local build
+
+Requirements: Node.js 22+, Android Studio, JDK 21, Android SDK Platform 36, and Build Tools 36.0.0.
 
 ```bash
 cd smokehouse-android
 npm install
+npm run build
 npx cap add android
 npx cap sync android
 npx cap open android
 ```
 
-To build a local debug APK after Android Studio has installed the required SDKs:
+To build a local debug APK after installing the required SDKs:
 
 ```bash
 cd android
@@ -23,29 +30,32 @@ cd android
 
 On Windows use `gradlew.bat assembleDebug`.
 
-## Automated test build
+## Current functionality and limitations
 
-The GitHub Actions workflow at `.github/workflows/smokehouse-android-build.yml` creates the native wrapper and produces an installable debug APK. This APK is for testing only. It is not the signed, release-ready AAB for Google Play.
+The Android shell packages the current app interface and the existing accounting/CRM prototype. Data still lives only in the app's local storage on that device; there is no cloud account or cross-device sync yet. The app starts with demonstration records; don't use it as the sole place for real business records.
 
-## Important production blockers
+The app includes a full JSON backup with data, stored product images and document attachments, and restore from a selected backup file. On Android, exports are passed to the native share/save chooser so users can save the file to a destination they choose. CSV exports use the same path. Test these flows on a real Android device: the build pipeline cannot simulate every file manager or share target.
 
-The HTML currently copied into `www/` still uses browser local storage and demonstration records. Wrapping it in Android does not add user accounts, a cloud database, cross-device sync, server-side subscription checks, Play Billing, protected expired-subscription read-only mode, or server-generated full exports. The JSON backup/export included here saves the state on this device, including image data and document attachments saved within that state; it is not a replacement for the future cloud export archive.
+The JSON backup is a local safety copy, not yet the final subscription-expiration archive described for the future cloud version. The promised full workbook and archive of server-stored photographs will require the production backend.
 
-Before public launch, the next production milestones are:
+## Remaining product work before production use
 
-1. Provision a **new, separate** production backend; do not connect the app to existing Technopark or song-app databases.
-2. Implement authentication and tenant isolation (every business sees only its own data), remote image/file storage, backup and restore.
-3. Add subscription/trial lifecycle with server-side entitlement checks and Google Play Billing integration, and retain read-only access plus full export after expiration.
-4. Complete invoice/financial acceptance tests using representative real-world cases and test on Android devices.
-5. Prepare the privacy policy, account/data deletion flows, support contact, Play Store listing, release signing key, and signed AAB. Store publication itself needs the owner's Play Console and identity/account setup.
+1. Provision a **new, separate** production backend; do not connect this to Technopark or song-app databases.
+2. Implement authentication and tenant isolation (each business sees only its own data), cloud records, file storage, backup and restore.
+3. Add trial/subscription lifecycle and server-side entitlement checks; after expiration switch to read-only and keep the full export available.
+4. Add Google Play Billing when subscription implementation begins.
+5. Complete financial acceptance tests, inspect layouts on multiple real Android screen sizes, validate export/import including large photos, and add an audit trail/backups.
+6. Finalize app icon, privacy and data deletion flows, support details, and a release-signing process.
 
-## Official requirements
+## Native details
 
-- Capacitor installation: https://capacitorjs.com/docs/getting-started
-- Capacitor Android environment: https://capacitorjs.com/docs/getting-started/environment-setup
-- Google Play target API requirement: https://support.google.com/googleplay/android-developer/answer/11926878
-- Play Billing subscriptions: https://developer.android.com/google/play/billing/subscriptions
+- App ID: `ru.koptilnya.app` (provisional).
+- Capacitor core/Android: `8.5.3`.
+- Android SDK target used by CI: API 36.
+- CI build artifact retention is 14 days; the attached APK saved in the conversation is a separate copy.
 
-## Package name
+## Official documentation
 
-`ru.koptilnya.app` is provisional. Confirm its availability and finalize it before the first public Play Store release; changing the application ID after release would be disruptive.
+- [Capacitor setup](https://capacitorjs.com/docs/getting-started)
+- [Filesystem API](https://next.capacitorjs.com/docs/apis/filesystem)
+- [Share API](https://capacitor-site.vercel.app/docs/apis/share)
