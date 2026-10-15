@@ -55,6 +55,7 @@ assert.ok(pkg.dependencies['@capacitor/filesystem'], 'Native file export depende
 assert.ok(pkg.dependencies['@capacitor/share'], 'Native share dependency missing');
 assert.ok(pkg.dependencies.jszip, 'ZIP dependency missing');
 assert.ok(pkg.dependencies.xlsx, 'Excel dependency missing');
+assert.ok(pkg.devDependencies['@capacitor/assets'], 'Branded Android icon generator missing');
 
 
 const createdUrls = new Map();
@@ -143,4 +144,6 @@ try {
   URL.revokeObjectURL = savedRevokeObjectUrl;
 }
 
+const assetGenerator = readFileSync(join(root, 'scripts', 'generate_assets.py'), 'utf8');
+for (const marker of ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']) assert.ok(assetGenerator.includes(marker), 'Missing branded Android asset: ' + marker);
 console.log('Smoke check passed: source syntax, primary accounting modules, Android file export, ZIP restore, and 13 Excel sheets are present.');

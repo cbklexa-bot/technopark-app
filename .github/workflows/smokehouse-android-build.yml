@@ -56,6 +56,12 @@ jobs:
       - name: Generate native Android project
         working-directory: smokehouse-android
         run: npx cap add android
+      - name: Generate branded Android launcher icon and splash assets
+        working-directory: smokehouse-android
+        run: |
+          python -m pip install --disable-pip-version-check --no-input Pillow==12.3.0
+          python scripts/generate_assets.py
+          npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#192b25' --splashBackgroundColor '#192b25'
       - name: Sync web assets to Android
         working-directory: smokehouse-android
         run: npx cap sync android
