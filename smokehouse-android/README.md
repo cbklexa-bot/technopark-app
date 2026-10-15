@@ -34,9 +34,9 @@ On Windows use `gradlew.bat assembleDebug`.
 
 The Android shell packages the current app interface and the existing accounting/CRM prototype. Data still lives only in the app's local storage on that device; there is no cloud account or cross-device sync yet. The app starts with demonstration records; don't use it as the sole place for real business records.
 
-The app includes a full JSON backup with data, stored product images and document attachments, and restore from a selected backup file. On Android, exports are passed to the native share/save chooser so users can save the file to a destination they choose. CSV exports use the same path. Test these flows on a real Android device: the build pipeline cannot simulate every file manager or share target.
+The app includes a full ZIP archive with a JSON database snapshot, an Excel workbook (summary, products, clients, documents, line items, expenses, payments, production batches, recipes, product sales, services, monthly financial summaries), product photos and document attachments. The ZIP can be restored with the in-app restore control; older JSON backups remain supported. On Android, the archive and CSV exports open the native share/save chooser. Test these flows on a real device, because CI cannot simulate every file manager or share target.
 
-The JSON backup is a local safety copy, not yet the final subscription-expiration archive described for the future cloud version. The promised full workbook and archive of server-stored photographs will require the production backend.
+The ZIP/Excel export is local to this test device. It does not replace the future server-side export after subscription expiration; cloud records, account-level export, and account retention still require the production backend.
 
 ## Remaining product work before production use
 

@@ -39,7 +39,7 @@
 </section>
 <section id="page-products" class="section"><div class="head"><div><h2>Каталог продукции</h2><p>Готовая продукция, полуфабрикаты и услуги</p></div><button class="btn" data-action="product">＋ Новая карточка</button></div><div class="tablewrap"><table><thead><tr><th>Продукция</th><th>Остаток</th><th>Себестоимость/кг</th><th>Приходная цена</th><th>Цена продажи</th><th>Тип</th><th></th></tr></thead><tbody id="productsTable"></tbody></table></div><div class="notice">Калькулятор себестоимости учитывает стоимость сырья, фактический выход, специи и электроэнергию. Цену можно менять для конкретной накладной.</div></section>
 <section id="page-production" class="section"><div class="head"><div><h2>Производственные партии</h2><p>Начальный вес, конечный выход и затраты</p></div><button class="btn" data-action="batch">＋ Новая партия</button></div><div class="cards" id="batchMetrics"></div><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Дата</th><th>Продукт</th><th>Сырьё</th><th>Вес сырья</th><th>Выход</th><th>Себестоимость/кг</th></tr></thead><tbody id="batchesTable"></tbody></table></div></section>
-<section id="page-clients" class="section"><div class="head"><div><h2>Клиенты и CRM</h2><p>Контакты, телефон и история обращений по переработке</p></div><div class="client-actions"><button class="btn secondary" id="exportClientsCsv">Экспорт базы CSV</button><button class="btn secondary" type="button" id="exportFullBackup">Скачать архив</button><button class="btn secondary" type="button" id="restoreFullBackup">Восстановить</button><input id="backupFile" type="file" accept=".json,application/json" style="display:none"><button class="btn" data-action="client">＋ Добавить клиента</button></div></div>
+<section id="page-clients" class="section"><div class="head"><div><h2>Клиенты и CRM</h2><p>Контакты, телефон и история обращений по переработке</p></div><div class="client-actions"><button class="btn secondary" id="exportClientsCsv">Экспорт базы CSV</button><button class="btn secondary" type="button" id="exportFullBackup">Скачать архив</button><button class="btn secondary" type="button" id="restoreFullBackup">Восстановить</button><input id="backupFile" type="file" accept=".json,.zip,application/json,application/zip" style="display:none"><button class="btn" data-action="client">＋ Добавить клиента</button></div></div>
 <div class="box client-filters"><div class="field"><label for="clientSearchInput">Поиск клиента или телефона</label><input id="clientSearchInput" type="search" placeholder="Введите имя или номер телефона"></div><div class="field"><label for="clientStatsPeriod">Статистика услуг</label><select id="clientStatsPeriod"><option value="month">Текущий месяц</option><option value="30days">Последние 30 дней</option><option value="all">За всё время</option></select></div></div>
 <div class="cards client-crm-metrics" id="clientCrmMetrics"></div>
 <div class="tablewrap"><table><thead><tr><th>Клиент</th><th>Телефон</th><th>Услуг за период</th><th>Сырьё, кг</th><th>Услуги, ₽</th><th>Последнее обращение</th><th>Продажи товара</th><th>Оплачено</th><th>Текущий долг</th><th>Действия</th></tr></thead><tbody id="clientsTable"></tbody></table></div>
@@ -356,31 +356,37 @@ function downloadDataFile(filename,mime,content){
  var blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000)
 }
 document.getElementById('exportFullBackup').onclick=function(){
- var backup={format:'koptilnya-backup',version:1,exportedAt:new Date().toISOString(),application:'Коптильня',contents:s};
+ var backup={format:'koptilnya-backup',version:2,exportedAt:new Date().toISOString(),application:'Коптильня',contents:s};
+ if(window.KoptilnyaNative&&typeof window.KoptilnyaNative.exportFullArchive==='function'){
+  window.KoptilnyaNative.exportFullArchive(backup).then(function(name){toast('Архив создан: '+name)}).catch(function(err){console.error(err);toast(err.message||'Не удалось создать архив')});
+  return;
+ }
  var filename='koptilnya-backup-'+localISO(new Date())+'.json';
  downloadDataFile(filename,'application/json;charset=utf-8',JSON.stringify(backup,null,2));
- toast('Полный архив подготовлен. Храните файл в безопасном месте');
+ toast('Полная резервная копия подготовлена');
 };
 document.getElementById('restoreFullBackup').onclick=function(){document.getElementById('backupFile').click()};
 document.getElementById('backupFile').onchange=function(e){
  var input=e.target,file=input.files&&input.files[0];if(!file)return;
- var reader=new FileReader();
- reader.onerror=function(){toast('Не удалось прочитать файл архива');input.value=''};
- reader.onload=function(){
+ async function restoreSelectedFile(){
   try{
-   var parsed=JSON.parse(String(reader.result||'')),next=parsed&&parsed.format==='koptilnya-backup'&&parsed.version===1?parsed.contents:parsed;
+   var parsed;
+   if(window.KoptilnyaNative&&typeof window.KoptilnyaNative.readBackupFile==='function')parsed=await window.KoptilnyaNative.readBackupFile(file);
+   else parsed=JSON.parse(await file.text());
+   var next=parsed&&parsed.format==='koptilnya-backup'&&Number(parsed.version)>=1?parsed.contents:parsed;
    if(!next||!Array.isArray(next.products)||!Array.isArray(next.clients)||!Array.isArray(next.docs)||!Array.isArray(next.expenses)||!Array.isArray(next.batches)||!Array.isArray(next.recipes)||!Array.isArray(next.payments))throw new Error('Структура архива не распознана');
-   if(!window.confirm('Восстановить архив? Текущие данные на этом устройстве будут заменены данными из файла. Перед продолжением убедитесь, что у вас сохранена резервная копия.')){input.value='';return}
+   if(!window.confirm('Восстановить архив? Текущие данные на этом устройстве будут заменены данными из файла. Перед продолжением убедитесь, что у вас сохранена резервная копия.'))return;
    s=Object.assign({},s,next);
    if(!s.clients.some(function(c){return c.id==='c_retail'}))s.clients.push({id:'c_retail',name:'Розничный покупатель (цех)',phone:'',kind:'Физлицо / продажа из цеха'});
    s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
    clientHistoryId='';clientQuery='';
    save();render();toast('Архив восстановлен на этом устройстве');
   }catch(err){toast(err.message||'Не удалось восстановить архив')}
-  input.value='';
- };
- reader.readAsText(file);
+  finally{input.value=''}
+ }
+ restoreSelectedFile();
 };
+document.getElementById('closeClientHistory').onclick=function(){clientHistoryId='';renderClientCRM()};
 document.getElementById('closeClientHistory').onclick=function(){clientHistoryId='';renderClientCRM()};
 document.getElementById('exportClientsCsv').onclick=function(){var rows=[['Имя клиента','Телефон','Тип','Услуг за всё время','Сырьё обработано, кг','Выручка от услуг','Продаж товара','Выручка от продаж','Последнее обращение']];s.clients.filter(function(c){return String(c.phone||'').trim()}).forEach(function(c){var sv=s.docs.filter(function(d){return d.type==='service'&&d.clientId===c.id}),sales=s.docs.filter(function(d){return d.type==='sale'&&d.clientId===c.id}),last=sv.slice().sort(function(a,b){return b.date.localeCompare(a.date)})[0];rows.push([c.name,c.phone,c.kind||'Частный клиент',sv.length,sv.reduce(function(a,d){return a+lines(d).reduce(function(z,x){return z+n(x.qty)},0)},0),sv.reduce(function(a,d){return a+amount(d)},0),sales.reduce(function(a,d){return a+lines(d).reduce(function(z,x){return z+n(x.qty)},0)},0),sales.reduce(function(a,d){return a+amount(d)},0),last?last.date:''])});var csv='\uFEFF'+rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');downloadDataFile('koptilnya-clients.csv','text/csv;charset=utf-8',csv)};
 document.getElementById('quick').onclick=function(){open('sale')};document.getElementById('menuToggle').onclick=function(){var lay=document.querySelector('.layout'),overlay=document.getElementById('drawerOverlay'),btn=document.getElementById('menuToggle'),opened=lay.classList.toggle('drawer-open');overlay.classList.toggle('open',opened);btn.setAttribute('aria-label',opened?'Закрыть меню':'Открыть меню');btn.textContent=opened?'×':'☰'};document.getElementById('drawerOverlay').onclick=closeDrawer;document.getElementById('period').onchange=render;
