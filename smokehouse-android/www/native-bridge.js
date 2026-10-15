@@ -75,7 +75,7 @@ function moneySummary(state) {
 }
 async function shareBase64File(filename, base64, message) {
   const file = await Filesystem.writeFile({
-    path: 'koptilnya-' + safeFilename(filename),
+    path: safeFilename(filename),
     data: base64,
     directory: Directory.Cache,
     recursive: true,
@@ -306,7 +306,7 @@ async function saveTextFile(filename, mimeType, content) {
   }
   const safeName = safeFilename(filename);
   const file = await Filesystem.writeFile({
-    path: 'koptilnya-' + safeName,
+    path: safeName,
     data: String(content),
     directory: Directory.Cache,
     encoding: Encoding.UTF8,
