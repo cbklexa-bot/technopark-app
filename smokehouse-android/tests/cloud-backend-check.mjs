@@ -18,7 +18,7 @@ assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}|service_role\s*:\s*['"]/.test(cloudConf
 assert.ok(backend.includes('createClient(SUPABASE_URL, SUPABASE_KEY'), 'Frontend must initialize the Supabase client');
 assert.ok(backend.includes('supabase.auth.signInWithPassword'), 'Email/password sign-in must be implemented');
 assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration must be implemented');
-assert.ok(backend.includes('function friendlyAuthError'), 'Auth errors must be translated to actionable Russian messages');
+assert.ok(backend.includes('const friendlyAuthError ='), 'Auth errors must be translated to actionable Russian messages');
 assert.ok(backend.includes('submit.textContent = signingUp ? \'Создаём аккаунт…\' : \'Выполняем вход…\''), 'Submit buttons must visibly show progress while requests are pending');
 assert.ok(backend.includes('submit.textContent = originalSubmitLabel'), 'Submit buttons must be restored after success/error and not remain disabled');
 assert.ok(backend.includes('Дорогой друг, пожалуйста, откройте почту и подтвердите адрес'), 'Successful registrations must clearly explain the email confirmation step');
