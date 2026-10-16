@@ -1,10 +1,9 @@
-import { Capacitor } from '@capacitor/core';
-import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 
 const isNative = Capacitor.isNativePlatform();
+const KoptilnyaDownloads = registerPlugin('KoptilnyaDownloads');
 
 function safeFilename(value) {
   return String(value || 'koptilnya-export')
@@ -13,6 +12,12 @@ function safeFilename(value) {
     .slice(0, 110) || 'koptilnya-export';
 }
 function num(value) { return Number(value) || 0; }
+function utf8ToBase64(value) {
+  const bytes = new TextEncoder().encode(String(value));
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  return btoa(binary);
+}
 function str(value) { return value == null ? '' : String(value); }
 function docItems(doc) {
   if (Array.isArray(doc.items) && doc.items.length) return doc.items;
@@ -73,20 +78,17 @@ function moneySummary(state) {
   const debt = operational.reduce((sum, d) => sum + Math.max(0, docAmount(d) - num(d.paid)), 0);
   return { operational, revenue, costs, totalExpenses, included, extra, debt, profit: revenue - costs - extra };
 }
-async function shareBase64File(filename, base64, message) {
-  const file = await Filesystem.writeFile({
-    path: safeFilename(filename),
+async function saveBase64ToDownloads(filename, base64, mimeType) {
+  if (!isNative) {
+    downloadBlob(filename, base64ToBlob(base64, mimeType || 'application/octet-stream'));
+    return filename;
+  }
+  await KoptilnyaDownloads.saveToDownloads({
+    fileName: safeFilename(filename),
+    mimeType: mimeType || 'application/octet-stream',
     data: base64,
-    directory: Directory.Cache,
-    recursive: true,
   });
-  await Share.share({
-    title: filename,
-    text: message || 'Файл из приложения «Коптильня»',
-    files: [file.uri],
-    dialogTitle: 'Сохранить или передать файл',
-  });
-  return file.uri;
+  return filename;
 }
 function base64ToBlob(base64, mimeType) {
   const binary = atob(base64);
@@ -259,7 +261,7 @@ async function exportFullArchive(backup) {
   const filename = 'koptilnya-archive-' + dateTag + '.zip';
   if (isNative) {
     const zippedBase64 = await archive.generateAsync({type:'base64',compression:'DEFLATE',compressionOptions:{level:6}});
-    await shareBase64File(filename,zippedBase64,'Полный архив данных и Excel-отчётов из «Коптильни»');
+    await saveBase64ToDownloads(filename,zippedBase64,'application/zip');
   } else {
     const zippedBlob = await archive.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
     downloadBlob(filename,zippedBlob);
@@ -300,25 +302,17 @@ async function readBackupFile(file) {
 }
 
 async function saveTextFile(filename, mimeType, content) {
-  if (!isNative) {
-    downloadBlob(filename, new Blob([String(content)], {type: mimeType || 'application/octet-stream'}));
-    return { filename };
-  }
   const safeName = safeFilename(filename);
-  const file = await Filesystem.writeFile({
-    path: safeName,
-    data: String(content),
-    directory: Directory.Cache,
-    encoding: Encoding.UTF8,
-    recursive: true,
+  if (!isNative) {
+    downloadBlob(safeName, new Blob([String(content)], {type: mimeType || 'application/octet-stream'}));
+    return { filename: safeName };
+  }
+  const result = await KoptilnyaDownloads.saveToDownloads({
+    fileName: safeName,
+    mimeType: mimeType || 'application/octet-stream',
+    data: utf8ToBase64(content),
   });
-  await Share.share({
-    title: safeName,
-    text: 'Файл экспорта из приложения «Коптильня» (' + (mimeType || 'application/octet-stream') + ')',
-    files: [file.uri],
-    dialogTitle: 'Сохранить или передать файл',
-  });
-  return { uri: file.uri, filename: safeName };
+  return { uri: result && result.uri, filename: safeName, path: 'Download/Коптильня/' + safeName };
 }
 
 window.KoptilnyaNative = {
