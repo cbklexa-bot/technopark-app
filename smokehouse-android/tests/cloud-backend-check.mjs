@@ -18,6 +18,13 @@ assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}|service_role\s*:\s*['"]/.test(cloudConf
 assert.ok(backend.includes('createClient(SUPABASE_URL, SUPABASE_KEY'), 'Frontend must initialize the Supabase client');
 assert.ok(backend.includes('supabase.auth.signInWithPassword'), 'Email/password sign-in must be implemented');
 assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration must be implemented');
+assert.ok(backend.includes('function friendlyAuthError'), 'Auth errors must be translated to actionable Russian messages');
+assert.ok(backend.includes('submit.textContent = signingUp ? \'Создаём аккаунт…\' : \'Выполняем вход…\''), 'Submit buttons must visibly show progress while requests are pending');
+assert.ok(backend.includes('submit.textContent = originalSubmitLabel'), 'Submit buttons must be restored after success/error and not remain disabled');
+assert.ok(backend.includes('Дорогой друг, пожалуйста, откройте почту и подтвердите адрес'), 'Successful registrations must clearly explain the email confirmation step');
+assert.ok(backend.includes('Аккаунт с этой почтой уже существует'), 'Duplicate registrations must direct users to sign in or recover the password');
+assert.ok(backend.includes('Письмо недавно запрашивали слишком часто'), 'Email rate limits must be shown as actionable guidance');
+assert.ok(backend.includes('Повторить подключение'), 'A saved session must have a retry path when workspace loading fails');
 assert.ok(backend.includes('supabase.auth.resetPasswordForEmail'), 'Password recovery must be implemented');
 assert.ok(backend.includes("AUTH_REDIRECT_URL = 'ru.koptilnya.app://auth/callback'"), 'Native Auth callback must use the app deep link');
 assert.ok(backend.includes('emailRedirectTo: AUTH_REDIRECT_URL'), 'Sign-up and resend must pass an explicit native confirmation redirect');
