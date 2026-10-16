@@ -108,7 +108,34 @@ const renderConfigBlocker = () => {
   body.innerHTML = '<div class="koptilnyaStatus error">Сервер не настроен. Не вводите пароль в эту сборку. Для включения входа нужно подключить отдельный проект Supabase «Коптильня» и задать его публичные URL и publishable key при сборке.</div><p>Данные тестового приложения не были загружены в облако и не изменены.</p>';
   setOverlayStatus('koptilnyaAuthGate', 'Вход пока недоступен: в приложении нет URL/ключа отдельного проекта.', 'error');
 };
-const renderAuth = (mode = 'signin', message = '') => {
+const friendlyAuthError = (error, action = 'auth') => {
+  const raw = String(error?.message || error?.error_description || error || '').trim();
+  const code = String(error?.code || error?.error_code || '').toLowerCase();
+  const combined = (raw + ' ' + code).toLowerCase();
+  if (/failed to fetch|network request failed|load failed|fetch failed|networkerror/.test(combined)) {
+    return action === 'signup'
+      ? 'Не удалось получить ответ от сервера. Запрос мог успеть дойти до Supabase — не нажимайте регистрацию много раз подряд. Проверьте интернет, попробуйте «Войти»; если пароль не подходит, используйте восстановление пароля. Если аккаунт новый и письма нет, повторите отправку письма спустя минуту.'
+      : 'Не удалось связаться с сервером. Ваш аккаунт не удалён. Проверьте интернет и нажмите «Повторить подключение». Не создавайте аккаунт заново.';
+  }
+  if (/users_email_partial_key|duplicate key|already registered|already been registered|user already exists|email_exists|user_already_exists/.test(combined)) {
+    return 'Аккаунт с этой почтой уже существует. Повторная регистрация не нужна: перейдите во «Войти». Если пароль не подходит, нажмите «Восстановить пароль».';
+  }
+  if (/over_email_send_rate_limit|email rate limit|too many requests|429|only request this after/.test(combined)) {
+    return 'Письмо недавно запрашивали слишком часто. Подождите не менее 60 секунд, проверьте папку «Спам» и запросите письмо ещё раз. Не нажимайте регистрацию повторно.';
+  }
+  if (/invalid login credentials|invalid_credentials/.test(combined)) {
+    return 'Почта или пароль не совпадают. Проверьте раскладку и пробелы; если пароль забыли, используйте «Восстановить пароль».';
+  }
+  if (/email not confirmed|email_not_confirmed/.test(combined)) {
+    return 'Аккаунт создан, но почта ещё не подтверждена. Проверьте последнее письмо Supabase или запросите новое письмо подтверждения.';
+  }
+  if (/database error saving new user|unexpected_failure/.test(combined)) {
+    return 'Supabase не смог завершить регистрацию. Если вы уже отправляли форму с этой почтой, попробуйте «Войти» или восстановление пароля; не повторяйте регистрацию много раз.';
+  }
+  return raw || (action === 'signup' ? 'Не удалось завершить регистрацию.' : 'Не удалось выполнить вход.');
+};
+
+const renderAuth = (mode = 'signin', message = '', messageKind = 'error') => {
   const gate = createOverlay('koptilnyaAuthGate', 'Коптильня', 'Войдите, чтобы открыть свою коптильню и синхронизировать данные между устройствами.');
   const body = gate.querySelector('#koptilnyaAuthGateBody');
   const signingUp = mode === 'signup';
@@ -120,7 +147,7 @@ const renderAuth = (mode = 'signin', message = '') => {
       <input id="koptilnyaPassword" type="password" name="password" autocomplete="${signingUp ? 'new-password' : 'current-password'}" minlength="8" required />
       ${signingUp ? '<label class="koptilnyaField" for="koptilnyaOrgName">Название коптильни</label><input id="koptilnyaOrgName" type="text" name="orgName" maxlength="120" value="Коптильня" required />' : ''}
       <div class="koptilnyaActions"><button class="koptilnyaButton" id="koptilnyaAuthSubmit" type="submit">${signingUp ? 'Создать аккаунт' : 'Войти'}</button><button class="koptilnyaButton secondary" type="button" id="koptilnyaAuthSwitch">${signingUp ? 'Уже есть аккаунт' : 'Регистрация'}</button></div>
-      ${!signingUp ? '<button class="koptilnyaButton secondary" style="margin-top:9px" id="koptilnyaReset" type="button">Восстановить пароль</button><button class="koptilnyaButton secondary" style="margin-top:9px" id="koptilnyaResend" type="button">Отправить письмо подтверждения повторно</button>' : ''}
+      ${!signingUp ? '<button class="koptilnyaButton secondary" style="margin-top:9px" id="koptilnyaReset" type="button">Восстановить пароль</button><button class="koptilnyaButton secondary" style="margin-top:9px" id="koptilnyaResend" type="button">Отправить письмо подтверждения повторно</button><button class="koptilnyaButton secondary" style="margin-top:9px" id="koptilnyaRetry" type="button">Повторить подключение</button>' : ''}
     </form>`;
   body.querySelector('#koptilnyaAuthSwitch').addEventListener('click', () => renderAuth(signingUp ? 'signin' : 'signup'));
   const form = body.querySelector('#koptilnyaAuthForm');
@@ -128,6 +155,11 @@ const renderAuth = (mode = 'signin', message = '') => {
     event.preventDefault();
     const submit = body.querySelector('#koptilnyaAuthSubmit');
     submit.disabled = true;
+    const originalSubmitLabel = submit.textContent;
+    submit.textContent = signingUp ? 'Создаём аккаунт…' : 'Выполняем вход…';
+    setOverlayStatus('koptilnyaAuthGate', signingUp
+      ? 'Отправляем запрос регистрации в Supabase. Не закрывайте приложение и не нажимайте кнопку повторно.'
+      : 'Проверяем данные и подключаем вашу коптильню…');
     const data = new FormData(form);
     const email = clean(data.get('email')).toLowerCase();
     const password = String(data.get('password') || '');
@@ -139,8 +171,11 @@ const renderAuth = (mode = 'signin', message = '') => {
         });
         if (error) throw error;
         if (!result.session) {
-          renderAuth('signin');
-          setOverlayStatus('koptilnyaAuthGate', 'Запрос регистрации обработан. Откройте последнее письмо Supabase и подтвердите адрес. Если письмо старое или ссылка истекла, нажмите «Отправить письмо подтверждения повторно».', 'ok');
+          if (result.user?.email_confirmed_at || result.user?.confirmed_at) {
+            renderAuth('signin', 'Этот адрес уже подтверждён. Повторно регистрироваться не нужно — войдите с указанным паролем. Если пароль не подходит, воспользуйтесь восстановлением пароля.', 'ok');
+          } else {
+            renderAuth('signin', 'Аккаунт создан. Дорогой друг, пожалуйста, откройте почту и подтвердите адрес по последнему письму Supabase. После подтверждения вернитесь сюда и нажмите «Войти». Если письма нет через пару минут, проверьте «Спам» и нажмите «Отправить письмо подтверждения повторно».', 'ok');
+          }
           return;
         }
         /* The auth-state listener opens the newly created session exactly once. */
@@ -150,9 +185,12 @@ const renderAuth = (mode = 'signin', message = '') => {
         /* The auth-state listener opens the signed-in session exactly once. */
       }
     } catch (error) {
-      setOverlayStatus('koptilnyaAuthGate', error?.message || 'Не удалось войти. Проверьте соединение и реквизиты.', 'error');
+      setOverlayStatus('koptilnyaAuthGate', friendlyAuthError(error, signingUp ? 'signup' : 'signin'), 'error');
     } finally {
-      submit.disabled = false;
+      if (submit.isConnected) {
+        submit.disabled = false;
+        submit.textContent = originalSubmitLabel;
+      }
     }
   });
   const reset = body.querySelector('#koptilnyaReset');
@@ -166,6 +204,24 @@ const renderAuth = (mode = 'signin', message = '') => {
       setOverlayStatus('koptilnyaAuthGate', 'Если для адреса существует аккаунт, инструкция восстановления будет отправлена на почту.', 'ok');
     } catch (error) { setOverlayStatus('koptilnyaAuthGate', error?.message || 'Не удалось отправить запрос восстановления.', 'error'); }
     finally { reset.disabled = false; }
+  });
+  const retry = body.querySelector('#koptilnyaRetry');
+  if (retry) retry.addEventListener('click', async () => {
+    retry.disabled = true;
+    setOverlayStatus('koptilnyaAuthGate', 'Проверяю сохранённую сессию и повторно подключаю рабочую область…');
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (!data.session) {
+        setOverlayStatus('koptilnyaAuthGate', 'Аккаунт есть, но сохранённая сессия не найдена. Войдите с вашей почтой и паролем.', 'error');
+        return;
+      }
+      await openWorkspace(data.session);
+    } catch (error) {
+      setOverlayStatus('koptilnyaAuthGate', friendlyAuthError(error, 'workspace'), 'error');
+    } finally {
+      if (retry.isConnected) retry.disabled = false;
+    }
   });
   const resend = body.querySelector('#koptilnyaResend');
   if (resend) resend.addEventListener('click', async () => {
@@ -183,7 +239,7 @@ const renderAuth = (mode = 'signin', message = '') => {
       setOverlayStatus('koptilnyaAuthGate', error?.message || 'Не удалось повторно отправить письмо.', 'error');
     } finally { resend.disabled = false; }
   });
-  if (message) setOverlayStatus('koptilnyaAuthGate', message, 'error');
+  if (message) setOverlayStatus('koptilnyaAuthGate', message, messageKind);
 };
 const openAccount = () => {
   const gate = createOverlay('koptilnyaAccountGate', 'Аккаунт', 'Текущий серверный профиль и синхронизация.');
@@ -332,7 +388,7 @@ const openWorkspace = async (currentSession, desiredName = 'Коптильня')
   } catch (error) {
     cloudActive = false;
     setCloudStatus('Ошибка облака', 'error');
-    renderAuth('signin', 'Не удалось открыть коптильню: ' + (error?.message || 'ошибка сервера'));
+    renderAuth('signin', 'Вход в аккаунт сохранён, но рабочую область открыть не удалось. ' + friendlyAuthError(error, 'workspace') + (String(error?.message || '').toLowerCase().includes('failed to fetch') ? '' : '\nПодробности: ' + (error?.message || 'ошибка сервера')), 'error');
   }
 };
 
