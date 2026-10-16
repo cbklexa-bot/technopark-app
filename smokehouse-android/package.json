@@ -21,7 +21,8 @@
     "@capacitor/share": "8.0.1",
     "jszip": "^3.10.1",
     "xlsx": "^0.18.5",
-    "@supabase/supabase-js": "^2.57.4"
+    "@supabase/supabase-js": "^2.57.4",
+    "@capacitor/app": "8.1.2"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",
