@@ -69,6 +69,9 @@ Run [38867329750](https://github.com/cbklexa-bot/technopark-app/actions/runs/388
 - Static schema security contracts passed.
 - Local Supabase started, applied the migration, and all 19 pgTAP integration checks passed.
 - The web bundle and smoke-test suite passed; the debug APK build completed successfully.
-- The unsigned Android App Bundle and artifact upload were still running at the last review. Do not describe them as completed until GitHub Actions reports success.
+- The debug APK, unsigned Android App Bundle, and artifact upload have now all completed successfully. Artifact `koptilnya-production-candidate` is available from run 38867329750 until 2026-10-30:
+https://github.com/cbklexa-bot/technopark-app/actions/runs/38867329750
+
+Extracted artifacts were verified as an Android APK and an unsigned Android App Bundle. The APK is a debug build (suitable for test installation), not a signed production release. The AAB requires release signing before store distribution.
 
 The later workflow-only change groups future runs by branch to cancel superseded jobs; older runs that used the previous per-commit concurrency group may still be finishing independently.
