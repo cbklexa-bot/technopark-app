@@ -27,8 +27,8 @@ for (const requiredTable of [
 ]) assert.ok(tables.includes(requiredTable), 'Missing required business table: ' + requiredTable);
 
 for (const rpc of [
-  'create_organization', 'save_organization_data', 'post_document', 'post_production_batch',
-  'record_payment_with_allocations',
+  'kp_create_organization', 'kp_save_organization_data', 'kp_post_document', 'kp_post_production_batch',
+  'kp_record_payment_with_allocations',
 ]) {
   assert.ok(sql.includes('function public.' + rpc + '('), 'Missing server-side RPC: ' + rpc);
   assert.ok(
@@ -41,8 +41,8 @@ for (const rpc of [
   );
 }
 
-for (const helper of ['is_org_member', 'has_org_role', 'can_write_org', 'can_edit_org']) {
-  assert.ok(sql.includes('function private.' + helper + '('), 'Missing private authorization helper: ' + helper);
+for (const helper of ['kp_is_org_member', 'kp_has_org_role', 'kp_can_write_org', 'kp_can_edit_org']) {
+  assert.ok(sql.includes('function kp_private.' + helper + '('), 'Missing private authorization helper: ' + helper);
 }
 assert.ok(sql.includes('set search_path = \'\''), 'Security-sensitive functions must pin the search_path');
 assert.ok(sql.includes('kp_private.kp_can_edit_org(v_document_org_id)'), 'Document posting must enforce role and subscription rights');
