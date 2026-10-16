@@ -3,8 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const sourceRoot = join(root, 'android', 'app', 'src', 'main', 'java');
-const kotlinRoot = join(root, 'android', 'app', 'src', 'main', 'kotlin');
+const projectRoot = join(root, '..');
+const sourceRoot = join(projectRoot, 'android', 'app', 'src', 'main', 'java');
+const kotlinRoot = join(projectRoot, 'android', 'app', 'src', 'main', 'kotlin');
 
 function findMainActivity(directory) {
   if (!existsSync(directory)) return null;
