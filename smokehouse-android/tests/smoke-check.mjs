@@ -148,7 +148,7 @@ try {
 const assetGenerator = readFileSync(join(root, 'scripts', 'generate_assets.py'), 'utf8');
 for (const marker of ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']) assert.ok(assetGenerator.includes(marker), 'Missing branded Android asset: ' + marker);
 const installer = readFileSync(join(root, 'scripts', 'install-download-plugin.mjs'), 'utf8');
-for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','android.intent.action.VIEW','android:scheme=\\"ru.koptilnya.app\\"','android:host=\\"auth\\"','android:path=\\"/callback\\"']) {
+for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','android.intent.action.VIEW','android:scheme="ru.koptilnya.app"','android:host="auth"','android:path="/callback"']) {
   assert.ok(installer.includes(marker), 'Missing direct Downloads implementation: ' + marker);
 }
 assert.ok(html.includes('name="category" list="expenseCategoryOptions"'), 'Expense category must be free text with suggestions');
