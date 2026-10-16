@@ -111,8 +111,8 @@ function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retu
 function prod(id){return s.products.find(function(x){return x.id===id})||{}}
 function cli(id){return s.clients.find(function(x){return x.id===id})||{}}
 function lines(d){if(Array.isArray(d.items)&&d.items.length)return d.items;return [{productId:d.productId,qty:d.qty,price:d.price,cost:d.cost,note:d.note}]}
-function amount(d){return lines(d).reduce(function(a,x){return a+n(x.qty)*n(x.price)},0)}
-function cost(d){return lines(d).reduce(function(a,x){return a+n(x.qty)*n(x.cost)},0)}
+function amount(d){if(d&&d.manualAmount!=null&&d.manualAmount!=='')return n(d.manualAmount);return lines(d).reduce(function(a,x){return a+n(x.qty)*n(x.price)},0)}
+function cost(d){if(d&&d.manualCost!=null&&d.manualCost!=='')return n(d.manualCost);return lines(d).reduce(function(a,x){return a+n(x.qty)*n(x.cost)},0)}
 function docProductLabel(d){return lines(d).map(function(x){return (prod(x.productId).name||'Продукция')+' '+n(x.qty)+' кг'}).join(', ')}
 function docProductSummary(d){var ls=lines(d);return ls.length>1?ls.length+' позиции: '+ls.map(function(x){return prod(x.productId).name||'Продукция'}).join(', '):(prod(ls[0].productId).name||d.note||'Продукция')}
 function debt(d){return Math.max(0,amount(d)-n(d.paid))}
