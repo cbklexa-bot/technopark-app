@@ -62,6 +62,19 @@ https://github.com/cbklexa-bot/technopark-app/actions/runs/38841744614
 
 It produced the CI artifact `koptilnya-android-test-build`. That debug package was a baseline; the newer branch's candidate artifacts are linked below.
 
+## Latest verified CI build (2026-10-16)
+
+Run [38874659642](https://github.com/cbklexa-bot/technopark-app/actions/runs/38874659642) completed successfully on branch `koptilnya-production`:
+- PostgreSQL parser and schema/RLS contract checks passed.
+- Local Supabase migration application succeeded.
+- All 23 pgTAP integration assertions passed, including snapshot revision safety.
+- Android smoke checks passed, including synthetic Excel import tests and local-vs-cloud conflict checks.
+- Debug APK and unsigned AAB both built and were uploaded in artifact `koptilnya-production-candidate` (expires 2026-10-30).
+
+**Important:** `smokehouse-android/www/cloud-config.js` intentionally contains empty public placeholders until the owner approves the dedicated Supabase organization/project. This candidate package will therefore display a configuration blocker and must not be used for live business records. Build a new package only after the real Koptilnya Supabase project is provisioned, the migration is applied, the public URL/key are configured, and hosted Auth has been verified.
+
+The user's final Excel workbook was not attached to this workstream at the time of this CI run. No historical business data was imported and no hosted database was altered.
+
 ## Latest isolated CI evidence
 
 Run [38867329750](https://github.com/cbklexa-bot/technopark-app/actions/runs/38867329750) validated the branch containing the tenant SQL schema and synthetic test-fixture corrections:
