@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(23);
 
 -- All fixtures are synthetic. They are rolled back with this test and never touch a hosted project.
 insert into auth.users (
@@ -99,6 +99,32 @@ select throws_ok(
   $test$insert into public.clients (organization_id, name)
          values ('bbbbbbbb-1111-4bbb-8bbb-bbbbbbbbbbbb', 'Cross-tenant write')$test$,
   '42501', null, 'Cross-tenant client insert is rejected by RLS'
+);
+
+select lives_ok(
+  $test$select public.save_organization_data(
+    'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaaaaaa'::uuid, 0,
+    '{"products":[],"clients":[],"docs":[],"expenses":[],"batches":[],"recipes":[],"payments":[]}'::jsonb
+  )$test$,
+  'Owner can save an initial cloud workspace'
+);
+select is(
+  (select revision from public.organization_data where organization_id = 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaaaaaa'::uuid),
+  1::bigint, 'Cloud workspace revision increments after a successful save'
+);
+select throws_ok(
+  $test$select public.save_organization_data(
+    'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaaaaaa'::uuid, 0, '{}'::jsonb
+  )$test$,
+  '40001', 'Workspace changed on another device. Reload before saving.',
+  'Stale cloud revision is rejected instead of overwriting a concurrent change'
+);
+select throws_ok(
+  $test$select public.save_organization_data(
+    'bbbbbbbb-1111-4bbb-8bbb-bbbbbbbbbbbb'::uuid, 0, '{}'::jsonb
+  )$test$,
+  '42501', 'Workspace access denied or workspace is read-only',
+  'Tenant A cannot modify tenant B cloud snapshot'
 );
 
 select lives_ok(
