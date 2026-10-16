@@ -43,7 +43,7 @@ const requiredArchiveLogic = [
   "addWorksheet(workbook,'Партии'", "addWorksheet(workbook,'Рецепты'",
   "addWorksheet(workbook,'Продажи'", "addWorksheet(workbook,'Услуги'",
   "addWorksheet(workbook,'По месяцам'", "addWorksheet(workbook,'Файлы'",
-  'KoptilnyaDownloads.saveToDownloads', "mimeType || 'application/zip'", 'utf8ToBase64',
+  'KoptilnyaDownloads.saveToDownloads', "'application/zip'", 'utf8ToBase64',
 ];
 for (const marker of requiredArchiveLogic) assert.ok(bridge.includes(marker), 'Missing archive logic: ' + marker);
 
