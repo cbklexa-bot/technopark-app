@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
 
-const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '');
+const runtimeConfig = window.KoptilnyaCloudConfig || {};
+const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || runtimeConfig.url || '').trim().replace(/\/$/, '');
 const SUPABASE_KEY = String(
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || runtimeConfig.publishableKey || '',
 ).trim();
 const configured = /^https:\/\/[^/]+\.supabase\.co$/i.test(SUPABASE_URL) && SUPABASE_KEY.length > 20;
 
