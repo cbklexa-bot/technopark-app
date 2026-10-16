@@ -21,9 +21,9 @@ assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration
 assert.ok(backend.includes('const friendlyAuthError ='), 'Auth errors must be translated to actionable Russian messages');
 assert.ok(backend.includes('submit.textContent = signingUp ? \'Создаём аккаунт…\' : \'Выполняем вход…\''), 'Submit buttons must visibly show progress while requests are pending');
 assert.ok(backend.includes('submit.textContent = originalSubmitLabel'), 'Submit buttons must be restored after success/error and not remain disabled');
-assert.ok(backend.includes('Дорогой друг, пожалуйста, откройте почту и подтвердите адрес'), 'Successful registrations must clearly explain the email confirmation step');
+assert.ok(backend.includes('Откройте почту и подтвердите адрес'), 'Successful registrations must clearly explain the email confirmation step');
 assert.ok(backend.includes('Аккаунт с этой почтой уже существует'), 'Duplicate registrations must direct users to sign in or recover the password');
-assert.ok(backend.includes('Письмо недавно запрашивали слишком часто'), 'Email rate limits must be shown as actionable guidance');
+assert.ok(backend.includes('Supabase временно ограничил отправку писем'), 'Email rate limits must be shown as actionable guidance');
 assert.ok(backend.includes('Повторить подключение'), 'A saved session must have a retry path when workspace loading fails');
 assert.ok(backend.includes('supabase.auth.resetPasswordForEmail'), 'Password recovery must be implemented');
 assert.ok(backend.includes("AUTH_REDIRECT_URL = 'ru.koptilnya.app://auth/callback'"), 'Native Auth callback must use the app deep link');
@@ -87,4 +87,10 @@ assert.ok(!backend.includes('service_role'), 'Service-role keys must never ship 
 assert.ok(!/https:\/\/[a-z0-9]+\.supabase\.co/.test(backend), 'A hosted Supabase project must not be hardcoded before it is provisioned');
 assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}/.test(backend), 'No Supabase secret key may be bundled into the app');
 
-console.log('Cloud workflow contract passed: Auth, persistent workspace sync, conflict safety, empty start, and reviewed Excel import.');
+assert.ok(backend.includes('isObfuscatedSignupResponse(result.user)'), 'Masked duplicate-signup responses must not be shown as a successful new registration');
+assert.ok(backend.includes('signInWithPassword({email, password})'), 'A masked duplicate signup should attempt sign-in with the supplied credentials');
+assert.ok(backend.includes('global: { fetch: fetchWithTimeout }'), 'Cloud requests must have a timeout');
+assert.ok(backend.includes("const showRetry ="), 'The retry action should be contextual, not shown permanently');
+assert.ok(backend.includes("id=\\"koptilnyaAuthSwitch\\""), 'Sign-in and registration must remain switchable');
+
+console.log('Cloud workflow contract passed: Auth, duplicate signup, request timeout, persistent workspace sync, conflict safety, and reviewed Excel import.');
