@@ -13,11 +13,18 @@ No connected project was confidently identified as a dedicated Koptilnya project
 
 ## Current migration scope
 
-The initial schema file defines tenant-owned business records, inventory ledger and atomic posting RPCs, production batches, payment allocations, subscription/entitlement tables, import and backup metadata, audit metadata, and private Storage policies. Every public table created by the migration enables RLS. Subscription writes fail closed until a valid active plan/subscription row is provisioned server-side.
+The baseline migration defines tenant-owned business records, inventory ledger and atomic posting RPCs, production batches, payment allocations, subscription/entitlement tables, import and backup metadata, a server-only import staging table, audit metadata, and private Storage policies. Every public table created by the migration is covered by an explicit RLS coverage list. Subscription writes fail closed until a valid active plan/subscription row is provisioned server-side.
+
+The branch includes:
+- `supabase/config.toml` for an isolated local test project. It contains no hosted project reference or secrets.
+- `supabase/tests/koptilnya_tenant_accounting.test.sql`, with synthetic pgTAP fixtures for organization isolation, inventory posting/idempotency, negative-stock rejection, payment replay, balance calculations, expired-subscription write denial, and private import staging.
+- `.github/workflows/koptilnya-production-check.yml`: a PostgreSQL grammar/static contract job, a temporary local Supabase integration-test job, and the existing web/Android build pipeline.
+
+The tests are source-controlled, but the integration suite must be reported as passed only after the corresponding CI job finishes green. A green local CI stack is not a substitute for reviewing and applying the migration to a separately identified hosted Koptilnya project.
 
 This is a foundation, not a declaration of product completion. The following work remains before production:
-- Provision the dedicated Supabase project and run the migration using the Supabase CLI after review.
-- Add and run database integration tests, including two-organization RLS isolation, concurrent stock reductions, duplicate posting, payment races, subscription expiry, and Storage isolation.
+- Review the migration and apply it to a separate Koptilnya project only after that project and its billing/organization are explicitly identified.
+- Verify two-tenant isolation and business-operation tests in CI; add concurrency-focused tests and Storage object read/write isolation tests as the backend is expanded.
 - Implement frontend Auth screens and bind existing screens to the Supabase data layer. The prototype still uses localStorage until that integration is completed.
 - Configure Google OAuth and an SMS provider; credentials belong only in Supabase Auth settings.
 - Select and configure a payment provider. Subscription rows are not client-writable; only a verified server-side webhook should change them.
