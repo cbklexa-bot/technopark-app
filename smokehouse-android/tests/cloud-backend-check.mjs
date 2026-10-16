@@ -13,8 +13,8 @@ assert.ok(pkg.dependencies['@supabase/supabase-js'], 'Supabase client dependency
 assert.ok(backend.includes("import './cloud-config.js'"), 'Hosted client config must be imported into the bundled backend module');
 assert.ok(!html.includes('<script src="./cloud-config.js"></script>'), 'Do not reference an unbundled standalone cloud-config.js file');
 assert.ok(cloudConfig.includes('https://ereiiidezagburttpxtn.supabase.co'), 'Cloud configuration must point at the isolated Koptilnya namespace host');
-assert.ok(/publishableKey:\\s*'sb_publishable_[A-Za-z0-9_-]+'/.test(cloudConfig), 'Cloud configuration must include only a public publishable key');
-assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}|service_role\\s*:\\s*['"]/.test(cloudConfig), 'No secret/service-role key may ship in client config');
+assert.ok(/publishableKey:\s*'sb_publishable_[A-Za-z0-9_-]+'/.test(cloudConfig), 'Cloud configuration must include only a public publishable key');
+assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}|service_role\s*:\s*['"]/.test(cloudConfig), 'No secret/service-role key may ship in client config');
 assert.ok(backend.includes('createClient(SUPABASE_URL, SUPABASE_KEY'), 'Frontend must initialize the Supabase client');
 assert.ok(backend.includes('supabase.auth.signInWithPassword'), 'Email/password sign-in must be implemented');
 assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration must be implemented');
