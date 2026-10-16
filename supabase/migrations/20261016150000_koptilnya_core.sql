@@ -429,6 +429,58 @@ $$;
 revoke all on function private.can_write_org(uuid) from public, anon;
 grant execute on function private.can_write_org(uuid) to authenticated;
 
+create or replace function private.can_edit_org(p_organization_id uuid)
+returns boolean
+language sql stable security definer
+set search_path = ''
+as $
+  select private.is_org_member(p_organization_id)
+     and private.can_write_org(p_organization_id)
+     and private.has_org_role(p_organization_id, array['owner', 'admin', 'manager', 'operator']);
+$;
+revoke all on function private.can_edit_org(uuid) from public, anon;
+grant execute on function private.can_edit_org(uuid) to authenticated;
+
+create or replace function private.prevent_tenant_reassignment()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if old.organization_id is distinct from new.organization_id then
+    raise exception 'organization_id cannot be reassigned' using errcode = '42501';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.prevent_tenant_reassignment() from public, anon, authenticated;
+
+create or replace function private.guard_product_inventory_settings()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if old.stock_quantity <> 0 and (
+       old.tracks_inventory is distinct from new.tracks_inventory
+       or old.unit is distinct from new.unit
+       or (new.product_type = 'service')
+     ) then
+    raise exception 'Inventory tracking and unit cannot change while stock is nonzero'
+      using errcode = '23514';
+  end if;
+  if not new.tracks_inventory and new.stock_quantity <> 0 then
+    raise exception 'A non-tracked product cannot keep a stock balance' using errcode = '23514';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.guard_product_inventory_settings() from public, anon, authenticated;
+drop trigger if exists guard_product_inventory_settings on public.products;
+create trigger guard_product_inventory_settings
+before update on public.products
+for each row execute function private.guard_product_inventory_settings();
+
 create or replace function private.touch_updated_at()
 returns trigger
 language plpgsql
@@ -596,8 +648,7 @@ begin
   for update;
 
   if not found then raise exception 'Document not found' using errcode = 'P0002'; end if;
-  if not private.is_org_member(v_doc.organization_id) then raise exception 'Organization access denied' using errcode = '42501'; end if;
-  if not private.can_write_org(v_doc.organization_id) then raise exception 'Subscription does not permit write operations' using errcode = '42501'; end if;
+  if not private.can_edit_org(v_doc.organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
 
   if v_doc.status = 'posted' then
     if v_doc.post_idempotency_key = p_idempotency_key then return v_doc.id; end if;
@@ -692,8 +743,7 @@ begin
   for update;
 
   if not found then raise exception 'Production batch not found' using errcode = 'P0002'; end if;
-  if not private.is_org_member(v_batch.organization_id) then raise exception 'Organization access denied' using errcode = '42501'; end if;
-  if not private.can_write_org(v_batch.organization_id) then raise exception 'Subscription does not permit write operations' using errcode = '42501'; end if;
+  if not private.can_edit_org(v_batch.organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
 
   if v_batch.status = 'posted' then
     if v_batch.post_idempotency_key = p_idempotency_key then return v_batch.id; end if;
@@ -801,8 +851,7 @@ declare
   v_allocation_total numeric(14,2);
 begin
   if (select auth.uid()) is null then raise exception 'Authentication required' using errcode = '28000'; end if;
-  if not private.is_org_member(p_organization_id) then raise exception 'Organization access denied' using errcode = '42501'; end if;
-  if not private.can_write_org(p_organization_id) then raise exception 'Subscription does not permit write operations' using errcode = '42501'; end if;
+  if not private.can_edit_org(p_organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
   if p_amount is null or p_amount <= 0 then raise exception 'Payment amount must be positive' using errcode = '22023'; end if;
   if p_method not in ('cash', 'transfer', 'bank') then raise exception 'Unsupported payment method' using errcode = '22023'; end if;
   if p_idempotency_key is null or length(btrim(p_idempotency_key)) < 8 or length(p_idempotency_key) > 160 then
@@ -950,9 +999,19 @@ revoke all on public.profiles, public.organizations, public.organization_members
   public.import_runs, public.audit_events from anon, authenticated;
 
 grant select, update on public.profiles to authenticated;
-grant select, update on public.organizations to authenticated;
+grant select on public.organizations to authenticated;
+grant update (name, timezone) on public.organizations to authenticated;
 grant select on public.organization_members to authenticated;
-grant select, insert, update on public.clients, public.products, public.expense_categories to authenticated;
+grant select, insert, update on public.clients, public.expense_categories to authenticated;
+grant select on public.products to authenticated;
+grant insert (organization_id, name, product_type, category, unit, tracks_inventory,
+              purchase_price, sale_price, photo_path, is_archived, archived_at,
+              legacy_source_name, legacy_source_id, created_by)
+  on public.products to authenticated;
+grant update (name, product_type, category, unit, tracks_inventory, purchase_price,
+              sale_price, photo_path, is_archived, archived_at,
+              legacy_source_name, legacy_source_id)
+  on public.products to authenticated;
 grant select, insert, update, delete on public.documents, public.document_items,
   public.production_batches, public.production_batch_inputs to authenticated;
 grant select on public.stock_movements, public.payments, public.payment_allocations,
@@ -986,104 +1045,104 @@ using (user_id = (select auth.uid()) or private.is_org_member(organization_id));
 create policy clients_select_member on public.clients
 for select to authenticated using (private.is_org_member(organization_id));
 create policy clients_insert_entitled on public.clients
-for insert to authenticated with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+for insert to authenticated with check (private.can_edit_org(organization_id));
 create policy clients_update_entitled on public.clients
 for update to authenticated
-using (private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (private.can_edit_org(organization_id))
+with check (private.can_edit_org(organization_id));
 
 create policy products_select_member on public.products
 for select to authenticated using (private.is_org_member(organization_id));
 create policy products_insert_entitled on public.products
-for insert to authenticated with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+for insert to authenticated with check (private.can_edit_org(organization_id));
 create policy products_update_entitled on public.products
 for update to authenticated
-using (private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (private.can_edit_org(organization_id))
+with check (private.can_edit_org(organization_id));
 
 -- Documents remain editable only while draft; posting must go through the atomic RPC.
 create policy documents_select_member on public.documents
 for select to authenticated using (private.is_org_member(organization_id));
 create policy documents_insert_draft on public.documents
 for insert to authenticated
-with check (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+with check (status = 'draft' and private.can_edit_org(organization_id));
 create policy documents_update_draft on public.documents
 for update to authenticated
-using (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (status = 'draft' and private.can_edit_org(organization_id))
+with check (status = 'draft' and private.can_edit_org(organization_id));
 create policy documents_delete_draft on public.documents
 for delete to authenticated
-using (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (status = 'draft' and private.can_edit_org(organization_id));
 
 create policy document_items_select_member on public.document_items
 for select to authenticated using (private.is_org_member(organization_id));
 create policy document_items_insert_draft on public.document_items
 for insert to authenticated
 with check (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.documents d where d.id = document_id
-              and d.organization_id = organization_id and d.status = 'draft')
+              and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
 create policy document_items_update_draft on public.document_items
 for update to authenticated
 using (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.documents d where d.id = document_id
-              and d.organization_id = organization_id and d.status = 'draft')
+              and d.organization_id = document_items.organization_id and d.status = 'draft')
 )
 with check (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.documents d where d.id = document_id
-              and d.organization_id = organization_id and d.status = 'draft')
+              and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
 create policy document_items_delete_draft on public.document_items
 for delete to authenticated
 using (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.documents d where d.id = document_id
-              and d.organization_id = organization_id and d.status = 'draft')
+              and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
 
 create policy production_batches_select_member on public.production_batches
 for select to authenticated using (private.is_org_member(organization_id));
 create policy production_batches_insert_draft on public.production_batches
 for insert to authenticated
-with check (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+with check (status = 'draft' and private.can_edit_org(organization_id));
 create policy production_batches_update_draft on public.production_batches
 for update to authenticated
-using (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (status = 'draft' and private.can_edit_org(organization_id))
+with check (status = 'draft' and private.can_edit_org(organization_id));
 create policy production_batches_delete_draft on public.production_batches
 for delete to authenticated
-using (status = 'draft' and private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (status = 'draft' and private.can_edit_org(organization_id));
 
 create policy production_batch_inputs_select_member on public.production_batch_inputs
 for select to authenticated using (private.is_org_member(organization_id));
 create policy production_batch_inputs_insert_draft on public.production_batch_inputs
 for insert to authenticated
 with check (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.production_batches b where b.id = batch_id
-              and b.organization_id = organization_id and b.status = 'draft')
+              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
 create policy production_batch_inputs_update_draft on public.production_batch_inputs
 for update to authenticated
 using (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.production_batches b where b.id = batch_id
-              and b.organization_id = organization_id and b.status = 'draft')
+              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 )
 with check (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.production_batches b where b.id = batch_id
-              and b.organization_id = organization_id and b.status = 'draft')
+              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
 create policy production_batch_inputs_delete_draft on public.production_batch_inputs
 for delete to authenticated
 using (
-  private.is_org_member(organization_id) and private.can_write_org(organization_id)
+  private.can_edit_org(organization_id)
   and exists (select 1 from public.production_batches b where b.id = batch_id
-              and b.organization_id = organization_id and b.status = 'draft')
+              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
 
 create policy stock_movements_select_member on public.stock_movements
@@ -1092,20 +1151,20 @@ for select to authenticated using (private.is_org_member(organization_id));
 create policy expense_categories_select_member on public.expense_categories
 for select to authenticated using (private.is_org_member(organization_id));
 create policy expense_categories_insert_entitled on public.expense_categories
-for insert to authenticated with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+for insert to authenticated with check (private.can_edit_org(organization_id));
 create policy expense_categories_update_entitled on public.expense_categories
 for update to authenticated
-using (private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (private.can_edit_org(organization_id))
+with check (private.can_edit_org(organization_id));
 
 create policy expenses_select_member on public.expenses
 for select to authenticated using (private.is_org_member(organization_id));
 create policy expenses_insert_entitled on public.expenses
-for insert to authenticated with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+for insert to authenticated with check (private.can_edit_org(organization_id));
 create policy expenses_update_entitled on public.expenses
 for update to authenticated
-using (not is_voided and private.is_org_member(organization_id) and private.can_write_org(organization_id))
-with check (private.is_org_member(organization_id) and private.can_write_org(organization_id));
+using (not is_voided and private.can_edit_org(organization_id))
+with check (private.can_edit_org(organization_id));
 
 create policy payments_select_member on public.payments
 for select to authenticated using (private.is_org_member(organization_id));
@@ -1157,7 +1216,7 @@ with check (
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_write_org(((storage.foldername(name))[1])::uuid)
+         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1168,7 +1227,7 @@ using (
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_write_org(((storage.foldername(name))[1])::uuid)
+         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 )
@@ -1177,7 +1236,7 @@ with check (
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_write_org(((storage.foldername(name))[1])::uuid)
+         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1188,7 +1247,7 @@ using (
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_write_org(((storage.foldername(name))[1])::uuid)
+         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1206,7 +1265,21 @@ begin
     execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function private.audit_row_change()', t);
   end loop;
 end
-$$;
+$;
+
+do $
+declare
+  t text;
+begin
+  foreach t in array array['clients', 'products', 'documents', 'document_items',
+                            'production_batches', 'production_batch_inputs',
+                            'expense_categories', 'expenses']
+  loop
+    execute format('drop trigger if exists prevent_tenant_reassignment on public.%I', t);
+    execute format('create trigger prevent_tenant_reassignment before update on public.%I for each row execute function private.prevent_tenant_reassignment()', t);
+  end loop;
+end
+$;
 
 do $$
 declare
