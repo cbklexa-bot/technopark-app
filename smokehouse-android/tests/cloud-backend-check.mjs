@@ -44,6 +44,10 @@ assert.ok(backend.includes("id=\"koptilnyaUseCloud\""), 'Existing cloud data mus
 assert.ok(backend.includes("id=\"koptilnyaUseLocal\""), 'Existing local data must offer an explicit local replacement option');
 assert.ok(backend.includes('Перед заменой будет создан ZIP-архив облачной базы'), 'Replacing cloud data must confirm a remote backup before overwriting');
 assert.ok(backend.includes("persistToCloud: remoteExists"), 'A chosen local replacement must be saved to the server using the expected revision');
+assert.ok(backend.includes('hasLegacyDemoData'), 'Old prototype sample records must be detected before moving local data to cloud');
+assert.ok(backend.includes('Для загрузки своего Excel лучше сначала начать с пустой облачной базы'), 'The login flow must warn against importing demo data');
+assert.ok(backend.includes('const localPreview ='), 'The data-source choice must show actual record names before migration');
+
 
 
 assert.ok(html.includes('cloud-backend.js'), 'The Android app must load the cloud backend module');
