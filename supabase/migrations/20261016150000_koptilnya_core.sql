@@ -1231,26 +1231,26 @@ for insert to authenticated
 with check (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_documents d where d.id = document_id
-              and d.organization_id = document_items.organization_id and d.status = 'draft')
+              and d.organization_id = kp_document_items.organization_id and d.status = 'draft')
 );
 create policy document_items_update_draft on public.kp_document_items
 for update to authenticated
 using (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_documents d where d.id = document_id
-              and d.organization_id = document_items.organization_id and d.status = 'draft')
+              and d.organization_id = kp_document_items.organization_id and d.status = 'draft')
 )
 with check (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_documents d where d.id = document_id
-              and d.organization_id = document_items.organization_id and d.status = 'draft')
+              and d.organization_id = kp_document_items.organization_id and d.status = 'draft')
 );
 create policy document_items_delete_draft on public.kp_document_items
 for delete to authenticated
 using (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_documents d where d.id = document_id
-              and d.organization_id = document_items.organization_id and d.status = 'draft')
+              and d.organization_id = kp_document_items.organization_id and d.status = 'draft')
 );
 
 create policy production_batches_select_member on public.kp_production_batches
@@ -1273,26 +1273,26 @@ for insert to authenticated
 with check (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_production_batches b where b.id = batch_id
-              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
+              and b.organization_id = kp_production_batch_inputs.organization_id and b.status = 'draft')
 );
 create policy production_batch_inputs_update_draft on public.kp_production_batch_inputs
 for update to authenticated
 using (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_production_batches b where b.id = batch_id
-              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
+              and b.organization_id = kp_production_batch_inputs.organization_id and b.status = 'draft')
 )
 with check (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_production_batches b where b.id = batch_id
-              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
+              and b.organization_id = kp_production_batch_inputs.organization_id and b.status = 'draft')
 );
 create policy production_batch_inputs_delete_draft on public.kp_production_batch_inputs
 for delete to authenticated
 using (
   kp_private.kp_can_edit_org(organization_id)
   and exists (select 1 from public.kp_production_batches b where b.id = batch_id
-              and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
+              and b.organization_id = kp_production_batch_inputs.organization_id and b.status = 'draft')
 );
 
 create policy stock_movements_select_member on public.kp_stock_movements
