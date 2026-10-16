@@ -631,6 +631,7 @@ set search_path = ''
 as $$
 declare
   v_doc public.documents%rowtype;
+  v_document_org_id uuid;
   v_line record;
   v_unit_cost numeric(14,4);
   v_total numeric(16,2);
@@ -642,13 +643,20 @@ begin
     raise exception 'A stable idempotency key of 8-160 characters is required' using errcode = '22023';
   end if;
 
+  select d.organization_id into v_document_org_id
+  from public.documents d
+  where d.id = p_document_id;
+
+  if not found or not private.can_edit_org(v_document_org_id) then
+    raise exception 'Document not found or access denied' using errcode = '42501';
+  end if;
+
   select * into v_doc
   from public.documents d
-  where d.id = p_document_id
+  where d.id = p_document_id and d.organization_id = v_document_org_id
   for update;
 
-  if not found then raise exception 'Document not found' using errcode = 'P0002'; end if;
-  if not private.can_edit_org(v_doc.organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
+  if not found then raise exception 'Document not found or access denied' using errcode = '42501'; end if;
 
   if v_doc.status = 'posted' then
     if v_doc.post_idempotency_key = p_idempotency_key then return v_doc.id; end if;
@@ -726,6 +734,7 @@ set search_path = ''
 as $$
 declare
   v_batch public.production_batches%rowtype;
+  v_batch_org_id uuid;
   v_input record;
   v_output record;
   v_total_cost numeric(16,2) := 0;
@@ -737,13 +746,20 @@ begin
     raise exception 'A stable idempotency key of 8-160 characters is required' using errcode = '22023';
   end if;
 
+  select b.organization_id into v_batch_org_id
+  from public.production_batches b
+  where b.id = p_batch_id;
+
+  if not found or not private.can_edit_org(v_batch_org_id) then
+    raise exception 'Production batch not found or access denied' using errcode = '42501';
+  end if;
+
   select * into v_batch
   from public.production_batches b
-  where b.id = p_batch_id
+  where b.id = p_batch_id and b.organization_id = v_batch_org_id
   for update;
 
-  if not found then raise exception 'Production batch not found' using errcode = 'P0002'; end if;
-  if not private.can_edit_org(v_batch.organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
+  if not found then raise exception 'Production batch not found or access denied' using errcode = '42501'; end if;
 
   if v_batch.status = 'posted' then
     if v_batch.post_idempotency_key = p_idempotency_key then return v_batch.id; end if;
@@ -885,6 +901,13 @@ begin
     p_organization_id::text || '|' || coalesce(p_client_id::text, '') || '|' ||
     round(p_amount, 2)::text || '|' || p_method || '|' || p_allocations::text || '|' || coalesce(p_note, '')
   );
+
+  -- Serialize retries using the same tenant-scoped idempotency key.
+  -- The unique constraint remains the final integrity guard.
+  perform pg_advisory_xact_lock(
+    hashtextextended(p_organization_id::text || ':' || p_idempotency_key, 0)
+  );
+
   select p.id, p.request_fingerprint into v_payment_id, v_existing_fingerprint
   from public.payments p
   where p.organization_id = p_organization_id and p.idempotency_key = p_idempotency_key;
