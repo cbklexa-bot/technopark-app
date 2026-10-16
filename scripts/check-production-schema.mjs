@@ -23,7 +23,7 @@ for (const requiredTable of [
   'documents', 'document_items', 'production_batches', 'production_batch_inputs',
   'stock_movements', 'expense_categories', 'expenses', 'payments',
   'payment_allocations', 'subscription_plans', 'organization_subscriptions',
-  'subscription_payment_events', 'backup_exports', 'import_runs', 'audit_events',
+  'subscription_payment_events', 'backup_exports', 'import_runs', 'import_staging_rows', 'audit_events',
 ]) assert.ok(tables.includes(requiredTable), 'Missing required business table: ' + requiredTable);
 
 for (const rpc of [
@@ -61,6 +61,8 @@ assert.ok(sql.includes('greatest(d.total_amount - coalesce(a.amount_paid, 0), 0)
 assert.ok(sql.includes('payment_allocations_document_idx'), 'Payment allocations must be indexed by document');
 assert.ok(sql.includes("array['owner', 'admin', 'manager', 'operator']"), 'Write operations must be role-limited');
 assert.ok(sql.includes("bucket_id = 'koptilnya-private'"), 'File storage must use the Koptilnya private bucket');
+assert.ok(sql.includes('create table public.import_staging_rows'), 'Historical data must be staged for review before importing');
+assert.ok(sql.includes('public.import_staging_rows, public.audit_events from anon, authenticated'), 'Raw import staging must not be exposed to client roles');
 
 const productsGrants = sql.match(/grant[^;]+on public\.products to authenticated/gi) || [];
 assert.ok(productsGrants.length >= 2, 'Product permissions should be column-scoped where writes are allowed');
