@@ -11,7 +11,8 @@
     "android:sync": "cap sync android",
     "android:open": "cap open android",
     "build": "vite build www --outDir ../dist --base=./ --emptyOutDir",
-    "test": "node tests/smoke-check.mjs"
+    "test": "node tests/smoke-check.mjs",
+    "test:cloud": "node tests/cloud-backend-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
@@ -19,7 +20,8 @@
     "@capacitor/filesystem": "8.1.5",
     "@capacitor/share": "8.0.1",
     "jszip": "^3.10.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@supabase/supabase-js": "^2.57.4"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",
