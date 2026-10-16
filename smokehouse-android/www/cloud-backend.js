@@ -71,15 +71,19 @@ const findSheet = (workbook, aliases) => {
 const parseWorkbook = (workbook, filename) => {
   const sourceNames = {
     products: findSheet(workbook, ['Продукция', 'Товары', 'Справочник продукции', 'Products']),
+    stock: findSheet(workbook, ['Остатки', 'Остатки продукции', 'Stock balances']),
     clients: findSheet(workbook, ['Клиенты', 'Контрагенты', 'Покупатели', 'Clients']),
     documents: findSheet(workbook, ['Документы', 'Накладные', 'Documents']),
     positions: findSheet(workbook, ['Позиции', 'Позиции накладных', 'Строки документов', 'Document items']),
     expenses: findSheet(workbook, ['Затраты', 'Расходы', 'Expenses']),
     payments: findSheet(workbook, ['Оплаты', 'Платежи', 'Payments']),
-    batches: findSheet(workbook, ['Партии', 'Производство', 'Выпуск', 'Production']),
+    batches: findSheet(workbook, ['Партии', 'Производство', 'Выпуск', 'Производство и выпуск', 'Производственные партии', 'Production']),
+    checksums: findSheet(workbook, ['Контрольные суммы и расхождения', 'Контрольные суммы', 'Сверка']),
   };
   const rawProducts = arrayRows(workbook, sourceNames.products);
+  const rawStock = arrayRows(workbook, sourceNames.stock);
   const rawClients = arrayRows(workbook, sourceNames.clients);
+  const rawChecksums = arrayRows(workbook, sourceNames.checksums);
   const rawDocs = arrayRows(workbook, sourceNames.documents);
   const rawPositions = arrayRows(workbook, sourceNames.positions);
   const rawExpenses = arrayRows(workbook, sourceNames.expenses);
@@ -89,6 +93,8 @@ const parseWorkbook = (workbook, filename) => {
   if (!sourceNames.documents && !sourceNames.positions) {
     warnings.push('Нет отдельных исходных листов «Документы» и «Позиции». Агрегированные листы «Продажи», «Услуги» и «По месяцам» не импортируются как операции, чтобы не посчитать выручку повторно.');
   }
+  if (!sourceNames.products && !sourceNames.stock) warnings.push('Не найден лист продукции или остатков. Без него нельзя достоверно связать позиции с карточками товаров.');
+  if (sourceNames.checksums && !rawChecksums.length) warnings.push('Лист сверки найден, но в нём не распознаны строки. Проверьте содержимое вручную.');
   const products = rawProducts.map((r) => {
     const rawType = clean(headerValue(r, ['Тип', 'Категория', 'Вид продукции']));
     let type = 'Готовая продукция';
@@ -110,6 +116,31 @@ const parseWorkbook = (workbook, filename) => {
   }).filter((p) => p.name);
   const productNames = new Map();
   products.forEach((p) => { const key = norm(p.name); if (key && !productNames.has(key)) productNames.set(key, p.id); });
+  rawStock.forEach((r, index) => {
+    const name = clean(headerValue(r, ['Продукция', 'Название', 'Наименование', 'Товар', 'Продукт']));
+    const sourceId = clean(headerValue(r, ['ID', 'ID продукции', 'Product ID']));
+    if (!name) return;
+    let product = (sourceId ? products.find((p) => p.id === sourceId) : null) || products.find((p) => norm(p.name) === norm(name));
+    if (!product) {
+      product = {
+        id: sourceId || stableId('', 'import-stock-' + index), name,
+        type: 'Готовая продукция', emoji: '', unit: clean(headerValue(r, ['Единица', 'Ед.изм.', 'Ед.'])) || 'кг',
+        stock: 0, cost: num(headerValue(r, ['Себестоимость за единицу', 'Себестоимость', 'Себестоимость/кг'])),
+        receipt: num(headerValue(r, ['Приходная цена', 'Цена закупки'])),
+        sale: num(headerValue(r, ['Цена продажи', 'Цена реализации'])), image: '',
+      };
+      products.push(product);
+      productNames.set(norm(name), product.id);
+      warnings.push('В продукции не найден товар «' + name + '» с листа остатков. Добавлена карточка по исходному названию; проверьте её тип и цены.');
+    }
+    product.stock = num(headerValue(r, ['Остаток', 'Количество', 'Остаток, кг', 'Количество на складе', 'Фактический остаток']));
+  });
+  rawChecksums.forEach((r) => {
+    const status = clean(headerValue(r, ['Статус', 'Результат проверки', 'Расхождение', 'Проверка']));
+    if (status && /расхожд|ошибк|не совпад|не сход|неверн/i.test(status)) {
+      warnings.push('Лист сверки содержит контрольную запись «' + status + '». Проверьте её до импорта.');
+    }
+  });
 
   const activeClientByName = new Map();
   const clients = [];
@@ -700,8 +731,10 @@ const openImportPicker = () => {
         preview.appendChild(warnings);
       }
       const hasSourceDocs = !!parsed.summary.sourceSheets.documents && counts.documents > 0;
-      const blockingWarnings = parsed.summary.warnings.some((w) => /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа/i.test(w));
-      confirm.disabled = !hasSourceDocs || counts.documents === 0 || blockingWarnings;
+      const hasProducts = !!parsed.summary.sourceSheets.products || !!parsed.summary.sourceSheets.stock;
+      const hasClients = !!parsed.summary.sourceSheets.clients;
+      const blockingWarnings = parsed.summary.warnings.some((w) => /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа|контрольная запись|контрольную запись/i.test(w));
+      confirm.disabled = !hasSourceDocs || !hasProducts || !hasClients || counts.documents === 0 || blockingWarnings;
       setOverlayStatus('koptilnyaImportGate', confirm.disabled
         ? 'Импорт заблокирован: нужен отдельный лист исходных документов с датами и типами; также исправь критические ошибки сопоставления, показанные выше.'
         : 'Проверь количество строк, контрагентов и суммы за 2025/2026 годы. Следующее нажатие заменит текущие данные.', confirm.disabled ? 'error' : 'ok');
