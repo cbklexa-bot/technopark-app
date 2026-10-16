@@ -30,6 +30,11 @@ assert.ok(backend.includes('summary.sheets'), 'Importer must display workbook sh
 assert.ok(backend.includes('summary.years[year]'), 'Importer must preview annual totals for 2025 and 2026');
 assert.ok(backend.includes('Повтор ключа документа'), 'Duplicate document keys must be exposed for review');
 assert.ok(backend.includes('manualAmount'), 'Source document totals must be retained when the workbook lacks itemized rows');
+assert.ok(backend.includes("rawPositions.forEach((r, index) =>"), 'The importer must process the source positions sheet');
+assert.ok(!backend.includes("if (rawPositions.length) {\n    docs.forEach((d) => {\n      if (d.items.length) d.items = [];"),
+  'Imported document positions must never be cleared after they have been read');
+assert.ok(backend.includes('Строка позиции №'), 'Unmapped source positions must be reported');
+
 assert.ok(backend.includes('На устройстве уже есть локальные записи'), 'Existing local records must require an explicit keep-or-replace choice');
 
 assert.ok(html.includes('cloud-backend.js'), 'The Android app must load the cloud backend module');
