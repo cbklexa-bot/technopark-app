@@ -209,15 +209,53 @@ const ensureWorkspace = async (currentSession, desiredName = 'Коптильня
   }
   return {organizationId, organizationName};
 };
-const renderInitialChoice = (remoteRevision, remoteState, localState) => new Promise((resolve) => {
-  const localHasData = localState && ['products','clients','docs','expenses','batches','payments'].some((key) => Array.isArray(localState[key]) && localState[key].length);
-  if (!localHasData) { resolve({state: EMPTY_STATE(), revision: remoteRevision}); return; }
-  const gate = createOverlay('koptilnyaInitialDataGate', 'Данные на этом телефоне', 'На устройстве уже есть локальные записи, но в облачной коптильне пока нет базы. Выбери, что перенести. Ничего не будет отправлено без подтверждения.');
+const hasBusinessRows = (state) => !!state && ['products','clients','docs','expenses','batches','payments'].some((key) => Array.isArray(state[key]) && state[key].length);
+const renderInitialChoice = (remoteRevision, remoteState, localState, remoteExists = false) => new Promise((resolve) => {
+  const localHasData = hasBusinessRows(localState);
+  const cloudState = remoteState || EMPTY_STATE();
+  const remoteHasData = hasBusinessRows(cloudState);
+  if (!localHasData) { resolve({state: cloudState, revision: remoteRevision, source: 'cloud'}); return; }
+  if (remoteExists && JSON.stringify(localState) === JSON.stringify(cloudState)) {
+    resolve({state: cloudState, revision: remoteRevision, source: 'cloud'});
+    return;
+  }
+  const existingCloud = remoteExists;
+  const title = existingCloud ? 'Есть данные на телефоне и в облаке' : 'Данные на этом телефоне';
+  const description = existingCloud
+    ? 'Источники различаются. Сначала сравни их количество, затем явно выбери, какие данные оставить. Облако не будет перезаписано без подтверждения.'
+    : 'На устройстве уже есть локальные записи, но в облачной коптильне пока нет базы. Выбери, что перенести. Ничего не будет отправлено без подтверждения.';
+  const gate = createOverlay('koptilnyaInitialDataGate', title, description);
   const body = gate.querySelector('#koptilnyaInitialDataGateBody');
-  const counts = ['products','clients','docs','expenses','batches','payments'].map((key) => key + ': ' + (Array.isArray(localState[key]) ? localState[key].length : 0)).join('\n');
-  body.innerHTML = '<div class="koptilnyaStatus">' + safeText(counts) + '</div><div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaMigrateLocal">Перенести эти данные в облако</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaStartEmpty">Начать с пустой базы</button></div>';
-  body.querySelector('#koptilnyaMigrateLocal').addEventListener('click', () => { gate.remove(); resolve({state: localState, revision: remoteRevision}); });
-  body.querySelector('#koptilnyaStartEmpty').addEventListener('click', () => { gate.remove(); resolve({state: EMPTY_STATE(), revision: remoteRevision}); });
+  const countsFor = (state) => ['products','clients','docs','expenses','batches','payments'].map((key) => key + ': ' + (Array.isArray(state?.[key]) ? state[key].length : 0)).join('\n');
+  const localCounts = countsFor(localState);
+  const cloudCounts = countsFor(cloudState);
+  body.innerHTML = (existingCloud
+    ? '<div class="koptilnyaStatus"><b>На телефоне</b>\n' + safeText(localCounts) + '\n\n<b>В облаке</b>\n' + safeText(cloudCounts) + '</div>' +
+      '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton secondary" id="koptilnyaUseCloud">Использовать облако</button><button type="button" class="koptilnyaButton" id="koptilnyaUseLocal">Заменить облако данными телефона</button></div>'
+    : '<div class="koptilnyaStatus">' + safeText(localCounts) + '</div>' +
+      '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaUseLocal">Перенести эти данные в облако</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaUseCloud">Начать с пустой базы</button></div>');
+  body.querySelector('#koptilnyaUseCloud').addEventListener('click', () => {
+    gate.remove();
+    resolve({state: cloudState, revision: remoteRevision, source: 'cloud'});
+  });
+  body.querySelector('#koptilnyaUseLocal').addEventListener('click', async () => {
+    const button = body.querySelector('#koptilnyaUseLocal');
+    if (existingCloud && remoteHasData) {
+      if (!window.confirm('Заменить текущие данные облачной коптильни данными этого телефона? Перед заменой будет создан ZIP-архив облачной базы.')) return;
+      button.disabled = true;
+      try {
+        const nativeBridge = window.KoptilnyaNative;
+        if (!nativeBridge?.exportFullArchive) throw new Error('Экспорт резервной копии недоступен; облачные данные не менялись.');
+        await nativeBridge.exportFullArchive({format:'koptilnya-backup',version:2,exportedAt:new Date().toISOString(),application:'Коптильня',contents:cloudState});
+      } catch (error) {
+        button.disabled = false;
+        setOverlayStatus('koptilnyaInitialDataGate', error?.message || 'Не удалось создать резервную копию облачных данных. Замена отменена.', 'error');
+        return;
+      }
+    }
+    gate.remove();
+    resolve({state: localState, revision: remoteRevision, source: 'local', persistToCloud: remoteExists});
+  });
 });
 const openWorkspace = async (currentSession, desiredName = 'Коптильня') => {
   const gate = document.getElementById('koptilnyaAuthGate');
@@ -231,23 +269,29 @@ const openWorkspace = async (currentSession, desiredName = 'Коптильня')
       .eq('organization_id', organizationId)
       .maybeSingle();
     if (error) throw error;
-    let chosen;
-    if (!remote) {
-      const local = app()?.getLocalState?.();
-      chosen = await renderInitialChoice(0, EMPTY_STATE(), local);
-    } else {
-      chosen = {state: remote.state || EMPTY_STATE(), revision: Number(remote.revision) || 0};
-    }
+    const remoteState = remote?.state || EMPTY_STATE();
+    const remoteRevision = Number(remote?.revision) || 0;
+    const local = app()?.getLocalState?.();
+    const chosen = await renderInitialChoice(remoteRevision, remoteState, local, !!remote);
     revision = chosen.revision;
     app()?.setState(chosen.state);
+    if (chosen.persistToCloud) {
+      const {data, error: persistError} = await supabase.rpc('save_organization_data', {
+        p_organization_id: organizationId,
+        p_expected_revision: revision,
+        p_state: chosen.state,
+      });
+      if (persistError) throw persistError;
+      revision = Number(data) || revision + 1;
+    }
     cloudActive = true;
     syncBlocked = false;
     if (gate) gate.remove();
     document.getElementById('koptilnyaInitialDataGate')?.remove();
     accountBar().style.display = 'flex';
-    setCloudStatus('Облако подключено', 'ok');
+    setCloudStatus(chosen.persistToCloud ? 'Данные телефона сохранены в облаке' : 'Облако подключено', 'ok');
     flushPromise = Promise.resolve();
-    if (!remote || (chosen.state && !remote?.state)) queueSave(app().getState());
+    if (!remote) queueSave(app().getState());
   } catch (error) {
     cloudActive = false;
     setCloudStatus('Ошибка облака', 'error');
