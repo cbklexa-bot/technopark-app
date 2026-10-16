@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const sourceRoot = join(root, 'android', 'app', 'src', 'main', 'java');
+const kotlinRoot = join(root, 'android', 'app', 'src', 'main', 'kotlin');
 
 function findMainActivity(directory) {
   if (!existsSync(directory)) return null;
@@ -19,8 +20,8 @@ function findMainActivity(directory) {
   return null;
 }
 
-const activityPath = findMainActivity(sourceRoot);
-if (!activityPath) throw new Error('Capacitor MainActivity.java was not found');
+const activityPath = findMainActivity(sourceRoot) || findMainActivity(kotlinRoot);
+if (!activityPath) throw new Error('Capacitor MainActivity was not found under src/main/java or src/main/kotlin');
 const activity = readFileSync(activityPath, 'utf8');
 const packageMatch = activity.match(/^package\s+([\w.]+);?/m);
 if (!packageMatch) throw new Error('Cannot determine the generated Android package name');
