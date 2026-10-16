@@ -91,6 +91,6 @@ assert.ok(backend.includes('isObfuscatedSignupResponse(result.user)'), 'Masked d
 assert.ok(backend.includes('signInWithPassword({email, password})'), 'A masked duplicate signup should attempt sign-in with the supplied credentials');
 assert.ok(backend.includes('global: { fetch: fetchWithTimeout }'), 'Cloud requests must have a timeout');
 assert.ok(backend.includes("const showRetry ="), 'The retry action should be contextual, not shown permanently');
-assert.ok(backend.includes("id=\\"koptilnyaAuthSwitch\\""), 'Sign-in and registration must remain switchable');
+assert.ok(backend.includes('id="koptilnyaAuthSwitch"'), 'Sign-in and registration must remain switchable');
 
 console.log('Cloud workflow contract passed: Auth, duplicate signup, request timeout, persistent workspace sync, conflict safety, and reviewed Excel import.');
