@@ -664,7 +664,7 @@ returns bigint
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_user_id uuid := (select auth.uid());
   v_revision bigint;
@@ -717,7 +717,7 @@ begin
 
   return v_revision + 1;
 end;
-$;
+$$;
 revoke all on function public.save_organization_data(uuid, bigint, jsonb) from public, anon;
 grant execute on function public.save_organization_data(uuid, bigint, jsonb) to authenticated;
 
