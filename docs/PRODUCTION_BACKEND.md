@@ -61,3 +61,14 @@ The latest workflow run checked during this audit succeeded on 2026-10-16:
 https://github.com/cbklexa-bot/technopark-app/actions/runs/38841744614
 
 It produced the expiring CI artifact `koptilnya-android-test-build`. That is a debug/test package, not a signed production release.
+
+## Latest isolated CI evidence
+
+Run [38867329750](https://github.com/cbklexa-bot/technopark-app/actions/runs/38867329750) validated the branch containing the tenant SQL schema and synthetic test-fixture corrections:
+- PostgreSQL parser accepted the migration.
+- Static schema security contracts passed.
+- Local Supabase started, applied the migration, and all 19 pgTAP integration checks passed.
+- The web bundle and smoke-test suite passed; the debug APK build completed successfully.
+- The unsigned Android App Bundle and artifact upload were still running at the last review. Do not describe them as completed until GitHub Actions reports success.
+
+The later workflow-only change groups future runs by branch to cancel superseded jobs; older runs that used the previous per-commit concurrency group may still be finishing independently.
