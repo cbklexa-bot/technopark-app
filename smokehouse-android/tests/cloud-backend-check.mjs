@@ -30,7 +30,7 @@ assert.ok(backend.includes('summary.sheets'), 'Importer must display workbook sh
 assert.ok(backend.includes('summary.years[year]'), 'Importer must preview annual totals for 2025 and 2026');
 assert.ok(backend.includes('Повтор ключа документа'), 'Duplicate document keys must be exposed for review');
 assert.ok(backend.includes('manualAmount'), 'Source document totals must be retained when the workbook lacks itemized rows');
-assert.ok(backend.includes('remote data'), 'The source code should describe server data in its restore choice');
+assert.ok(backend.includes('На устройстве уже есть локальные записи'), 'Existing local records must require an explicit keep-or-replace choice');
 
 assert.ok(html.includes('cloud-backend.js'), 'The Android app must load the cloud backend module');
 assert.ok(html.includes('window.KoptilnyaApp='), 'The existing accounting UI must expose its state to the cloud adapter');
