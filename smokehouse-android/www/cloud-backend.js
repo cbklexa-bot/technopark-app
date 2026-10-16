@@ -113,12 +113,14 @@ const parseWorkbook = (workbook, filename) => {
 
   const activeClientByName = new Map();
   const clients = [];
+  const inactiveCounterpartyNames = new Set();
+  if (!sourceNames.clients) warnings.push('В книге не найден лист «Клиенты/Контрагенты». Шесть активных контрагентов будут созданы без телефона и дополнительных реквизитов.');
   rawClients.forEach((r) => {
     const name = clean(headerValue(r, ['Клиент', 'Контрагент', 'Название', 'Наименование', 'Покупатель', 'Имя клиента', 'Name']));
     if (!name) return;
     const key = norm(name);
     const exact = CANONICAL_CLIENTS.find((canonical) => norm(canonical) === key);
-    if (!exact) return; // Other counterparties stay as document name snapshots, never as active clients.
+    if (!exact) { inactiveCounterpartyNames.add(name); return; } // Other counterparties stay as document name snapshots, never as active clients.
     if (activeClientByName.has(key)) {
       warnings.push('Повтор названия активного контрагента «' + exact + '» на листе «' + sourceNames.clients + '». До импорта проверьте этот лист.');
       return;
@@ -133,6 +135,9 @@ const parseWorkbook = (workbook, filename) => {
     clients.push(client);
   });
   // Always keep the exact six owner-approved active counterparties; other historical names remain on their documents.
+  if (inactiveCounterpartyNames.size) {
+    warnings.push('Контрагенты вне разрешённой шестёрки останутся только в исторических реквизитах документов и не появятся в активном справочнике: ' + [...inactiveCounterpartyNames].slice(0,30).join(', ') + (inactiveCounterpartyNames.size > 30 ? ', …' : '') + '.');
+  }
   {
     CANONICAL_CLIENTS.forEach((name) => {
       if (activeClientByName.has(norm(name))) return;
