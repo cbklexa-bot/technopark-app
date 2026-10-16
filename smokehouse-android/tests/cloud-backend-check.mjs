@@ -19,6 +19,16 @@ assert.ok(backend.includes('createClient(SUPABASE_URL, SUPABASE_KEY'), 'Frontend
 assert.ok(backend.includes('supabase.auth.signInWithPassword'), 'Email/password sign-in must be implemented');
 assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration must be implemented');
 assert.ok(backend.includes('supabase.auth.resetPasswordForEmail'), 'Password recovery must be implemented');
+assert.ok(backend.includes("AUTH_REDIRECT_URL = 'ru.koptilnya.app://auth/callback'"), 'Native Auth callback must use the app deep link');
+assert.ok(backend.includes('emailRedirectTo: AUTH_REDIRECT_URL'), 'Sign-up and resend must pass an explicit native confirmation redirect');
+assert.ok(backend.includes('resetPasswordForEmail(email, { redirectTo: AUTH_REDIRECT_URL })'), 'Password recovery must return to Android');
+assert.ok(backend.includes('supabase.auth.resend('), 'Users must be able to request a fresh sign-up confirmation email');
+assert.ok(backend.includes("App.addListener('appUrlOpen'"), 'Android must receive auth links while the app is open');
+assert.ok(backend.includes('App.getLaunchUrl()'), 'Android must process auth links that launch the app from a closed state');
+assert.ok(backend.includes('supabase.auth.setSession({ access_token, refresh_token })'), 'Implicit-flow auth callbacks must be exchanged for a saved session');
+assert.ok(backend.includes('supabase.auth.exchangeCodeForSession(String(rawUrl))'), 'PKCE auth callbacks must be supported');
+assert.ok(backend.includes("errorCode === 'otp_expired'"), 'Expired email links must show actionable guidance');
+assert.ok(!backend.includes('http://localhost:3000'), 'A native auth redirect must never default to a localhost web server');
 assert.ok(backend.includes('supabase.auth.getSession'), 'Saved sessions must be restored after restart');
 assert.ok(backend.includes('supabase.auth.signOut()'), 'Account sign-out must be implemented');
 assert.ok(backend.includes(".from('kp_organization_members')"), 'Every signed-in user must be resolved to an organization membership');
