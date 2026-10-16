@@ -214,6 +214,12 @@ const renderInitialChoice = (remoteRevision, remoteState, localState, remoteExis
   const localHasData = hasBusinessRows(localState);
   const cloudState = remoteState || EMPTY_STATE();
   const remoteHasData = hasBusinessRows(cloudState);
+  const demoProductNames = new Set(['Грудинка горячего копчения','Колбаса копчёная','Купаты','Шашлык свиной','Копчение сырья клиента','Изготовление колбас из сырья клиента'].map(norm));
+  const hasLegacyDemoData = !!localState && (
+    (localState.products || []).some((p) => demoProductNames.has(norm(p.name))) ||
+    (localState.clients || []).some((c) => ['Магазин «У дома»','Продукты № 2','Мясной ряд','Заказчик услуг'].some((name) => norm(name) === norm(c.name))) ||
+    (localState.docs || []).some((d) => ['НК-0108','НК-0109','УС-0032'].includes(clean(d.number)))
+  );
   if (!localHasData) { resolve({state: cloudState, revision: remoteRevision, source: 'cloud'}); return; }
   if (remoteExists && JSON.stringify(localState) === JSON.stringify(cloudState)) {
     resolve({state: cloudState, revision: remoteRevision, source: 'cloud'});
@@ -229,10 +235,18 @@ const renderInitialChoice = (remoteRevision, remoteState, localState, remoteExis
   const countsFor = (state) => ['products','clients','docs','expenses','batches','payments'].map((key) => key + ': ' + (Array.isArray(state?.[key]) ? state[key].length : 0)).join('\n');
   const localCounts = countsFor(localState);
   const cloudCounts = countsFor(cloudState);
-  body.innerHTML = (existingCloud
-    ? '<div class="koptilnyaStatus"><b>На телефоне</b>\n' + safeText(localCounts) + '\n\n<b>В облаке</b>\n' + safeText(cloudCounts) + '</div>' +
+  const localPreview = [
+    ...(Array.isArray(localState?.products) ? localState.products.slice(0,4).map((x) => 'Товар: ' + (x.name || 'без названия')) : []),
+    ...(Array.isArray(localState?.clients) ? localState.clients.slice(0,4).map((x) => 'Клиент: ' + (x.name || 'без названия')) : []),
+    ...(Array.isArray(localState?.docs) ? localState.docs.slice(0,4).map((x) => 'Документ: ' + (x.number || x.date || 'без номера')) : []),
+  ].join('\n');
+  const sampleWarning = hasLegacyDemoData
+    ? '<div class="koptilnyaStatus error"><b>Внимание:</b> похоже, здесь остались демонстрационные товары/документы из старой тестовой версии. Не переноси их в рабочую базу, если это не реальные записи. Для загрузки своего Excel лучше сначала начать с пустой облачной базы.</div>'
+    : '';
+  body.innerHTML = sampleWarning + (existingCloud
+    ? '<div class="koptilnyaStatus"><b>На телефоне</b>\n' + safeText(localCounts) + '\n' + safeText(localPreview) + '\n\n<b>В облаке</b>\n' + safeText(cloudCounts) + '</div>' +
       '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton secondary" id="koptilnyaUseCloud">Использовать облако</button><button type="button" class="koptilnyaButton" id="koptilnyaUseLocal">Заменить облако данными телефона</button></div>'
-    : '<div class="koptilnyaStatus">' + safeText(localCounts) + '</div>' +
+    : '<div class="koptilnyaStatus">' + safeText(localCounts) + '\n' + safeText(localPreview) + '</div>' +
       '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaUseLocal">Перенести эти данные в облако</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaUseCloud">Начать с пустой базы</button></div>');
   body.querySelector('#koptilnyaUseCloud').addEventListener('click', () => {
     gate.remove();
