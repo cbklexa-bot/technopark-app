@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: koptilnya-production-check-${{ github.sha }}
+  group: koptilnya-production-check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
