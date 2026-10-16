@@ -46,16 +46,15 @@ This is a foundation, not a declaration of product completion. The following wor
 - Historical source names and identifiers should be preserved in staging/legacy fields until mapping and reconciliation are approved.
 - No trial length, subscription price, or payment provider has been assumed in code.
 
-## Setup checklist after the shared Technopark project is confirmed
+## Hosted deployment status and remaining acceptance
 
-1. Install the Supabase CLI and verify its version with `supabase --version`.
-2. In a local checkout of this branch, link only the identified Technopark Supabase project (`ereiiidezagburttpxtn`) and do not apply this migration to `max-song-app`.
-3. Create the migration through the CLI, move the reviewed SQL into its generated migration file, and apply it first to a non-production branch/test project.
-4. Run `supabase db lint` if supported by the installed CLI, then `supabase test db` and the project security advisors; fix all warnings before production.
-5. Add project URL and publishable key as deployment configuration. Keep private/payment credentials in server-side secrets only.
-6. Configure email confirmations and password recovery; enable Google only after OAuth client configuration. Enable phone OTP only after SMS-provider setup and testing.
-7. Decide trial duration, tariff prices/limits, billing interval, grace period, and payment provider before enabling writes for end users.
-8. Keep the migration report and source archive outside GitHub; store original file checksums with the private import run metadata.
+The `kp_`-namespaced migration was applied to the existing Technopark Supabase project `ereiiidezagburttpxtn` on 2026-10-16. Verification returned 22 public `kp_` tables with RLS enabled, one namespaced view, five public RPC functions, and the private `koptilnya-private` Storage bucket. The migration is additive: it does not update existing `tp_*` business tables.
+
+GitHub Actions run 53 validated the latest migration in an isolated Supabase stack: PostgreSQL grammar and schema contracts passed, local migration application succeeded, and all 23 pgTAP assertions passed. Run 53's APK was built before the client configuration was populated; use only the newest successful run after that change. CI does not simulate user signup, email confirmation, password recovery, or Android file-picker behavior on a real device.
+
+Before recording real historical money or customer data, manually validate: email/password registration and login, confirmation/reset email behavior, first workspace creation, save/reopen after app restart, Excel preview/import, ZIP/Excel export, and denial of access to a second organization's records. The existing project has separate legacy Security Advisor warnings for `public.users`, `public.notebook`, `public.user_budgets`, and several public/anonymously accessible policies. These were not changed by the Koptilnya migration; review them in a separate, tested Technopark security maintenance.
+
+Keep real Excel workbooks, database dumps, customer records, and exports outside this public repository. Never apply this migration to `max-song-app`.
 
 ## Original prototype baseline build
 
@@ -73,7 +72,7 @@ Run [38874659642](https://github.com/cbklexa-bot/technopark-app/actions/runs/388
 - Android smoke checks passed, including synthetic Excel import tests and local-vs-cloud conflict checks.
 - Debug APK and unsigned AAB both built and were uploaded in artifact `koptilnya-production-candidate` (expires 2026-10-30).
 
-**Important:** `smokehouse-android/www/cloud-config.js` intentionally contains empty public placeholders until the owner approves the dedicated Supabase organization/project. This candidate package will therefore display a configuration blocker and must not be used for live business records. Build a new package only after the real Koptilnya Supabase project is provisioned, the migration is applied, the public URL/key are configured, and hosted Auth has been verified.
+**Historical note:** run 38874659642 produced an unconfigured placeholder APK. Do not install that artifact for use. The branch's cloud configuration has since been populated for the shared Technopark project; use the newest successful production-workflow artifact. Hosted Auth and physical-device acceptance still require manual verification.
 
 The user's final Excel workbook was not attached to this workstream at the time of this CI run. No historical business data was imported and no hosted database was altered.
 

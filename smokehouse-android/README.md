@@ -4,7 +4,7 @@ This branch builds an installable **debug APK** for functional testing. It is no
 
 ## Get and install the test APK
 
-1. Download `Koptilnya-Android-Test.apk` from the conversation attachment, or open the latest successful [Android build workflow](https://github.com/cbklexa-bot/technopark-app/actions/workflows/smokehouse-android-build.yml?query=branch%3Asmokehouse-android) and download the artifact named `koptilnya-android-test-build`.
+1. Open the [Koptilnya production workflow](https://github.com/cbklexa-bot/technopark-app/actions/workflows/koptilnya-production-check.yml?query=branch%3Akoptilnya-production), select the newest **successful** run for `koptilnya-production`, and download the `koptilnya-production-candidate` artifact. Avoid the older `smokehouse-android` artifact: it may have the old unconfigured placeholder.
 2. Transfer the APK to an Android phone and open it. Android may ask to allow installation from the app used to open the file; enable this only for the install and then turn it off if desired.
 3. This is a debug-signed test build. It is not the signed Play Store release package.
 
