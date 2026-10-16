@@ -12,7 +12,7 @@ function findMainActivity(directory) {
     if (statSync(path).isDirectory()) {
       const found = findMainActivity(path);
       if (found) return found;
-    } else if (entry === 'MainActivity.java') {
+    } else if (entry === 'MainActivity.java' || entry === 'MainActivity.kt') {
       return path;
     }
   }
@@ -22,7 +22,7 @@ function findMainActivity(directory) {
 const activityPath = findMainActivity(sourceRoot);
 if (!activityPath) throw new Error('Capacitor MainActivity.java was not found');
 const activity = readFileSync(activityPath, 'utf8');
-const packageMatch = activity.match(/^package\s+([\w.]+);/m);
+const packageMatch = activity.match(/^package\s+([\w.]+);?/m);
 if (!packageMatch) throw new Error('Cannot determine the generated Android package name');
 const packageName = packageMatch[1];
 const packagePath = join(sourceRoot, ...packageName.split('.'));
@@ -96,16 +96,26 @@ const pluginSource =
 
 writeFileSync(join(packagePath, 'KoptilnyaDownloadsPlugin.java'), pluginSource, 'utf8');
 
-const mainActivity =
-  'package ' + packageName + ';\n\n' +
-  'import android.os.Bundle;\n' +
-  'import com.getcapacitor.BridgeActivity;\n\n' +
-  'public class MainActivity extends BridgeActivity {\n' +
-  '  @Override\n' +
-  '  public void onCreate(Bundle savedInstanceState) {\n' +
-  '    registerPlugin(KoptilnyaDownloadsPlugin.class);\n' +
-  '    super.onCreate(savedInstanceState);\n' +
-  '  }\n' +
-  '}\n';
+const isKotlin = activityPath.endsWith('.kt');
+const mainActivity = isKotlin
+  ? 'package ' + packageName + '\n\n' +
+    'import android.os.Bundle\n' +
+    'import com.getcapacitor.BridgeActivity\n\n' +
+    'class MainActivity : BridgeActivity() {\n' +
+    '  override fun onCreate(savedInstanceState: Bundle?) {\n' +
+    '    registerPlugin(KoptilnyaDownloadsPlugin::class.java)\n' +
+    '    super.onCreate(savedInstanceState)\n' +
+    '  }\n' +
+    '}\n'
+  : 'package ' + packageName + ';\n\n' +
+    'import android.os.Bundle;\n' +
+    'import com.getcapacitor.BridgeActivity;\n\n' +
+    'public class MainActivity extends BridgeActivity {\n' +
+    '  @Override\n' +
+    '  public void onCreate(Bundle savedInstanceState) {\n' +
+    '    registerPlugin(KoptilnyaDownloadsPlugin.class);\n' +
+    '    super.onCreate(savedInstanceState);\n' +
+    '  }\n' +
+    '}\n';
 writeFileSync(activityPath, mainActivity, 'utf8');
 console.log('Registered KoptilnyaDownloadsPlugin; exports will be saved into Downloads/Коптильня on Android 10+.');
