@@ -16,7 +16,7 @@ assert.ok(inlineScript, 'The main application script must exist');
 assert.doesNotThrow(() => new Function(inlineScript[1]), 'The main application JavaScript must parse');
 
 const requiredUi = [
-  'id="page-products"', 'id="page-production"', 'id="page-clients"',
+  'id="page-products"', 'id="productsGrid"', 'id="page-production"', 'id="page-clients"', 'id="ownerModeToggle"',
   'id="page-documents"', 'id="page-expenses"', 'id="page-debts"',
   'id="page-reports"', 'id="page-recipes"', 'id="exportFullBackup"',
   'id="restoreFullBackup"', 'id="exportClientsCsv"', 'id="clientSearchInput"',
@@ -26,7 +26,7 @@ for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI ma
 
 const requiredBusinessLogic = [
   "type==='receipt'", "type==='sale'", "type==='service'",
-  "type==='payment'", 'function resolveServiceClient', 'function deleteClient',
+  "type==='payment'", 'function resolveServiceClient', 'function deleteClient', 'data-delete-product', 'data-delete-expense', 'data-delete-recipe', 'OWNER_PIN',
   'function renderReports', 'function docStockDelta', "localStorage.getItem(KEY)",
   "document.getElementById('exportFullBackup').onclick",
   "document.getElementById('backupFile').onchange",
@@ -43,7 +43,7 @@ const requiredArchiveLogic = [
   "addWorksheet(workbook,'Партии'", "addWorksheet(workbook,'Рецепты'",
   "addWorksheet(workbook,'Продажи'", "addWorksheet(workbook,'Услуги'",
   "addWorksheet(workbook,'По месяцам'", "addWorksheet(workbook,'Файлы'",
-  'Share.share', 'Directory.Cache',
+  'KoptilnyaDownloads.saveToDownloads', "mimeType || 'application/zip'", 'utf8ToBase64',
 ];
 for (const marker of requiredArchiveLogic) assert.ok(bridge.includes(marker), 'Missing archive logic: ' + marker);
 
@@ -146,4 +146,11 @@ try {
 
 const assetGenerator = readFileSync(join(root, 'scripts', 'generate_assets.py'), 'utf8');
 for (const marker of ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']) assert.ok(assetGenerator.includes(marker), 'Missing branded Android asset: ' + marker);
+const installer = readFileSync(join(root, 'scripts', 'install-download-plugin.mjs'), 'utf8');
+for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS']) {
+  assert.ok(installer.includes(marker), 'Missing direct Downloads implementation: ' + marker);
+}
+assert.ok(html.includes('name="category" list="expenseCategoryOptions"'), 'Expense category must be free text with suggestions');
+assert.ok(html.includes('Комментарий (необязательно)'), 'Expense comment must be optional');
+assert.ok(html.includes('data-edit-recipe=') && html.includes('data-delete-recipe='), 'Owner recipe controls must be present');
 console.log('Smoke check passed: source syntax, primary accounting modules, Android file export, ZIP restore, and 13 Excel sheets are present.');
