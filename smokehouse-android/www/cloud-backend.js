@@ -186,7 +186,7 @@ const ensureWorkspace = async (currentSession, desiredName = 'Коптильня
   user = currentSession.user;
   let {data: memberships, error} = await supabase
     .from('kp_organization_members')
-    .select('organization_id, role, status, organizations(name, timezone)')
+    .select('organization_id, role, status, kp_organizations(name, timezone)')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .limit(1);
@@ -205,7 +205,7 @@ const ensureWorkspace = async (currentSession, desiredName = 'Коптильня
   } else {
     const membership = memberships[0];
     organizationId = membership.organization_id;
-    organizationName = membership.organizations?.name || 'Коптильня';
+    organizationName = membership.kp_organizations?.name || 'Коптильня';
   }
   return {organizationId, organizationName};
 };

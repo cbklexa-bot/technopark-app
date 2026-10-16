@@ -16,6 +16,8 @@ assert.ok(backend.includes('supabase.auth.resetPasswordForEmail'), 'Password rec
 assert.ok(backend.includes('supabase.auth.getSession'), 'Saved sessions must be restored after restart');
 assert.ok(backend.includes('supabase.auth.signOut()'), 'Account sign-out must be implemented');
 assert.ok(backend.includes(".from('kp_organization_members')"), 'Every signed-in user must be resolved to an organization membership');
+assert.ok(backend.includes("kp_organizations(name, timezone)"), 'Membership query must join the namespaced organization table');
+assert.ok(backend.includes('membership.kp_organizations?.name'), 'Workspace name must be read from the namespaced relationship');
 assert.ok(backend.includes("rpc('kp_create_organization'"), 'First-time owners must be able to initialize a workspace');
 assert.ok(backend.includes(".from('kp_organization_data')"), 'The app must fetch server state, not only localStorage');
 assert.ok(backend.includes("rpc('kp_save_organization_data'"), 'Mutations must persist to the server');

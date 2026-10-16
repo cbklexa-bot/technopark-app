@@ -4,7 +4,7 @@
 
 - Android prototype source: `smokehouse-android`.
 - This work is isolated in `koptilnya-production`; `main`, `smokehouse-android`, and `smokehouse-prototype` are not modified by this workstream.
-- The prototype uses localStorage and sample data. It is not a multi-tenant production application yet.
+- The UI keeps an editable client state, while `kp_organization_data` persists a revisioned JSON snapshot per organization in Supabase. The schema also defines normalized business tables for the next staged migration; the current UI uses the revision-checked snapshot RPC.
 - The GitHub repository is public. Real `.BP` archives, exports containing customer information, database dumps, credentials, service-role keys, and payment secrets must never be committed here.
 
 ## Supabase project selection
@@ -22,12 +22,12 @@ The branch includes:
 - `supabase/tests/koptilnya_tenant_accounting.test.sql`, with synthetic pgTAP fixtures for organization isolation, inventory posting/idempotency, negative-stock rejection, payment replay, balance calculations, expired-subscription write denial, and private import staging.
 - `.github/workflows/koptilnya-production-check.yml`: a PostgreSQL grammar/static contract job, a temporary local Supabase integration-test job, and the existing web/Android build pipeline.
 
-The tests are source-controlled, but the integration suite must be reported as passed only after the corresponding CI job finishes green. A green local CI stack is not a substitute for reviewing and applying the migration to a separately identified hosted Koptilnya project.
+The tests are source-controlled, and the integration suite must be reported as passed only after the corresponding CI job finishes green. A green local CI stack is not a substitute for applying and verifying this namespaced migration against the hosted Technopark project.
 
 This is a foundation, not a declaration of product completion. The following work remains before production:
 - Review the namespaced migration and apply it only to `ereiiidezagburttpxtn` (the existing Technopark Supabase project), never to `max-song-app`.
 - Verify two-tenant isolation and business-operation tests in CI; add concurrency-focused tests and Storage object read/write isolation tests as the backend is expanded.
-- Implement frontend Auth screens and bind existing screens to the Supabase data layer. The prototype still uses localStorage until that integration is completed.
+- Implement frontend Auth screens and bind existing screens to the Supabase data layer. The UI's domain state is synchronized through the revision-checked `kp_organization_data` RPC; normalized business tables remain available for subsequent feature-by-feature migration.
 - Configure Google OAuth and an SMS provider; credentials belong only in Supabase Auth settings.
 - Select and configure a payment provider. Subscription rows are not client-writable; only a verified server-side webhook should change them.
 - Build server-side export/restore and idempotent import jobs.
@@ -49,7 +49,7 @@ This is a foundation, not a declaration of product completion. The following wor
 ## Setup checklist after the shared Technopark project is confirmed
 
 1. Install the Supabase CLI and verify its version with `supabase --version`.
-2. In a local checkout of this branch, link only the identified Technopark Supabase project (`ereiiidezagburttpxtn`).
+2. In a local checkout of this branch, link only the identified Technopark Supabase project (`ereiiidezagburttpxtn`) and do not apply this migration to `max-song-app`.
 3. Create the migration through the CLI, move the reviewed SQL into its generated migration file, and apply it first to a non-production branch/test project.
 4. Run `supabase db lint` if supported by the installed CLI, then `supabase test db` and the project security advisors; fix all warnings before production.
 5. Add project URL and publishable key as deployment configuration. Keep private/payment credentials in server-side secrets only.
