@@ -34,6 +34,10 @@ assert.ok(backend.includes("rawPositions.forEach((r, index) =>"), 'The importer 
 assert.ok(!backend.includes("if (rawPositions.length) {\n    docs.forEach((d) => {\n      if (d.items.length) d.items = [];"),
   'Imported document positions must never be cleared after they have been read');
 assert.ok(backend.includes('Строка позиции №'), 'Unmapped source positions must be reported');
+assert.ok(backend.includes('ambiguousDocNumbers'), 'Repeated document numbers must not be used to assign payments arbitrarily');
+assert.ok(backend.includes('Платёж с распределением по'), 'Ambiguous historical payment allocations must be reported');
+assert.ok(backend.includes('Исторический снимок названия') || backend.includes('как исторический снимок названия'), 'Unmatched legacy product names must remain in document items');
+
 
 assert.ok(backend.includes('На устройстве уже есть локальные записи'), 'Existing local records must require an explicit keep-or-replace choice');
 
