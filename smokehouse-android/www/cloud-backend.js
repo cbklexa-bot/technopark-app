@@ -180,7 +180,7 @@ const renderAuth = (mode = 'signin', message = '', messageKind = 'error') => {
       <label class="koptilnyaField" for="koptilnyaEmail">Электронная почта</label>
       <input id="koptilnyaEmail" type="email" name="email" autocomplete="email" required maxlength="254" value="${safeText(previousEmail)}" />
       <label class="koptilnyaField" for="koptilnyaPassword">Пароль</label>
-      <input id="koptilnyaPassword" type="password" name="password" autocomplete="${signingUp ? 'new-password' : 'current-password'}" minlength="8" required />
+      <input id="koptilnyaPassword" type="password" name="password" autocomplete="${signingUp ? 'new-password' : 'current-password'}" ${signingUp ? 'minlength="8"' : ''} required />
       ${signingUp ? '<label class="koptilnyaField" for="koptilnyaOrgName">Название коптильни</label><input id="koptilnyaOrgName" type="text" name="orgName" maxlength="120" value="' + safeText(previousOrgName) + '" required />' : ''}
       <div class="koptilnyaActions"><button class="koptilnyaButton" id="koptilnyaAuthSubmit" type="submit">${signingUp ? 'Создать аккаунт' : 'Войти'}</button></div>
       <div class="koptilnyaAuthLinks">

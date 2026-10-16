@@ -87,6 +87,7 @@ assert.ok(!backend.includes('service_role'), 'Service-role keys must never ship 
 assert.ok(!/https:\/\/[a-z0-9]+\.supabase\.co/.test(backend), 'A hosted Supabase project must not be hardcoded before it is provisioned');
 assert.ok(!/sb_secret_[A-Za-z0-9_-]{12,}/.test(backend), 'No Supabase secret key may be bundled into the app');
 
+assert.ok(/\$\{signingUp \? 'minlength="8"' : ''\}/.test(backend), 'The 8-character minimum must apply to registration but never block existing-account sign-in');
 assert.ok(backend.includes('isObfuscatedSignupResponse(result.user)'), 'Masked duplicate-signup responses must not be shown as a successful new registration');
 assert.ok(backend.includes('signInWithPassword({email, password})'), 'A masked duplicate signup should attempt sign-in with the supplied credentials');
 assert.ok(backend.includes('global: { fetch: fetchWithTimeout }'), 'Cloud requests must have a timeout');
