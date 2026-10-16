@@ -1,0 +1,18 @@
+# Sensitive source archives and local migration work — never commit business data.
+*.BP
+*.bp
+*.BP.*
+*.bp.*
+/koptilnya-private/
+/private-data/
+/migration-inputs/
+/migration-work/
+/imports-private/
+
+# Runtime configuration and credentials
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+service-account*.json
