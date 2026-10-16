@@ -433,11 +433,11 @@ create or replace function private.can_edit_org(p_organization_id uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
-as $
+as $$
   select private.is_org_member(p_organization_id)
      and private.can_write_org(p_organization_id)
      and private.has_org_role(p_organization_id, array['owner', 'admin', 'manager', 'operator']);
-$;
+$$;
 revoke all on function private.can_edit_org(uuid) from public, anon;
 grant execute on function private.can_edit_org(uuid) to authenticated;
 
@@ -445,21 +445,21 @@ create or replace function private.prevent_tenant_reassignment()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   if old.organization_id is distinct from new.organization_id then
     raise exception 'organization_id cannot be reassigned' using errcode = '42501';
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function private.prevent_tenant_reassignment() from public, anon, authenticated;
 
 create or replace function private.guard_product_inventory_settings()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   if old.stock_quantity <> 0 and (
        old.tracks_inventory is distinct from new.tracks_inventory
@@ -474,7 +474,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function private.guard_product_inventory_settings() from public, anon, authenticated;
 drop trigger if exists guard_product_inventory_settings on public.products;
 create trigger guard_product_inventory_settings
@@ -1265,9 +1265,9 @@ begin
     execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function private.audit_row_change()', t);
   end loop;
 end
-$;
+$$;
 
-do $
+do $$
 declare
   t text;
 begin
@@ -1279,7 +1279,7 @@ begin
     execute format('create trigger prevent_tenant_reassignment before update on public.%I for each row execute function private.prevent_tenant_reassignment()', t);
   end loop;
 end
-$;
+$$;
 
 do $$
 declare
