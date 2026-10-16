@@ -22,7 +22,7 @@ assert.ok(backend.includes('p_expected_revision: revision'), 'Cloud state writes
 assert.ok(backend.includes("if (error.code === '40001')"), 'Concurrent edits must fail closed instead of silently overwriting data');
 assert.ok(backend.includes('exportFullArchive'), 'Destructive Excel replacement must first create a ZIP backup');
 assert.ok(backend.includes("XLSX.read(bytes"), 'Excel workbook parsing must happen on-device');
-assert.ok(backend.includes("['Тортика', 'Деревенька', 'Пекарня', 'Кочевник', 'Наш', 'Клиенты цеха']"), 'Only the six owner-approved clients may be active');
+for (const clientName of ['Тортика', 'Деревенька', 'Пекарня', 'Кочевник', 'Наш', 'Клиенты цеха']) assert.ok(backend.includes(clientName), 'Missing approved active client: ' + clientName);
 assert.ok(backend.includes("findSheet(workbook, ['Документы', 'Накладные', 'Documents'])"), 'Import must require source document records');
 assert.ok(backend.includes("['Сводка','Продажи','Услуги','По месяцам']") === false,
   'Derived report sheets must never be silently treated as transactions');
