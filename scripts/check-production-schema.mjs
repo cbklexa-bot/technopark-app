@@ -64,6 +64,12 @@ assert.ok(sql.includes('greatest(d.total_amount - coalesce(a.amount_paid, 0), 0)
 assert.ok(sql.includes('payment_allocations_document_idx'), 'Payment allocations must be indexed by document');
 assert.ok(sql.includes("array['owner', 'admin', 'manager', 'operator']"), 'Write operations must be role-limited');
 assert.ok(sql.includes("bucket_id = 'koptilnya-private'"), 'File storage must use the Koptilnya private bucket');
+assert.ok(sql.includes('create table public.organization_data'), 'Authenticated workspace persistence table is required');
+assert.ok(sql.includes('function public.save_organization_data('), 'Cloud state saves must go through the server-side revision RPC');
+assert.ok(sql.includes('p_expected_revision'), 'Cloud state writes must reject concurrent stale revisions');
+assert.ok(sql.includes('private.can_edit_org(p_organization_id)'), 'Cloud state write RPC must enforce organization role and active entitlement');
+assert.ok(sql.includes('owner-early-access'), 'The owner workspace must have a server-provisioned initial access plan');
+
 assert.ok(sql.includes('create table public.import_staging_rows'), 'Historical data must be staged for review before importing');
 assert.ok(sql.includes('public.import_staging_rows, public.audit_events from anon, authenticated'), 'Raw import staging must not be exposed to client roles');
 
