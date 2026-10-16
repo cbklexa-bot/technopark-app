@@ -45,8 +45,8 @@ for (const helper of ['is_org_member', 'has_org_role', 'can_write_org', 'can_edi
   assert.ok(sql.includes('function private.' + helper + '('), 'Missing private authorization helper: ' + helper);
 }
 assert.ok(sql.includes('set search_path = \'\''), 'Security-sensitive functions must pin the search_path');
-assert.ok(sql.includes('private.can_edit_org(v_doc.organization_id)'), 'Document posting must enforce role and subscription rights');
-assert.ok(sql.includes('private.can_edit_org(v_batch.organization_id)'), 'Production posting must enforce role and subscription rights');
+assert.ok(sql.includes('private.can_edit_org(v_document_org_id)'), 'Document posting must enforce role and subscription rights');
+assert.ok(sql.includes('private.can_edit_org(v_batch_org_id)'), 'Production posting must enforce role and subscription rights');
 assert.ok(sql.includes('private.can_edit_org(p_organization_id)'), 'Payment posting must enforce role and subscription rights');
 
 assert.ok(sql.includes('create unique index stock_movement_doc_line_unique'), 'Document posting must be idempotent at stock-movement level');
