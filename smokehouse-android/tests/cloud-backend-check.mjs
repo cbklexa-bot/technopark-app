@@ -40,6 +40,11 @@ assert.ok(importer.includes('как исторический снимок наз
 
 
 assert.ok(backend.includes('На устройстве уже есть локальные записи'), 'Existing local records must require an explicit keep-or-replace choice');
+assert.ok(backend.includes("id=\"koptilnyaUseCloud\""), 'Existing cloud data must offer an explicit keep-cloud option');
+assert.ok(backend.includes("id=\"koptilnyaUseLocal\""), 'Existing local data must offer an explicit local replacement option');
+assert.ok(backend.includes('Перед заменой будет создан ZIP-архив облачной базы'), 'Replacing cloud data must confirm a remote backup before overwriting');
+assert.ok(backend.includes("persistToCloud: remoteExists"), 'A chosen local replacement must be saved to the server using the expected revision');
+
 
 assert.ok(html.includes('cloud-backend.js'), 'The Android app must load the cloud backend module');
 assert.ok(html.includes('window.KoptilnyaApp='), 'The existing accounting UI must expose its state to the cloud adapter');
