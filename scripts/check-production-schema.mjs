@@ -19,7 +19,7 @@ const rlsTables = [...rlsBlock[1].matchAll(/'([a-z_][a-z0-9_]*)'/gi)].map((match
 assert.deepEqual([...tables].sort(), [...rlsTables].sort(), 'Every public table must be covered by RLS; no unprotected business table is allowed');
 
 for (const requiredTable of [
-  'profiles', 'organizations', 'organization_members', 'clients', 'products',
+  'profiles', 'organizations', 'organization_data', 'organization_members', 'clients', 'products',
   'documents', 'document_items', 'production_batches', 'production_batch_inputs',
   'stock_movements', 'expense_categories', 'expenses', 'payments',
   'payment_allocations', 'subscription_plans', 'organization_subscriptions',
@@ -27,7 +27,7 @@ for (const requiredTable of [
 ]) assert.ok(tables.includes(requiredTable), 'Missing required business table: ' + requiredTable);
 
 for (const rpc of [
-  'create_organization', 'post_document', 'post_production_batch',
+  'create_organization', 'save_organization_data', 'post_document', 'post_production_batch',
   'record_payment_with_allocations',
 ]) {
   assert.ok(sql.includes('function public.' + rpc + '('), 'Missing server-side RPC: ' + rpc);
@@ -48,6 +48,9 @@ assert.ok(sql.includes('set search_path = \'\''), 'Security-sensitive functions 
 assert.ok(sql.includes('private.can_edit_org(v_document_org_id)'), 'Document posting must enforce role and subscription rights');
 assert.ok(sql.includes('private.can_edit_org(v_batch_org_id)'), 'Production posting must enforce role and subscription rights');
 assert.ok(sql.includes('private.can_edit_org(p_organization_id)'), 'Payment posting must enforce role and subscription rights');
+assert.ok(sql.includes('private.can_edit_org(p_organization_id)'), 'Workspace save must be role and subscription protected');
+assert.ok(sql.includes('p_expected_revision'), 'Workspace saves must have optimistic concurrency protection');
+assert.ok(sql.includes('owner-early-access'), 'New owners must receive launch access without blocking basic account creation');
 
 assert.ok(sql.includes('create unique index stock_movement_doc_line_unique'), 'Document posting must be idempotent at stock-movement level');
 assert.ok(sql.includes('create unique index stock_movement_batch_input_unique'), 'Production inputs must not be deducted twice');
