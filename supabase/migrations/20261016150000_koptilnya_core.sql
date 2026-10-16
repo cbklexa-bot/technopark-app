@@ -1027,7 +1027,8 @@ left join (
   select organization_id, document_id, sum(amount)::numeric(14,2) as amount_paid
   from public.payment_allocations
   group by organization_id, document_id
-) a on a.organization_id = d.organization_id and a.document_id = d.id;
+) a on a.organization_id = d.organization_id and a.document_id = d.id
+where d.status = 'posted' and d.kind in ('sale', 'service');
 grant select on public.document_balances to authenticated;
 
 -- Enable RLS on every public table created by this migration.
