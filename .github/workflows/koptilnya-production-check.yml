@@ -40,12 +40,36 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from pglast import parse_sql
-          migration = Path('supabase/migrations/20261016150000_koptilnya_core.sql')
-          statements = parse_sql(migration.read_text(encoding='utf-8'))
-          print(f'PostgreSQL parser accepted {len(statements)} SQL statements in {migration}.')
+          paths = [
+              Path('supabase/migrations/20261016150000_koptilnya_core.sql'),
+              Path('supabase/tests/koptilnya_tenant_accounting.test.sql'),
+          ]
+          for path in paths:
+              statements = parse_sql(path.read_text(encoding='utf-8'))
+              print(f'PostgreSQL parser accepted {len(statements)} SQL statements in {path}.')
           PY
       - name: Check tenant, RLS, accounting, entitlement, and recipe-block contracts
         run: node scripts/check-production-schema.mjs
+
+  database-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - name: Confirm the CLI is running
+        run: supabase --version
+      - name: Start an isolated local Supabase stack and apply migrations
+        run: supabase start
+      - name: Run real PostgreSQL RLS and accounting tests using pgTAP
+        run: supabase test db --local
+      - name: Stop local containers
+        if: always()
+        run: supabase stop --no-backup
 
   android:
     runs-on: ubuntu-latest
