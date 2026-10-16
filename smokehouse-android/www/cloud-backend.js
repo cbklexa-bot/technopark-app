@@ -279,13 +279,6 @@ const parseWorkbook = (workbook, filename) => {
     });
   });
 
-  if (rawPositions.length) {
-    docs.forEach((d) => {
-      if (d.items.length) d.items = [];
-      // The document header total remains as a fallback until its source positions have been matched.
-    });
-  }
-
   docs.forEach((d) => {
     if (d.items.length) {
       delete d.manualAmount; delete d.manualCost;
