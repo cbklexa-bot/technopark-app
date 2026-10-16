@@ -56,8 +56,11 @@ insert into public.documents (
   counterparty_id, counterparty_name_snapshot, total_amount, total_cost, posted_at
 ) values
   ('aaaaaaaa-4444-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaaaaaa',
+   'SALE-A-OTHER-TEST', 'sale', 'posted', current_date,
+   'aaaaaaaa-2222-4aaa-8aaa-aaaaaaaaaaaa', 'Tenant A customer', 900, 500, now()),
+  ('bbbbbbbb-4444-4bbb-8bbb-bbbbbbbbbbbb', 'bbbbbbbb-1111-4bbb-8bbb-bbbbbbbbbbbb',
    'SALE-B-TEST', 'sale', 'posted', current_date,
-   'bbbbbbbb-2222-4bbb-8bbb-bbbbbbbbbbbb', 'Tenant B customer', 900, 500, now());
+   'bbbbbbbb-2222-4bbb-8bbb-bbbbbbbbbbbb', 'Tenant B customer', 700, 400, now());
 
 insert into public.documents (
   id, organization_id, document_number, kind, status, document_date,
@@ -148,8 +151,8 @@ select is(
   (select count(*) from public.payments where idempotency_key = 'ci-payment-key-0001'),
   1::bigint, 'Payment idempotency key resolves to one payment row'
 );
-select is((select count(*) from public.document_balances), 1::bigint,
-  'Debt balances omit drafts and other tenants documents');
+select is((select count(*) from public.document_balances), 2::bigint,
+  'Tenant A sees only its posted sales/services, not drafts or Tenant B balances');
 select is(
   (select balance_due from public.document_balances where id = 'aaaaaaaa-5555-4aaa-8aaa-aaaaaaaaaaaa'::uuid),
   15::numeric, 'Partial payment reduces the balance without being counted as revenue'
