@@ -1,7 +1,6 @@
-// Public client configuration for Koptilnya only.
-// Fill these two values only after a dedicated Koptilnya Supabase project is created.
-// This file is bundled into Android, so it must never contain passwords or secret/service-role keys.
+// Public client configuration for Koptilnya within the existing Technopark Supabase project.
+// Only publishable client credentials belong here; never include a service_role or secret key.
 window.KoptilnyaCloudConfig = Object.freeze({
-  url: '',
-  publishableKey: '',
+  url: 'https://ereiiidezagburttpxtn.supabase.co',
+  publishableKey: 'sb_publishable_YuQ8s49c1LvkCTmoBPQ0hA_7EJ3Z1cj',
 });
