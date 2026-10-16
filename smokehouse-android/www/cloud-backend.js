@@ -131,9 +131,8 @@ const parseWorkbook = (workbook, filename) => {
     activeClientByName.set(key, client.id);
     clients.push(client);
   });
-  // Create blank entries for the named six only when the workbook has a client sheet;
-  // this never silently creates extra active counterparties.
-  if (sourceNames.clients) {
+  // Always keep the exact six owner-approved active counterparties; other historical names remain on their documents.
+  {
     CANONICAL_CLIENTS.forEach((name) => {
       if (activeClientByName.has(norm(name))) return;
       const client = { id: 'koptilnya-client-' + norm(name), name, phone: '', kind: 'Контрагент' };
@@ -185,9 +184,10 @@ const parseWorkbook = (workbook, filename) => {
       warnings.push('Документ «' + doc.number + '» за ' + date.slice(0,4) + ' год не попадёт в оперативную базу (оставлен за пределами периода 2025–2026).');
       return;
     }
-    const productId = productNames.get(norm(headerValue(r, ['ID продукции', 'Продукция ID', 'Product ID'])))
+    const sourceProductId = clean(headerValue(r, ['ID продукции', 'Продукция ID', 'Product ID']));
+    const productId = (products.some((p) => p.id === sourceProductId) ? sourceProductId : '')
       || productNames.get(norm(headerValue(r, ['Продукция', 'Товар', 'Наименование продукции'])));
-    if (productId && doc.qty > 0) {
+    if (productId && doc.qty > 0 && rawPositions.length === 0) {
       doc.items.push({
         productId, qty: doc.qty,
         price: doc.qty ? amount / doc.qty : 0,
@@ -198,6 +198,8 @@ const parseWorkbook = (workbook, filename) => {
       doc.manualAmount = amount;
       doc.manualCost = cost;
     }
+    doc._headerAmount = amount;
+    doc._headerCost = cost;
     if (!date) warnings.push('У документа «' + doc.number + '» отсутствует распознаваемая дата.');
     docMap.set(key, doc);
     docs.push(doc);
@@ -238,6 +240,27 @@ const parseWorkbook = (workbook, filename) => {
       cost: unitCost || (qty ? lineCost / qty : 0),
       note: productId ? '' : productName,
     });
+  });
+
+  if (rawPositions.length) {
+    docs.forEach((d) => {
+      if (d.items.length) d.items = [];
+      // The document header total remains as a fallback until its source positions have been matched.
+    });
+  }
+
+  docs.forEach((d) => {
+    if (d.items.length) {
+      delete d.manualAmount; delete d.manualCost;
+      const lineAmount = d.items.reduce((sum, item) => sum + num(item.qty) * num(item.price), 0);
+      const lineCost = d.items.reduce((sum, item) => sum + num(item.qty) * num(item.cost), 0);
+      if (d._headerAmount && Math.abs(lineAmount - d._headerAmount) > 0.01) warnings.push('Сумма позиций документа «' + d.number + '» (' + formatMoney(lineAmount) + ') не совпадает с итогом исходного документа (' + formatMoney(d._headerAmount) + '). Проверьте до использования отчётов.');
+      if (d._headerCost && Math.abs(lineCost - d._headerCost) > 0.01) warnings.push('Себестоимость позиций документа «' + d.number + '» не совпадает с исходным итогом.');
+    } else {
+      if (d._headerAmount) d.manualAmount = d._headerAmount;
+      if (d._headerCost) d.manualCost = d._headerCost;
+    }
+    delete d._headerAmount; delete d._headerCost;
   });
 
   // The old workbook may contain one transaction per row in named sales/service sheets.
@@ -466,11 +489,11 @@ const renderAuth = (mode = 'signin', message = '') => {
           setOverlayStatus('koptilnyaAuthGate', 'Аккаунт создан. Если в проекте включено подтверждение почты, подтвердите адрес в письме, затем войдите.', 'ok');
           return;
         }
-        if (result.session) await openWorkspace(result.session, clean(data.get('orgName')) || 'Коптильня');
+        /* The auth-state listener opens the newly created session exactly once. */
       } else {
         const {data: result, error} = await supabase.auth.signInWithPassword({email, password});
         if (error) throw error;
-        await openWorkspace(result.session);
+        /* The auth-state listener opens the signed-in session exactly once. */
       }
     } catch (error) {
       setOverlayStatus('koptilnyaAuthGate', error?.message || 'Не удалось войти. Проверьте соединение и реквизиты.', 'error');
@@ -666,9 +689,10 @@ const openImportPicker = () => {
         preview.appendChild(warnings);
       }
       const hasSourceDocs = !!parsed.summary.sourceSheets.documents && counts.documents > 0;
-      confirm.disabled = !hasSourceDocs || counts.documents === 0;
+      const blockingWarnings = parsed.summary.warnings.some((w) => /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа/i.test(w));
+      confirm.disabled = !hasSourceDocs || counts.documents === 0 || blockingWarnings;
       setOverlayStatus('koptilnyaImportGate', confirm.disabled
-        ? 'Импорт заблокирован: нужен отдельный лист исходных документов с датами и типами. Сводки не используются вместо накладных.'
+        ? 'Импорт заблокирован: нужен отдельный лист исходных документов с датами и типами; также исправь критические ошибки сопоставления, показанные выше.'
         : 'Проверь количество строк, контрагентов и суммы за 2025/2026 годы. Следующее нажатие заменит текущие данные.', confirm.disabled ? 'error' : 'ok');
     } catch (error) {
       parsed = null;
@@ -680,8 +704,12 @@ const openImportPicker = () => {
     const again = window.confirm('Внимание: текущие данные облачной коптильни будут заменены данными из «' + parsed.filename + '». Продолжить? Перед импортом обязательно сохрани ZIP-резервную копию.');
     if (!again) return;
     confirm.disabled = true;
-    setOverlayStatus('koptilnyaImportGate', 'Сохраняю импортированную базу…');
+    setOverlayStatus('koptilnyaImportGate', 'Создаю резервную копию и сохраняю импортированную базу…');
     try {
+      const nativeBridge = window.KoptilnyaNative;
+      if (nativeBridge?.exportFullArchive) {
+        await nativeBridge.exportFullArchive({format:'koptilnya-backup',version:2,exportedAt:new Date().toISOString(),application:'Коптильня',contents:app().getState()});
+      }
       parsed.state.importHistory = [
         ...(app().getState().importHistory || []),
         {
