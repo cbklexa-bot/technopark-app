@@ -363,6 +363,41 @@ create table public.import_runs (
   unique (organization_id, source_sha256)
 );
 
+-- Private import staging. Raw source rows are intentionally inaccessible through the client Data API.
+-- Only a trusted server-side import worker should read/write this table after explicit approval.
+create table public.import_staging_rows (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null,
+  import_run_id uuid not null,
+  source_table text not null,
+  source_record_id text,
+  source_row_number integer not null check (source_row_number > 0),
+  entity_type text not null check (entity_type in (
+    'clients', 'products', 'documents', 'document_items', 'production_batches',
+    'production_batch_inputs', 'stock_movements', 'expenses', 'payments',
+    'payment_allocations', 'unknown'
+  )),
+  source_payload jsonb not null,
+  normalized_payload jsonb,
+  mapped_target_id uuid,
+  match_confidence numeric(5,4) check (match_confidence between 0 and 1),
+  review_status text not null default 'pending'
+    check (review_status in ('pending', 'matched', 'approved', 'ignored', 'error', 'imported')),
+  validation_errors jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(validation_errors) = 'array'),
+  imported_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (organization_id, id),
+  unique (organization_id, import_run_id, source_table, source_row_number),
+  foreign key (organization_id, import_run_id)
+    references public.import_runs (organization_id, id) on delete cascade
+);
+create unique index import_staging_source_id_unique
+  on public.import_staging_rows (organization_id, import_run_id, source_table, source_record_id)
+  where source_record_id is not null;
+create index import_staging_review_idx
+  on public.import_staging_rows (organization_id, import_run_id, review_status, source_table);
+
 create table public.audit_events (
   id bigint generated always as identity primary key,
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -1005,7 +1040,7 @@ begin
     'documents', 'document_items', 'production_batches', 'production_batch_inputs',
     'stock_movements', 'expense_categories', 'expenses', 'payments',
     'payment_allocations', 'subscription_plans', 'organization_subscriptions',
-    'subscription_payment_events', 'backup_exports', 'import_runs', 'audit_events'
+    'subscription_payment_events', 'backup_exports', 'import_runs', 'import_staging_rows', 'audit_events'
   ]
   loop
     execute format('alter table public.%I enable row level security', t);
@@ -1019,7 +1054,7 @@ revoke all on public.profiles, public.organizations, public.organization_members
   public.production_batch_inputs, public.stock_movements, public.expense_categories,
   public.expenses, public.payments, public.payment_allocations, public.subscription_plans,
   public.organization_subscriptions, public.subscription_payment_events, public.backup_exports,
-  public.import_runs, public.audit_events from anon, authenticated;
+  public.import_runs, public.import_staging_rows, public.audit_events from anon, authenticated;
 
 grant select, update on public.profiles to authenticated;
 grant select on public.organizations to authenticated;
