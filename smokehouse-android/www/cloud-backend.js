@@ -654,7 +654,7 @@ const handleAuthRedirect = async (rawUrl) => {
   try {
     const code = query.get('code') || hash.get('code');
     if (code) {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(String(rawUrl));
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) throw error;
       if (type === 'recovery') showPasswordRecovery(data.session);
       return true;
