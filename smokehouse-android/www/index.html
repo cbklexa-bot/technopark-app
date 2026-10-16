@@ -54,7 +54,7 @@
  .product-card-top{align-items:flex-start;flex-direction:column}.product-delete-btn{padding:7px 9px}
  .recipe-head-actions{justify-content:flex-end}.client-actions{flex-wrap:nowrap;overflow-x:auto}
 }
-</style><script type="module" src="./native-bridge.js"></script></head><body>
+</style><script type="module" src="./native-bridge.js"></script><script type="module" src="./cloud-backend.js"></script></head><body>
 <div class="drawer-overlay" id="drawerOverlay"></div><div class="layout"><aside class="side"><div class="brand"><div class="logo">К</div><div><b>Коптильня</b><small>учёт производства</small></div></div><nav class="nav"><button class="active" data-page="home">⌂　Главная</button><button data-page="products">▦　Продукция</button><button data-page="clients">♙　Клиенты</button><button data-page="documents">▤　Документы</button><button data-page="expenses">↘　Затраты</button><button data-page="debts">₽　Долги и оплаты</button><button data-page="reports">▥　Отчёты</button><button data-page="recipes">▧　Рецепты и технологии</button></nav><div class="side-note"><b>ДЕМО-РЕЖИМ</b>Тестовые записи хранятся только в этом браузере. Не используйте прототип для реального учёта.</div></aside>
 <main class="main"><header class="top"><div class="heading-group"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Открыть меню">☰</button><div><div class="eyebrow" id="eyebrow">ваше производство · финансы</div><h1 id="title">Главная</h1></div></div><div class="topright"><select class="period" id="period"><option value="month">Текущий месяц</option><option value="today">Сегодня</option><option value="year">Текущий год</option><option value="all">За всё время</option></select><button class="btn" id="quick">＋ Новая операция</button></div></header><section id="page-home" class="section active">
 <div class="cards home-metrics" id="metrics"></div>
@@ -98,13 +98,13 @@
 var KEY='smokehouse_static_preview_v1';
 function dateDays(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
 function uid(){return 'x'+Math.random().toString(36).slice(2)+Date.now().toString(36)}
-var seed={products:[{id:'p1',name:'Грудинка горячего копчения',type:'Готовая продукция',emoji:'🥓',stock:18,cost:412,receipt:420,sale:690,unit:'кг'},{id:'p2',name:'Колбаса копчёная',type:'Готовая продукция',emoji:'🌭',stock:24,cost:515,receipt:530,sale:820,unit:'кг'},{id:'p3',name:'Купаты',type:'Полуфабрикат',emoji:'🥩',stock:15,cost:380,receipt:400,sale:620,unit:'кг'},{id:'p4',name:'Шашлык свиной',type:'Полуфабрикат',emoji:'🍢',stock:28,cost:445,receipt:450,sale:700,unit:'кг'},{id:'p5',name:'Копчение сырья клиента',type:'Услуга',emoji:'♨️',stock:0,cost:20,receipt:20,sale:170,unit:'кг'},{id:'p6',name:'Изготовление колбас из сырья клиента',type:'Услуга',emoji:'🧑‍🍳',stock:0,cost:65,receipt:65,sale:220,unit:'кг'}],clients:[{id:'c1',name:'Магазин «У дома»',kind:'Магазин'},{id:'c2',name:'Продукты № 2',kind:'Магазин'},{id:'c3',name:'Мясной ряд',kind:'Магазин'},{id:'c4',name:'Заказчик услуг',kind:'Частный клиент'}],docs:[{id:'d1',number:'НК-0108',date:dateDays(1),type:'sale',clientId:'c1',productId:'p1',qty:20,price:690,cost:412,paid:0,note:'Поставка грудинки'},{id:'d2',number:'НК-0109',date:dateDays(2),type:'sale',clientId:'c2',productId:'p2',qty:16,price:820,cost:515,paid:8000,note:'Поставка колбасы'},{id:'d3',number:'УС-0032',date:dateDays(2),type:'service',clientId:'c4',productId:'p5',qty:10,price:170,cost:20,paid:1700,note:'Копчение сырья клиента'}],expenses:[{id:'e1',date:dateDays(1),category:'Бензин',note:'Развоз по магазинам',amount:1800,inCost:false},{id:'e2',date:dateDays(2),category:'Электричество',note:'Работа коптильни',amount:950,inCost:true},{id:'e3',date:dateDays(3),category:'Зарплата',note:'Выплата за период',amount:12000,inCost:false}],batches:[{id:'b1',date:dateDays(2),productId:'p1',rawName:'Грудинка сырая',rawQty:50,outputQty:40,totalCost:16480}],recipes:[{id:'r1',name:'Копчёная колбаса',kind:'Колбаса',emoji:'🌭',desc:'Состав, потери веса, режимы обработки и заметки.'},{id:'r2',name:'Купаты',kind:'Полуфабрикат',emoji:'🥩',desc:'Рецептура фарша, пропорции ингредиентов и подготовка.'},{id:'r3',name:'Шашлык',kind:'Полуфабрикат',emoji:'🍢',desc:'Маринад, нормы ингредиентов и расчёт себестоимости.'}],payments:[]};
+var seed={products:[],clients:[],docs:[],expenses:[],batches:[],recipes:[],payments:[]};
 var s;try{s=JSON.parse(localStorage.getItem(KEY)||'null')||seed}catch(e){s=seed}
-if(!s.clients.some(function(c){return c.id==='c_retail'}))s.clients.push({id:'c_retail',name:'Розничный покупатель (цех)',phone:'',kind:'Физлицо / продажа из цеха'});
+/* Retail client is created only when explicitly added by the owner. */
 // Migrate legacy payment allocations (document-number strings) to stable document IDs.
 s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
 var page='home',filter='all',reportTab='finance',clientHistoryId='',clientQuery='',clientStatsPeriod='month';
-function save(){localStorage.setItem(KEY,JSON.stringify(s))}
+function save(){localStorage.setItem(KEY,JSON.stringify(s));try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}}
 function n(v){return Number(v)||0}
 function money(v){return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n(v))}
 function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -411,7 +411,7 @@ document.getElementById('backupFile').onchange=function(e){
    if(!next||!Array.isArray(next.products)||!Array.isArray(next.clients)||!Array.isArray(next.docs)||!Array.isArray(next.expenses)||!Array.isArray(next.batches)||!Array.isArray(next.recipes)||!Array.isArray(next.payments))throw new Error('Структура архива не распознана');
    if(!window.confirm('Восстановить архив? Текущие данные на этом устройстве будут заменены данными из файла. Перед продолжением убедитесь, что у вас сохранена резервная копия.'))return;
    s=Object.assign({},s,next);
-   if(!s.clients.some(function(c){return c.id==='c_retail'}))s.clients.push({id:'c_retail',name:'Розничный покупатель (цех)',phone:'',kind:'Физлицо / продажа из цеха'});
+   /* Retail client is created only when explicitly added by the owner. */
    s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
    clientHistoryId='';clientQuery='';
    save();render();toast('Архив восстановлен на этом устройстве');
@@ -428,5 +428,30 @@ document.getElementById('applyReportRange').onclick=renderReports;document.getEl
 document.getElementById('reportStart').onchange=function(){document.querySelectorAll('[data-report-period]').forEach(function(x){x.classList.toggle('active',x.dataset.reportPeriod==='custom')})};document.getElementById('reportEnd').onchange=function(){document.querySelectorAll('[data-report-period]').forEach(function(x){x.classList.toggle('active',x.dataset.reportPeriod==='custom')})};
 document.getElementById('close').onclick=close;document.getElementById('cancel').onclick=close;document.getElementById('back').onclick=function(e){if(e.target.id==='back')close()};document.getElementById('docTabs').onclick=function(e){var b=e.target.closest('[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('#docTabs button').forEach(function(x){x.classList.toggle('active',x===b)});render()};document.getElementById('csv').onclick=function(){var b=reportBounds();if(!b.valid){toast('Проверьте даты отчёта');return}var head=['Дата','Документ','Тип записи','Клиент или категория','Позиции или описание','Количество, кг','Выручка или сумма','Себестоимость','Оплачено','Долг','Уже в себестоимости'];var dr=s.docs.filter(function(d){return d.date>=b.start&&d.date<=b.end}).map(function(d){return [d.date,d.number,d.type==='sale'?'Расходный':d.type==='receipt'?'Приходный':'Услуга',cli(d.clientId).name||d.supplier||'',docProductLabel(d),d.qty,amount(d),cost(d),d.paid,debt(d),'']});var er=s.expenses.filter(function(e){return e.date>=b.start&&e.date<=b.end}).map(function(e){return [e.date,'','Затраты',e.category,e.note,'',e.amount,'','','',e.inCost?'Да':'Нет']});var rows=[head].concat(dr,er);var csv='\uFEFF'+rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"'}).join(';')}).join('\r\n');downloadDataFile('koptilnya-report-'+b.start+'-'+b.end+'.csv','text/csv;charset=utf-8',csv)};
 document.getElementById('period').style.display='none';render();
+window.KoptilnyaApp={
+  getState:function(){return JSON.parse(JSON.stringify(s))},
+  setState:function(next){
+    next=next&&typeof next==='object'?next:{};
+    s={
+      products:Array.isArray(next.products)?next.products:[],
+      clients:Array.isArray(next.clients)?next.clients:[],
+      docs:Array.isArray(next.docs)?next.docs:[],
+      expenses:Array.isArray(next.expenses)?next.expenses:[],
+      batches:Array.isArray(next.batches)?next.batches:[],
+      recipes:[],
+      payments:Array.isArray(next.payments)?next.payments:[],
+      importHistory:Array.isArray(next.importHistory)?next.importHistory:[]
+    };
+    s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
+    save();render();
+  },
+  getLocalState:function(){try{var raw=localStorage.getItem(KEY);return raw?JSON.parse(raw):null}catch(e){return null}},
+  hasSavedLocalState:function(){return !!localStorage.getItem(KEY)},
+  hasLocalBusinessData:function(){
+    var d=this.getLocalState()||{};
+    return ['products','clients','docs','expenses','batches','payments'].some(function(k){return Array.isArray(d[k])&&d[k].length>0});
+  },
+  showToast:function(message){toast(message)}
+};
 })();
 </script></body></html>
