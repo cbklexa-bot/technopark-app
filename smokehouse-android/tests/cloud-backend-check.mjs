@@ -33,7 +33,7 @@ assert.ok(backend.includes('supabase.auth.resend('), 'Users must be able to requ
 assert.ok(backend.includes("App.addListener('appUrlOpen'"), 'Android must receive auth links while the app is open');
 assert.ok(backend.includes('App.getLaunchUrl()'), 'Android must process auth links that launch the app from a closed state');
 assert.ok(backend.includes('supabase.auth.setSession({ access_token, refresh_token })'), 'Implicit-flow auth callbacks must be exchanged for a saved session');
-assert.ok(backend.includes('supabase.auth.exchangeCodeForSession(String(rawUrl))'), 'PKCE auth callbacks must be supported');
+assert.ok(backend.includes('supabase.auth.exchangeCodeForSession(code)'), 'PKCE auth callbacks must be supported');
 assert.ok(backend.includes("errorCode === 'otp_expired'"), 'Expired email links must show actionable guidance');
 assert.ok(!backend.includes('http://localhost:3000'), 'A native auth redirect must never default to a localhost web server');
 assert.ok(backend.includes('supabase.auth.getSession'), 'Saved sessions must be restored after restart');
