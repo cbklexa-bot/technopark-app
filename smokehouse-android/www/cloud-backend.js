@@ -185,7 +185,7 @@ const ensureWorkspace = async (currentSession, desiredName = 'Коптильня
   session = currentSession;
   user = currentSession.user;
   let {data: memberships, error} = await supabase
-    .from('organization_members')
+    .from('kp_organization_members')
     .select('organization_id, role, status, organizations(name, timezone)')
     .eq('user_id', user.id)
     .eq('status', 'active')
@@ -193,13 +193,13 @@ const ensureWorkspace = async (currentSession, desiredName = 'Коптильня
   if (error) throw error;
   if (!memberships?.length) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    const {data: newOrgId, error: createError} = await supabase.rpc('create_organization', {
+    const {data: newOrgId, error: createError} = await supabase.rpc('kp_create_organization', {
       p_name: desiredName || 'Коптильня',
       p_timezone: timeZone,
     });
     if (createError) throw createError;
     organizationId = newOrgId;
-    const loaded = await supabase.from('organizations').select('name').eq('id', organizationId).single();
+    const loaded = await supabase.from('kp_organizations').select('name').eq('id', organizationId).single();
     if (loaded.error) throw loaded.error;
     organizationName = loaded.data.name;
   } else {
@@ -278,7 +278,7 @@ const openWorkspace = async (currentSession, desiredName = 'Коптильня')
   try {
     await ensureWorkspace(currentSession, desiredName);
     const {data: remote, error} = await supabase
-      .from('organization_data')
+      .from('kp_organization_data')
       .select('state, revision, updated_at')
       .eq('organization_id', organizationId)
       .maybeSingle();
@@ -290,7 +290,7 @@ const openWorkspace = async (currentSession, desiredName = 'Коптильня')
     revision = chosen.revision;
     app()?.setState(chosen.state);
     if (chosen.persistToCloud) {
-      const {data, error: persistError} = await supabase.rpc('save_organization_data', {
+      const {data, error: persistError} = await supabase.rpc('kp_save_organization_data', {
         p_organization_id: organizationId,
         p_expected_revision: revision,
         p_state: chosen.state,
@@ -318,7 +318,7 @@ const flushSave = async () => {
   const latest = pendingState;
   pendingState = null;
   setCloudStatus('Сохраняю…');
-  const {data, error} = await supabase.rpc('save_organization_data', {
+  const {data, error} = await supabase.rpc('kp_save_organization_data', {
     p_organization_id: organizationId,
     p_expected_revision: revision,
     p_state: latest,
@@ -434,7 +434,7 @@ const openImportPicker = () => {
         },
       ];
       revision = Number(revision) || 0;
-      const {data, error} = await supabase.rpc('save_organization_data', {
+      const {data, error} = await supabase.rpc('kp_save_organization_data', {
         p_organization_id: organizationId,
         p_expected_revision: revision,
         p_state: parsed.state,
@@ -457,7 +457,7 @@ const openImportPicker = () => {
 };
 const reloadRemoteState = async () => {
   if (!supabase || !organizationId) return;
-  const {data, error} = await supabase.from('organization_data').select('state,revision').eq('organization_id',organizationId).maybeSingle();
+  const {data, error} = await supabase.from('kp_organization_data').select('state,revision').eq('organization_id',organizationId).maybeSingle();
   if (error) { toast(error.message || 'Не удалось перечитать данные', true); return; }
   revision = Number(data?.revision) || 0;
   syncBlocked = false;

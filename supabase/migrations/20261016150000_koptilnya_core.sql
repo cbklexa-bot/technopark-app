@@ -1,20 +1,20 @@
--- Koptilnya production schema baseline.
--- Source-only until a dedicated Supabase project is provisioned and reviewed.
--- Do not apply this migration to max-song-app, Technopark, or an unidentified project.
+-- Koptilnya schema for the existing Technopark Supabase project.
+-- All Koptilnya tables, views, indexes, and RPCs are namespaced with kp_.
+-- Existing tp_* data is not modified; Auth and Storage are project-wide services.
 
-create schema if not exists private;
-revoke all on schema private from public;
-revoke all on schema private from anon;
-grant usage on schema private to authenticated;
+create schema if not exists kp_private;
+revoke all on schema kp_private from public;
+revoke all on schema kp_private from anon;
+grant usage on schema kp_private to authenticated;
 
-create table public.profiles (
+create table public.kp_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table public.organizations (
+create table public.kp_organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null check (length(btrim(name)) between 2 and 120),
   owner_user_id uuid not null references auth.users(id) on delete restrict,
@@ -24,8 +24,8 @@ create table public.organizations (
   unique (id)
 );
 
-create table public.organization_data (
-  organization_id uuid primary key references public.organizations(id) on delete cascade,
+create table public.kp_organization_data (
+  organization_id uuid primary key references public.kp_organizations(id) on delete cascade,
   state jsonb not null default '{"products":[],"clients":[],"docs":[],"expenses":[],"batches":[],"recipes":[],"payments":[]}'::jsonb
     check (jsonb_typeof(state) = 'object' and pg_column_size(state) <= 10485760),
   revision bigint not null default 0 check (revision >= 0),
@@ -33,9 +33,9 @@ create table public.organization_data (
   updated_at timestamptz not null default now()
 );
 
-create table public.organization_members (
+create table public.kp_organization_members (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   role text not null check (role in ('owner', 'admin', 'manager', 'operator', 'reader')),
   status text not null default 'active' check (status in ('invited', 'active', 'suspended')),
@@ -44,9 +44,9 @@ create table public.organization_members (
   unique (organization_id, id)
 );
 
-create table public.clients (
+create table public.kp_clients (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   name text not null check (length(btrim(name)) between 1 and 200),
   phone text,
   email text,
@@ -62,11 +62,11 @@ create table public.clients (
   unique (organization_id, id),
   check ((is_archived and archived_at is not null) or (not is_archived and archived_at is null))
 );
-create index clients_org_active_name_idx on public.clients (organization_id, lower(name)) where not is_archived;
+create index kp_clients_org_active_name_idx on public.kp_clients (organization_id, lower(name)) where not is_archived;
 
-create table public.products (
+create table public.kp_products (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   name text not null check (length(btrim(name)) between 1 and 200),
   product_type text not null check (product_type in ('raw_material', 'semi_finished', 'finished', 'service')),
   category text,
@@ -88,11 +88,11 @@ create table public.products (
   check ((product_type = 'service' and not tracks_inventory) or product_type <> 'service'),
   check ((is_archived and archived_at is not null) or (not is_archived and archived_at is null))
 );
-create index products_org_active_name_idx on public.products (organization_id, lower(name)) where not is_archived;
+create index kp_products_org_active_name_idx on public.kp_products (organization_id, lower(name)) where not is_archived;
 
-create table public.documents (
+create table public.kp_documents (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   document_number text,
   kind text not null check (kind in ('receipt', 'sale', 'service')),
   status text not null default 'draft' check (status in ('draft', 'posted', 'voided')),
@@ -112,16 +112,16 @@ create table public.documents (
   unique (organization_id, id),
   unique (organization_id, document_number),
   foreign key (organization_id, counterparty_id)
-    references public.clients (organization_id, id) on delete restrict,
+    references public.kp_clients (organization_id, id) on delete restrict,
   unique (organization_id, request_idempotency_key)
 );
-create unique index documents_post_key_unique on public.documents (organization_id, post_idempotency_key) where post_idempotency_key is not null;
-create index documents_org_date_idx on public.documents (organization_id, document_date desc);
-create index documents_org_kind_status_idx on public.documents (organization_id, kind, status, document_date);
+create unique index kp_documents_post_key_unique on public.kp_documents (organization_id, post_idempotency_key) where post_idempotency_key is not null;
+create index kp_documents_org_date_idx on public.kp_documents (organization_id, document_date desc);
+create index kp_documents_org_kind_status_idx on public.kp_documents (organization_id, kind, status, document_date);
 
-create table public.document_items (
+create table public.kp_document_items (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   document_id uuid not null,
   product_id uuid not null,
   product_name_snapshot text not null,
@@ -135,16 +135,16 @@ create table public.document_items (
   created_at timestamptz not null default now(),
   unique (organization_id, id),
   foreign key (organization_id, document_id)
-    references public.documents (organization_id, id) on delete cascade,
+    references public.kp_documents (organization_id, id) on delete cascade,
   foreign key (organization_id, product_id)
-    references public.products (organization_id, id) on delete restrict
+    references public.kp_products (organization_id, id) on delete restrict
 );
-create index document_items_document_idx on public.document_items (organization_id, document_id);
-create index document_items_product_idx on public.document_items (organization_id, product_id);
+create index kp_document_items_document_idx on public.kp_document_items (organization_id, document_id);
+create index kp_document_items_product_idx on public.kp_document_items (organization_id, product_id);
 
-create table public.production_batches (
+create table public.kp_production_batches (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   batch_number text,
   output_product_id uuid not null,
   output_product_name_snapshot text not null,
@@ -164,14 +164,14 @@ create table public.production_batches (
   unique (organization_id, batch_number),
   unique (organization_id, request_idempotency_key),
   foreign key (organization_id, output_product_id)
-    references public.products (organization_id, id) on delete restrict
+    references public.kp_products (organization_id, id) on delete restrict
 );
-create unique index production_batches_post_key_unique on public.production_batches (organization_id, post_idempotency_key) where post_idempotency_key is not null;
-create index production_batches_org_date_idx on public.production_batches (organization_id, batch_date desc);
+create unique index kp_production_batches_post_key_unique on public.kp_production_batches (organization_id, post_idempotency_key) where post_idempotency_key is not null;
+create index kp_production_batches_org_date_idx on public.kp_production_batches (organization_id, batch_date desc);
 
-create table public.production_batch_inputs (
+create table public.kp_production_batch_inputs (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   batch_id uuid not null,
   product_id uuid not null,
   product_name_snapshot text not null,
@@ -182,15 +182,15 @@ create table public.production_batch_inputs (
   created_at timestamptz not null default now(),
   unique (organization_id, id),
   foreign key (organization_id, batch_id)
-    references public.production_batches (organization_id, id) on delete cascade,
+    references public.kp_production_batches (organization_id, id) on delete cascade,
   foreign key (organization_id, product_id)
-    references public.products (organization_id, id) on delete restrict
+    references public.kp_products (organization_id, id) on delete restrict
 );
-create index production_batch_inputs_batch_idx on public.production_batch_inputs (organization_id, batch_id);
+create index kp_production_batch_inputs_batch_idx on public.kp_production_batch_inputs (organization_id, batch_id);
 
-create table public.stock_movements (
+create table public.kp_stock_movements (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   product_id uuid not null,
   movement_type text not null check (movement_type in ('receipt', 'sale', 'production_input', 'production_output', 'adjustment', 'opening_balance')),
   quantity_delta numeric(14,3) not null check (quantity_delta <> 0),
@@ -205,39 +205,39 @@ create table public.stock_movements (
   created_at timestamptz not null default now(),
   unique (organization_id, id),
   foreign key (organization_id, product_id)
-    references public.products (organization_id, id) on delete restrict,
+    references public.kp_products (organization_id, id) on delete restrict,
   foreign key (organization_id, source_document_id)
-    references public.documents (organization_id, id) on delete restrict,
+    references public.kp_documents (organization_id, id) on delete restrict,
   foreign key (organization_id, source_document_item_id)
-    references public.document_items (organization_id, id) on delete restrict,
+    references public.kp_document_items (organization_id, id) on delete restrict,
   foreign key (organization_id, source_production_batch_id)
-    references public.production_batches (organization_id, id) on delete restrict,
+    references public.kp_production_batches (organization_id, id) on delete restrict,
   foreign key (organization_id, source_production_input_id)
-    references public.production_batch_inputs (organization_id, id) on delete restrict,
+    references public.kp_production_batch_inputs (organization_id, id) on delete restrict,
   check ((source_document_id is null and source_document_item_id is null) or
          (source_document_id is not null and source_document_item_id is not null)),
   check ((source_production_batch_id is null and source_production_input_id is null) or
          (source_production_batch_id is not null))
 );
-create unique index stock_movement_doc_line_unique on public.stock_movements (organization_id, source_document_item_id) where source_document_item_id is not null;
-create unique index stock_movement_batch_input_unique on public.stock_movements (organization_id, source_production_input_id) where source_production_input_id is not null;
-create unique index stock_movement_batch_output_unique on public.stock_movements (organization_id, source_production_batch_id) where source_production_batch_id is not null and movement_type = 'production_output';
-create index stock_movements_product_date_idx on public.stock_movements (organization_id, product_id, movement_date desc);
+create unique index kp_stock_movement_doc_line_unique on public.kp_stock_movements (organization_id, source_document_item_id) where source_document_item_id is not null;
+create unique index kp_stock_movement_batch_input_unique on public.kp_stock_movements (organization_id, source_production_input_id) where source_production_input_id is not null;
+create unique index kp_stock_movement_batch_output_unique on public.kp_stock_movements (organization_id, source_production_batch_id) where source_production_batch_id is not null and movement_type = 'production_output';
+create index kp_stock_movements_product_date_idx on public.kp_stock_movements (organization_id, product_id, movement_date desc);
 
-create table public.expense_categories (
+create table public.kp_expense_categories (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   name text not null check (length(btrim(name)) between 1 and 100),
   is_archived boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (organization_id, id)
 );
-create unique index expense_categories_name_unique on public.expense_categories (organization_id, lower(name)) where not is_archived;
+create unique index kp_expense_categories_name_unique on public.kp_expense_categories (organization_id, lower(name)) where not is_archived;
 
-create table public.expenses (
+create table public.kp_expenses (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   expense_date date not null default current_date,
   category_id uuid,
   category_name_snapshot text not null,
@@ -255,14 +255,14 @@ create table public.expenses (
   unique (organization_id, id),
   unique (organization_id, request_idempotency_key),
   foreign key (organization_id, category_id)
-    references public.expense_categories (organization_id, id) on delete restrict,
+    references public.kp_expense_categories (organization_id, id) on delete restrict,
   check ((not is_voided and voided_at is null) or (is_voided and voided_at is not null))
 );
-create index expenses_org_date_idx on public.expenses (organization_id, expense_date desc) where not is_voided;
+create index kp_expenses_org_date_idx on public.kp_expenses (organization_id, expense_date desc) where not is_voided;
 
-create table public.payments (
+create table public.kp_payments (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   client_id uuid,
   amount numeric(14,2) not null check (amount > 0),
   payment_method text not null check (payment_method in ('cash', 'transfer', 'bank')),
@@ -275,13 +275,13 @@ create table public.payments (
   unique (organization_id, id),
   unique (organization_id, idempotency_key),
   foreign key (organization_id, client_id)
-    references public.clients (organization_id, id) on delete restrict
+    references public.kp_clients (organization_id, id) on delete restrict
 );
-create index payments_org_date_idx on public.payments (organization_id, payment_date desc);
+create index kp_payments_org_date_idx on public.kp_payments (organization_id, payment_date desc);
 
-create table public.payment_allocations (
+create table public.kp_payment_allocations (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   payment_id uuid not null,
   document_id uuid not null,
   amount numeric(14,2) not null check (amount > 0),
@@ -289,13 +289,13 @@ create table public.payment_allocations (
   unique (organization_id, id),
   unique (organization_id, payment_id, document_id),
   foreign key (organization_id, payment_id)
-    references public.payments (organization_id, id) on delete restrict,
+    references public.kp_payments (organization_id, id) on delete restrict,
   foreign key (organization_id, document_id)
-    references public.documents (organization_id, id) on delete restrict
+    references public.kp_documents (organization_id, id) on delete restrict
 );
-create index payment_allocations_document_idx on public.payment_allocations (organization_id, document_id);
+create index kp_payment_allocations_document_idx on public.kp_payment_allocations (organization_id, document_id);
 
-create table public.subscription_plans (
+create table public.kp_subscription_plans (
   id uuid primary key default gen_random_uuid(),
   code text not null,
   name text not null,
@@ -310,10 +310,10 @@ create table public.subscription_plans (
   unique (code, billing_interval)
 );
 
-create table public.organization_subscriptions (
+create table public.kp_organization_subscriptions (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null unique references public.organizations(id) on delete cascade,
-  plan_id uuid not null references public.subscription_plans(id) on delete restrict,
+  organization_id uuid not null unique references public.kp_organizations(id) on delete cascade,
+  plan_id uuid not null references public.kp_subscription_plans(id) on delete restrict,
   status text not null check (status in ('trialing', 'active', 'past_due', 'canceled', 'expired')),
   provider text not null default 'unconfigured',
   provider_customer_id text,
@@ -328,11 +328,11 @@ create table public.organization_subscriptions (
   unique (provider, provider_subscription_id)
 );
 
-create table public.subscription_payment_events (
+create table public.kp_subscription_payment_events (
   id uuid primary key default gen_random_uuid(),
   provider text not null,
   provider_event_id text not null,
-  organization_id uuid references public.organizations(id) on delete set null,
+  organization_id uuid references public.kp_organizations(id) on delete set null,
   event_type text not null,
   verified boolean not null default false,
   processed_at timestamptz,
@@ -341,9 +341,9 @@ create table public.subscription_payment_events (
   unique (provider, provider_event_id)
 );
 
-create table public.backup_exports (
+create table public.kp_backup_exports (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   requested_by uuid references auth.users(id) on delete set null,
   storage_path text not null,
   checksum_sha256 text not null check (checksum_sha256 ~ '^[0-9a-f]{64}$'),
@@ -354,9 +354,9 @@ create table public.backup_exports (
   unique (organization_id, checksum_sha256)
 );
 
-create table public.import_runs (
+create table public.kp_import_runs (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   requested_by uuid references auth.users(id) on delete set null,
   source_file_name text not null,
   source_format text not null,
@@ -374,7 +374,7 @@ create table public.import_runs (
 
 -- Private import staging. Raw source rows are intentionally inaccessible through the client Data API.
 -- Only a trusted server-side import worker should read/write this table after explicit approval.
-create table public.import_staging_rows (
+create table public.kp_import_staging_rows (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null,
   import_run_id uuid not null,
@@ -399,17 +399,17 @@ create table public.import_staging_rows (
   unique (organization_id, id),
   unique (organization_id, import_run_id, source_table, source_row_number),
   foreign key (organization_id, import_run_id)
-    references public.import_runs (organization_id, id) on delete cascade
+    references public.kp_import_runs (organization_id, id) on delete cascade
 );
-create unique index import_staging_source_id_unique
-  on public.import_staging_rows (organization_id, import_run_id, source_table, source_record_id)
+create unique index kp_import_staging_source_id_unique
+  on public.kp_import_staging_rows (organization_id, import_run_id, source_table, source_record_id)
   where source_record_id is not null;
-create index import_staging_review_idx
-  on public.import_staging_rows (organization_id, import_run_id, review_status, source_table);
+create index kp_import_staging_review_idx
+  on public.kp_import_staging_rows (organization_id, import_run_id, review_status, source_table);
 
-create table public.audit_events (
+create table public.kp_audit_events (
   id bigint generated always as identity primary key,
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id uuid not null references public.kp_organizations(id) on delete cascade,
   actor_id uuid references auth.users(id) on delete set null,
   action text not null check (action in ('INSERT', 'UPDATE', 'DELETE')),
   entity_name text not null,
@@ -417,51 +417,51 @@ create table public.audit_events (
   changed_columns text[] not null default '{}'::text[],
   occurred_at timestamptz not null default now()
 );
-create index audit_events_org_time_idx on public.audit_events (organization_id, occurred_at desc);
+create index kp_audit_events_org_time_idx on public.kp_audit_events (organization_id, occurred_at desc);
 
 -- Security helper functions live in an unexposed schema, not in public.
-create or replace function private.is_org_member(p_organization_id uuid)
+create or replace function kp_private.kp_is_org_member(p_organization_id uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
 as $$
   select exists (
     select 1
-    from public.organization_members m
+    from public.kp_organization_members m
     where m.organization_id = p_organization_id
       and m.user_id = (select auth.uid())
       and m.status = 'active'
   );
 $$;
-revoke all on function private.is_org_member(uuid) from public, anon;
-grant execute on function private.is_org_member(uuid) to authenticated;
+revoke all on function kp_private.kp_is_org_member(uuid) from public, anon;
+grant execute on function kp_private.kp_is_org_member(uuid) to authenticated;
 
-create or replace function private.has_org_role(p_organization_id uuid, p_roles text[])
+create or replace function kp_private.kp_has_org_role(p_organization_id uuid, p_roles text[])
 returns boolean
 language sql stable security definer
 set search_path = ''
 as $$
   select exists (
     select 1
-    from public.organization_members m
+    from public.kp_organization_members m
     where m.organization_id = p_organization_id
       and m.user_id = (select auth.uid())
       and m.status = 'active'
       and m.role = any (p_roles)
   );
 $$;
-revoke all on function private.has_org_role(uuid, text[]) from public, anon;
-grant execute on function private.has_org_role(uuid, text[]) to authenticated;
+revoke all on function kp_private.kp_has_org_role(uuid, text[]) from public, anon;
+grant execute on function kp_private.kp_has_org_role(uuid, text[]) to authenticated;
 
-create or replace function private.can_write_org(p_organization_id uuid)
+create or replace function kp_private.kp_can_write_org(p_organization_id uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
 as $$
   select exists (
     select 1
-    from public.organization_subscriptions s
-    join public.subscription_plans p on p.id = s.plan_id and p.is_active
+    from public.kp_organization_subscriptions s
+    join public.kp_subscription_plans p on p.id = s.plan_id and p.is_active
     where s.organization_id = p_organization_id
       and (
         (s.status = 'active' and (s.current_period_end is null or s.current_period_end > now()))
@@ -470,22 +470,22 @@ as $$
       )
   );
 $$;
-revoke all on function private.can_write_org(uuid) from public, anon;
-grant execute on function private.can_write_org(uuid) to authenticated;
+revoke all on function kp_private.kp_can_write_org(uuid) from public, anon;
+grant execute on function kp_private.kp_can_write_org(uuid) to authenticated;
 
-create or replace function private.can_edit_org(p_organization_id uuid)
+create or replace function kp_private.kp_can_edit_org(p_organization_id uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
 as $$
-  select private.is_org_member(p_organization_id)
-     and private.can_write_org(p_organization_id)
-     and private.has_org_role(p_organization_id, array['owner', 'admin', 'manager', 'operator']);
+  select kp_private.kp_is_org_member(p_organization_id)
+     and kp_private.kp_can_write_org(p_organization_id)
+     and kp_private.kp_has_org_role(p_organization_id, array['owner', 'admin', 'manager', 'operator']);
 $$;
-revoke all on function private.can_edit_org(uuid) from public, anon;
-grant execute on function private.can_edit_org(uuid) to authenticated;
+revoke all on function kp_private.kp_can_edit_org(uuid) from public, anon;
+grant execute on function kp_private.kp_can_edit_org(uuid) to authenticated;
 
-create or replace function private.prevent_tenant_reassignment()
+create or replace function kp_private.kp_prevent_tenant_reassignment()
 returns trigger
 language plpgsql
 set search_path = ''
@@ -497,9 +497,9 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.prevent_tenant_reassignment() from public, anon, authenticated;
+revoke all on function kp_private.kp_prevent_tenant_reassignment() from public, anon, authenticated;
 
-create or replace function private.guard_product_inventory_settings()
+create or replace function kp_private.kp_guard_product_inventory_settings()
 returns trigger
 language plpgsql
 set search_path = ''
@@ -519,13 +519,13 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.guard_product_inventory_settings() from public, anon, authenticated;
-drop trigger if exists guard_product_inventory_settings on public.products;
+revoke all on function kp_private.kp_guard_product_inventory_settings() from public, anon, authenticated;
+drop trigger if exists guard_product_inventory_settings on public.kp_products;
 create trigger guard_product_inventory_settings
-before update on public.products
-for each row execute function private.guard_product_inventory_settings();
+before update on public.kp_products
+for each row execute function kp_private.kp_guard_product_inventory_settings();
 
-create or replace function private.touch_updated_at()
+create or replace function kp_private.kp_touch_updated_at()
 returns trigger
 language plpgsql
 set search_path = ''
@@ -535,27 +535,11 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.touch_updated_at() from public, anon, authenticated;
+revoke all on function kp_private.kp_touch_updated_at() from public, anon, authenticated;
 
-create or replace function private.handle_new_auth_user()
-returns trigger
-language plpgsql security definer
-set search_path = ''
-as $$
-begin
-  insert into public.profiles (id, display_name)
-  values (new.id, nullif(btrim(coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name', '')), ''))
-  on conflict (id) do nothing;
-  return new;
-end;
-$$;
-revoke all on function private.handle_new_auth_user() from public, anon, authenticated;
-drop trigger if exists koptilnya_auth_user_created on auth.users;
-create trigger koptilnya_auth_user_created
-after insert on auth.users
-for each row execute function private.handle_new_auth_user();
+-- Avoid a global auth.users trigger: Koptilnya creates its profile when its workspace is first initialized.
 
-create or replace function private.audit_row_change()
+create or replace function kp_private.kp_audit_row_change()
 returns trigger
 language plpgsql security definer
 set search_path = ''
@@ -590,16 +574,16 @@ begin
   end if;
 
   if v_org is not null then
-    insert into public.audit_events (organization_id, actor_id, action, entity_name, entity_id, changed_columns)
+    insert into public.kp_audit_events (organization_id, actor_id, action, entity_name, entity_id, changed_columns)
     values (v_org, (select auth.uid()), tg_op, tg_table_name, v_entity_id, coalesce(v_changed, '{}'::text[]));
   end if;
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
 $$;
-revoke all on function private.audit_row_change() from public, anon, authenticated;
+revoke all on function kp_private.kp_audit_row_change() from public, anon, authenticated;
 
-create or replace function public.create_organization(p_name text, p_timezone text default 'UTC')
+create or replace function public.kp_create_organization(p_name text, p_timezone text default 'UTC')
 returns uuid
 language plpgsql security definer
 set search_path = ''
@@ -609,6 +593,8 @@ declare
   v_org_id uuid;
 begin
   if v_user_id is null then raise exception 'Authentication required' using errcode = '28000'; end if;
+
+  insert into public.kp_profiles (id) values (v_user_id) on conflict (id) do nothing;
   if p_name is null or length(btrim(p_name)) not between 2 and 120 then
     raise exception 'Organization name must contain 2 to 120 characters' using errcode = '22023';
   end if;
@@ -616,20 +602,20 @@ begin
     raise exception 'Invalid time zone' using errcode = '22023';
   end if;
 
-  insert into public.organizations (name, owner_user_id, timezone)
+  insert into public.kp_organizations (name, owner_user_id, timezone)
   values (btrim(p_name), v_user_id, btrim(p_timezone))
   returning id into v_org_id;
 
-  insert into public.organization_members (organization_id, user_id, role, status)
+  insert into public.kp_organization_members (organization_id, user_id, role, status)
   values (v_org_id, v_user_id, 'owner', 'active');
 
   -- Launch access: no paid subscription is required to start using the private owner's workspace.
   -- This plan is server-controlled and is not a client-editable subscription.
-  insert into public.organization_subscriptions (
+  insert into public.kp_organization_subscriptions (
     organization_id, plan_id, status, current_period_start, current_period_end
   )
   select v_org_id, p.id, 'active', now(), null
-  from public.subscription_plans p
+  from public.kp_subscription_plans p
   where p.code = 'owner-early-access' and p.billing_interval = 'month';
 
   if not found then
@@ -639,12 +625,12 @@ begin
   return v_org_id;
 end;
 $$;
-revoke all on function public.create_organization(text, text) from public, anon;
-grant execute on function public.create_organization(text, text) to authenticated;
+revoke all on function public.kp_create_organization(text, text) from public, anon;
+grant execute on function public.kp_create_organization(text, text) to authenticated;
 
 -- Free early-access entitlement so the owner can work while the hosted integration is rolled out.
 -- Paid plans can be introduced later through a verified server-side payment webhook.
-insert into public.subscription_plans (
+insert into public.kp_subscription_plans (
   code, name, billing_interval, price_minor_units, currency, trial_days, limits, is_active
 ) values (
   'owner-early-access', 'Owner early access', 'month', 0, 'RUB', 0,
@@ -655,7 +641,7 @@ set is_active = true,
     price_minor_units = 0,
     limits = excluded.limits;
 
-create or replace function public.save_organization_data(
+create or replace function public.kp_save_organization_data(
   p_organization_id uuid,
   p_expected_revision bigint,
   p_state jsonb
@@ -672,7 +658,7 @@ begin
   if v_user_id is null then
     raise exception 'Authentication required' using errcode = '28000';
   end if;
-  if not private.can_edit_org(p_organization_id) then
+  if not kp_private.kp_can_edit_org(p_organization_id) then
     raise exception 'Workspace access denied or workspace is read-only' using errcode = '42501';
   end if;
   if p_expected_revision is null or p_expected_revision < 0 then
@@ -689,7 +675,7 @@ begin
     raise exception 'Workspace collections must be arrays' using errcode = '22023';
   end if;
 
-  insert into public.organization_data (organization_id, state, revision, updated_by)
+  insert into public.kp_organization_data (organization_id, state, revision, updated_by)
   values (
     p_organization_id,
     '{"products":[],"clients":[],"docs":[],"expenses":[],"batches":[],"recipes":[],"payments":[]}'::jsonb,
@@ -699,7 +685,7 @@ begin
   on conflict (organization_id) do nothing;
 
   select d.revision into v_revision
-  from public.organization_data d
+  from public.kp_organization_data d
   where d.organization_id = p_organization_id
   for update;
 
@@ -708,7 +694,7 @@ begin
       using errcode = '40001';
   end if;
 
-  update public.organization_data
+  update public.kp_organization_data
   set state = p_state,
       revision = v_revision + 1,
       updated_by = v_user_id,
@@ -718,17 +704,17 @@ begin
   return v_revision + 1;
 end;
 $$;
-revoke all on function public.save_organization_data(uuid, bigint, jsonb) from public, anon;
-grant execute on function public.save_organization_data(uuid, bigint, jsonb) to authenticated;
+revoke all on function public.kp_save_organization_data(uuid, bigint, jsonb) from public, anon;
+grant execute on function public.kp_save_organization_data(uuid, bigint, jsonb) to authenticated;
 
-create or replace function private.apply_stock_movement()
+create or replace function kp_private.kp_apply_stock_movement()
 returns trigger
 language plpgsql security definer
 set search_path = ''
 as $$
 begin
   if new.quantity_delta > 0 then
-    update public.products p
+    update public.kp_products p
     set average_cost = case
           when p.stock_quantity + new.quantity_delta > 0
             then round(((p.stock_quantity * p.average_cost) + (new.quantity_delta * new.unit_cost)) / (p.stock_quantity + new.quantity_delta), 4)
@@ -740,7 +726,7 @@ begin
       and p.tracks_inventory
       and p.stock_quantity + new.quantity_delta >= 0;
   else
-    update public.products p
+    update public.kp_products p
     set stock_quantity = p.stock_quantity + new.quantity_delta
     where p.id = new.product_id
       and p.organization_id = new.organization_id
@@ -755,18 +741,18 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.apply_stock_movement() from public, anon, authenticated;
+revoke all on function kp_private.kp_apply_stock_movement() from public, anon, authenticated;
 create trigger stock_movement_apply_balance
-before insert on public.stock_movements
-for each row execute function private.apply_stock_movement();
+before insert on public.kp_stock_movements
+for each row execute function kp_private.kp_apply_stock_movement();
 
-create or replace function public.post_document(p_document_id uuid, p_idempotency_key text)
+create or replace function public.kp_post_document(p_document_id uuid, p_idempotency_key text)
 returns uuid
 language plpgsql security definer
 set search_path = ''
 as $$
 declare
-  v_doc public.documents%rowtype;
+  v_doc public.kp_documents%rowtype;
   v_document_org_id uuid;
   v_line record;
   v_unit_cost numeric(14,4);
@@ -780,15 +766,15 @@ begin
   end if;
 
   select d.organization_id into v_document_org_id
-  from public.documents d
+  from public.kp_documents d
   where d.id = p_document_id;
 
-  if not found or not private.can_edit_org(v_document_org_id) then
+  if not found or not kp_private.kp_can_edit_org(v_document_org_id) then
     raise exception 'Document not found or access denied' using errcode = '42501';
   end if;
 
   select * into v_doc
-  from public.documents d
+  from public.kp_documents d
   where d.id = p_document_id and d.organization_id = v_document_org_id
   for update;
 
@@ -801,15 +787,15 @@ begin
   if v_doc.status <> 'draft' then raise exception 'Only draft documents can be posted' using errcode = '23514'; end if;
 
   select count(*) into v_line_count
-  from public.document_items i
+  from public.kp_document_items i
   where i.organization_id = v_doc.organization_id and i.document_id = v_doc.id;
   if v_line_count = 0 then raise exception 'Cannot post an empty document' using errcode = '23514'; end if;
 
   for v_line in
     select i.id, i.product_id, i.quantity, i.unit_price,
            p.tracks_inventory, p.average_cost, p.is_archived, p.name, p.unit
-    from public.document_items i
-    join public.products p
+    from public.kp_document_items i
+    join public.kp_products p
       on p.organization_id = i.organization_id and p.id = i.product_id
     where i.organization_id = v_doc.organization_id and i.document_id = v_doc.id
     order by p.id, i.id
@@ -823,12 +809,12 @@ begin
       v_unit_cost := v_line.average_cost;
     end if;
 
-    update public.document_items
+    update public.kp_document_items
     set unit_cost = v_unit_cost
     where organization_id = v_doc.organization_id and id = v_line.id;
 
     if v_line.tracks_inventory and v_doc.kind in ('receipt', 'sale') then
-      insert into public.stock_movements (
+      insert into public.kp_stock_movements (
         organization_id, product_id, movement_type, quantity_delta, unit_cost,
         source_document_id, source_document_item_id, created_by
       ) values (
@@ -846,10 +832,10 @@ begin
 
   select coalesce(sum(i.line_total), 0), coalesce(sum(i.line_cost_total), 0)
   into v_total, v_cost_total
-  from public.document_items i
+  from public.kp_document_items i
   where i.organization_id = v_doc.organization_id and i.document_id = v_doc.id;
 
-  update public.documents
+  update public.kp_documents
   set status = 'posted',
       posted_at = now(),
       post_idempotency_key = p_idempotency_key,
@@ -860,16 +846,16 @@ begin
   return v_doc.id;
 end;
 $$;
-revoke all on function public.post_document(uuid, text) from public, anon;
-grant execute on function public.post_document(uuid, text) to authenticated;
+revoke all on function public.kp_post_document(uuid, text) from public, anon;
+grant execute on function public.kp_post_document(uuid, text) to authenticated;
 
-create or replace function public.post_production_batch(p_batch_id uuid, p_idempotency_key text)
+create or replace function public.kp_post_production_batch(p_batch_id uuid, p_idempotency_key text)
 returns uuid
 language plpgsql security definer
 set search_path = ''
 as $$
 declare
-  v_batch public.production_batches%rowtype;
+  v_batch public.kp_production_batches%rowtype;
   v_batch_org_id uuid;
   v_input record;
   v_output record;
@@ -883,15 +869,15 @@ begin
   end if;
 
   select b.organization_id into v_batch_org_id
-  from public.production_batches b
+  from public.kp_production_batches b
   where b.id = p_batch_id;
 
-  if not found or not private.can_edit_org(v_batch_org_id) then
+  if not found or not kp_private.kp_can_edit_org(v_batch_org_id) then
     raise exception 'Production batch not found or access denied' using errcode = '42501';
   end if;
 
   select * into v_batch
-  from public.production_batches b
+  from public.kp_production_batches b
   where b.id = p_batch_id and b.organization_id = v_batch_org_id
   for update;
 
@@ -904,12 +890,12 @@ begin
   if v_batch.status <> 'draft' then raise exception 'Only draft batches can be posted' using errcode = '23514'; end if;
 
   select count(*) into v_input_count
-  from public.production_batch_inputs i
+  from public.kp_production_batch_inputs i
   where i.organization_id = v_batch.organization_id and i.batch_id = v_batch.id;
   if v_input_count = 0 then raise exception 'Production batch requires at least one input' using errcode = '23514'; end if;
 
   if exists (
-    select 1 from public.production_batch_inputs i
+    select 1 from public.kp_production_batch_inputs i
     where i.organization_id = v_batch.organization_id
       and i.batch_id = v_batch.id
       and i.product_id = v_batch.output_product_id
@@ -919,8 +905,8 @@ begin
 
   for v_input in
     select i.id, i.product_id, i.quantity, p.average_cost, p.tracks_inventory, p.is_archived
-    from public.production_batch_inputs i
-    join public.products p
+    from public.kp_production_batch_inputs i
+    join public.kp_products p
       on p.organization_id = i.organization_id and p.id = i.product_id
     where i.organization_id = v_batch.organization_id and i.batch_id = v_batch.id
     order by p.id, i.id
@@ -933,11 +919,11 @@ begin
     v_unit_cost := v_input.average_cost;
     v_total_cost := v_total_cost + round(v_input.quantity * v_unit_cost, 2);
 
-    update public.production_batch_inputs
+    update public.kp_production_batch_inputs
     set unit_cost = v_unit_cost
     where organization_id = v_batch.organization_id and id = v_input.id;
 
-    insert into public.stock_movements (
+    insert into public.kp_stock_movements (
       organization_id, product_id, movement_type, quantity_delta, unit_cost,
       source_production_batch_id, source_production_input_id, created_by
     ) values (
@@ -948,7 +934,7 @@ begin
 
   select p.id, p.tracks_inventory, p.is_archived
   into v_output
-  from public.products p
+  from public.kp_products p
   where p.organization_id = v_batch.organization_id and p.id = v_batch.output_product_id
   for update;
 
@@ -959,14 +945,14 @@ begin
   v_total_cost := round(v_total_cost, 2);
   v_unit_cost := round(v_total_cost / v_batch.output_quantity, 4);
 
-  update public.production_batches
+  update public.kp_production_batches
   set status = 'posted',
       total_cost = v_total_cost,
       posted_at = now(),
       post_idempotency_key = p_idempotency_key
   where organization_id = v_batch.organization_id and id = v_batch.id;
 
-  insert into public.stock_movements (
+  insert into public.kp_stock_movements (
     organization_id, product_id, movement_type, quantity_delta, unit_cost,
     source_production_batch_id, created_by
   ) values (
@@ -977,10 +963,10 @@ begin
   return v_batch.id;
 end;
 $$;
-revoke all on function public.post_production_batch(uuid, text) from public, anon;
-grant execute on function public.post_production_batch(uuid, text) to authenticated;
+revoke all on function public.kp_post_production_batch(uuid, text) from public, anon;
+grant execute on function public.kp_post_production_batch(uuid, text) to authenticated;
 
-create or replace function public.record_payment_with_allocations(
+create or replace function public.kp_record_payment_with_allocations(
   p_organization_id uuid,
   p_client_id uuid,
   p_amount numeric,
@@ -998,12 +984,12 @@ declare
   v_fingerprint text;
   v_existing_fingerprint text;
   v_alloc record;
-  v_doc public.documents%rowtype;
+  v_doc public.kp_documents%rowtype;
   v_due numeric(14,2);
   v_allocation_total numeric(14,2);
 begin
   if (select auth.uid()) is null then raise exception 'Authentication required' using errcode = '28000'; end if;
-  if not private.can_edit_org(p_organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
+  if not kp_private.kp_can_edit_org(p_organization_id) then raise exception 'Organization access denied or write subscription is inactive' using errcode = '42501'; end if;
   if p_amount is null or p_amount <= 0 then raise exception 'Payment amount must be positive' using errcode = '22023'; end if;
   if p_method not in ('cash', 'transfer', 'bank') then raise exception 'Unsupported payment method' using errcode = '22023'; end if;
   if p_idempotency_key is null or length(btrim(p_idempotency_key)) < 8 or length(p_idempotency_key) > 160 then
@@ -1013,7 +999,7 @@ begin
     raise exception 'At least one document allocation is required' using errcode = '22023';
   end if;
   if p_client_id is not null and not exists (
-    select 1 from public.clients c
+    select 1 from public.kp_clients c
     where c.organization_id = p_organization_id and c.id = p_client_id and not c.is_archived
   ) then
     raise exception 'Client not found or archived' using errcode = '23503';
@@ -1045,7 +1031,7 @@ begin
   );
 
   select p.id, p.request_fingerprint into v_payment_id, v_existing_fingerprint
-  from public.payments p
+  from public.kp_payments p
   where p.organization_id = p_organization_id and p.idempotency_key = p_idempotency_key;
 
   if found then
@@ -1062,7 +1048,7 @@ begin
     order by x.document_id
   loop
     select * into v_doc
-    from public.documents d
+    from public.kp_documents d
     where d.organization_id = p_organization_id and d.id = v_alloc.document_id
     for update;
 
@@ -1076,7 +1062,7 @@ begin
 
     select round(v_doc.total_amount - coalesce(sum(a.amount), 0), 2)
     into v_due
-    from public.payment_allocations a
+    from public.kp_payment_allocations a
     where a.organization_id = p_organization_id and a.document_id = v_doc.id;
 
     if v_alloc.amount > v_due then
@@ -1084,7 +1070,7 @@ begin
     end if;
   end loop;
 
-  insert into public.payments (
+  insert into public.kp_payments (
     organization_id, client_id, amount, payment_method, idempotency_key,
     request_fingerprint, note, created_by
   ) values (
@@ -1097,18 +1083,18 @@ begin
     from jsonb_to_recordset(p_allocations) as x(document_id uuid, amount numeric)
     order by x.document_id
   loop
-    insert into public.payment_allocations (organization_id, payment_id, document_id, amount)
+    insert into public.kp_payment_allocations (organization_id, payment_id, document_id, amount)
     values (p_organization_id, v_payment_id, v_alloc.document_id, v_alloc.amount);
   end loop;
 
   return v_payment_id;
 end;
 $$;
-revoke all on function public.record_payment_with_allocations(uuid, uuid, numeric, text, jsonb, text, text) from public, anon;
-grant execute on function public.record_payment_with_allocations(uuid, uuid, numeric, text, jsonb, text, text) to authenticated;
+revoke all on function public.kp_record_payment_with_allocations(uuid, uuid, numeric, text, jsonb, text, text) from public, anon;
+grant execute on function public.kp_record_payment_with_allocations(uuid, uuid, numeric, text, jsonb, text, text) to authenticated;
 
 -- Payment totals are derived from allocations, not counted again as revenue.
-create or replace view public.document_balances
+create or replace view public.kp_document_balances
 with (security_invoker = true)
 as
 select d.id,
@@ -1123,14 +1109,14 @@ select d.id,
        d.total_cost,
        coalesce(a.amount_paid, 0)::numeric(14,2) as amount_paid,
        greatest(d.total_amount - coalesce(a.amount_paid, 0), 0)::numeric(14,2) as balance_due
-from public.documents d
+from public.kp_documents d
 left join (
   select organization_id, document_id, sum(amount)::numeric(14,2) as amount_paid
-  from public.payment_allocations
+  from public.kp_payment_allocations
   group by organization_id, document_id
 ) a on a.organization_id = d.organization_id and a.document_id = d.id
 where d.status = 'posted' and d.kind in ('sale', 'service');
-grant select on public.document_balances to authenticated;
+grant select on public.kp_document_balances to authenticated;
 
 -- Enable RLS on every public table created by this migration.
 do $$
@@ -1138,11 +1124,11 @@ declare
   t text;
 begin
   foreach t in array array[
-    'profiles', 'organizations', 'organization_data', 'organization_members', 'clients', 'products',
-    'documents', 'document_items', 'production_batches', 'production_batch_inputs',
-    'stock_movements', 'expense_categories', 'expenses', 'payments',
-    'payment_allocations', 'subscription_plans', 'organization_subscriptions',
-    'subscription_payment_events', 'backup_exports', 'import_runs', 'import_staging_rows', 'audit_events'
+    'kp_profiles', 'kp_organizations', 'kp_organization_data', 'kp_organization_members', 'kp_clients', 'kp_products',
+    'kp_documents', 'kp_document_items', 'kp_production_batches', 'kp_production_batch_inputs',
+    'kp_stock_movements', 'kp_expense_categories', 'kp_expenses', 'kp_payments',
+    'kp_payment_allocations', 'kp_subscription_plans', 'kp_organization_subscriptions',
+    'kp_subscription_payment_events', 'kp_backup_exports', 'kp_import_runs', 'kp_import_staging_rows', 'kp_audit_events'
   ]
   loop
     execute format('alter table public.%I enable row level security', t);
@@ -1151,201 +1137,201 @@ end
 $$;
 
 -- Revoke client access by default, then grant only table operations needed by the app.
-revoke all on public.profiles, public.organizations, public.organization_data, public.organization_members, public.clients,
-  public.products, public.documents, public.document_items, public.production_batches,
-  public.production_batch_inputs, public.stock_movements, public.expense_categories,
-  public.expenses, public.payments, public.payment_allocations, public.subscription_plans,
-  public.organization_subscriptions, public.subscription_payment_events, public.backup_exports,
-  public.import_runs, public.import_staging_rows, public.audit_events from anon, authenticated;
+revoke all on public.kp_profiles, public.kp_organizations, public.kp_organization_data, public.kp_organization_members, public.kp_clients,
+  public.kp_products, public.kp_documents, public.kp_document_items, public.kp_production_batches,
+  public.kp_production_batch_inputs, public.kp_stock_movements, public.kp_expense_categories,
+  public.kp_expenses, public.kp_payments, public.kp_payment_allocations, public.kp_subscription_plans,
+  public.kp_organization_subscriptions, public.kp_subscription_payment_events, public.kp_backup_exports,
+  public.kp_import_runs, public.kp_import_staging_rows, public.kp_audit_events from anon, authenticated;
 
-grant select, update on public.profiles to authenticated;
-grant select on public.organizations, public.organization_data to authenticated;
-grant update (name, timezone) on public.organizations to authenticated;
-grant select on public.organization_members to authenticated;
-grant select, insert, update on public.clients, public.expense_categories to authenticated;
-grant select on public.products to authenticated;
+grant select, update on public.kp_profiles to authenticated;
+grant select on public.kp_organizations, public.kp_organization_data to authenticated;
+grant update (name, timezone) on public.kp_organizations to authenticated;
+grant select on public.kp_organization_members to authenticated;
+grant select, insert, update on public.kp_clients, public.kp_expense_categories to authenticated;
+grant select on public.kp_products to authenticated;
 grant insert (organization_id, name, product_type, category, unit, tracks_inventory,
               purchase_price, sale_price, photo_path, is_archived, archived_at,
               legacy_source_name, legacy_source_id, created_by)
-  on public.products to authenticated;
+  on public.kp_products to authenticated;
 grant update (name, product_type, category, unit, tracks_inventory, purchase_price,
               sale_price, photo_path, is_archived, archived_at,
               legacy_source_name, legacy_source_id)
-  on public.products to authenticated;
-grant select, insert, update, delete on public.documents, public.document_items,
-  public.production_batches, public.production_batch_inputs to authenticated;
-grant select on public.stock_movements, public.payments, public.payment_allocations,
-  public.organization_subscriptions, public.backup_exports, public.import_runs, public.audit_events to authenticated;
-grant select on public.subscription_plans to authenticated;
-grant select, insert, update on public.expenses to authenticated;
+  on public.kp_products to authenticated;
+grant select, insert, update, delete on public.kp_documents, public.kp_document_items,
+  public.kp_production_batches, public.kp_production_batch_inputs to authenticated;
+grant select on public.kp_stock_movements, public.kp_payments, public.kp_payment_allocations,
+  public.kp_organization_subscriptions, public.kp_backup_exports, public.kp_import_runs, public.kp_audit_events to authenticated;
+grant select on public.kp_subscription_plans to authenticated;
+grant select, insert, update on public.kp_expenses to authenticated;
 
 -- Per-user profile access.
-create policy profiles_select_self on public.profiles
+create policy profiles_select_self on public.kp_profiles
 for select to authenticated
 using (id = (select auth.uid()));
-create policy profiles_update_self on public.profiles
+create policy profiles_update_self on public.kp_profiles
 for update to authenticated
 using (id = (select auth.uid()))
 with check (id = (select auth.uid()));
 
 -- An organization is visible only to its active members.
-create policy organizations_select_member on public.organizations
+create policy organizations_select_member on public.kp_organizations
 for select to authenticated
-using (private.is_org_member(id));
-create policy organizations_update_admin on public.organizations
+using (kp_private.kp_is_org_member(id));
+create policy organizations_update_admin on public.kp_organizations
 for update to authenticated
-using (private.has_org_role(id, array['owner', 'admin']))
-with check (private.has_org_role(id, array['owner', 'admin']));
+using (kp_private.kp_has_org_role(id, array['owner', 'admin']))
+with check (kp_private.kp_has_org_role(id, array['owner', 'admin']));
 
-create policy organization_data_select_member on public.organization_data
+create policy organization_data_select_member on public.kp_organization_data
 for select to authenticated
-using (private.is_org_member(organization_id));
+using (kp_private.kp_is_org_member(organization_id));
 
-create policy organization_members_select_related on public.organization_members
+create policy organization_members_select_related on public.kp_organization_members
 for select to authenticated
-using (user_id = (select auth.uid()) or private.is_org_member(organization_id));
+using (user_id = (select auth.uid()) or kp_private.kp_is_org_member(organization_id));
 
 -- Client and product CRUD is tenant-scoped and subscription-gated; archival is an update, not deletion.
-create policy clients_select_member on public.clients
-for select to authenticated using (private.is_org_member(organization_id));
-create policy clients_insert_entitled on public.clients
-for insert to authenticated with check (private.can_edit_org(organization_id));
-create policy clients_update_entitled on public.clients
+create policy clients_select_member on public.kp_clients
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy clients_insert_entitled on public.kp_clients
+for insert to authenticated with check (kp_private.kp_can_edit_org(organization_id));
+create policy clients_update_entitled on public.kp_clients
 for update to authenticated
-using (private.can_edit_org(organization_id))
-with check (private.can_edit_org(organization_id));
+using (kp_private.kp_can_edit_org(organization_id))
+with check (kp_private.kp_can_edit_org(organization_id));
 
-create policy products_select_member on public.products
-for select to authenticated using (private.is_org_member(organization_id));
-create policy products_insert_entitled on public.products
-for insert to authenticated with check (private.can_edit_org(organization_id));
-create policy products_update_entitled on public.products
+create policy products_select_member on public.kp_products
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy products_insert_entitled on public.kp_products
+for insert to authenticated with check (kp_private.kp_can_edit_org(organization_id));
+create policy products_update_entitled on public.kp_products
 for update to authenticated
-using (private.can_edit_org(organization_id))
-with check (private.can_edit_org(organization_id));
+using (kp_private.kp_can_edit_org(organization_id))
+with check (kp_private.kp_can_edit_org(organization_id));
 
 -- Documents remain editable only while draft; posting must go through the atomic RPC.
-create policy documents_select_member on public.documents
-for select to authenticated using (private.is_org_member(organization_id));
-create policy documents_insert_draft on public.documents
+create policy documents_select_member on public.kp_documents
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy documents_insert_draft on public.kp_documents
 for insert to authenticated
-with check (status = 'draft' and private.can_edit_org(organization_id));
-create policy documents_update_draft on public.documents
+with check (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
+create policy documents_update_draft on public.kp_documents
 for update to authenticated
-using (status = 'draft' and private.can_edit_org(organization_id))
-with check (status = 'draft' and private.can_edit_org(organization_id));
-create policy documents_delete_draft on public.documents
+using (status = 'draft' and kp_private.kp_can_edit_org(organization_id))
+with check (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
+create policy documents_delete_draft on public.kp_documents
 for delete to authenticated
-using (status = 'draft' and private.can_edit_org(organization_id));
+using (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
 
-create policy document_items_select_member on public.document_items
-for select to authenticated using (private.is_org_member(organization_id));
-create policy document_items_insert_draft on public.document_items
+create policy document_items_select_member on public.kp_document_items
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy document_items_insert_draft on public.kp_document_items
 for insert to authenticated
 with check (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.documents d where d.id = document_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_documents d where d.id = document_id
               and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
-create policy document_items_update_draft on public.document_items
+create policy document_items_update_draft on public.kp_document_items
 for update to authenticated
 using (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.documents d where d.id = document_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_documents d where d.id = document_id
               and d.organization_id = document_items.organization_id and d.status = 'draft')
 )
 with check (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.documents d where d.id = document_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_documents d where d.id = document_id
               and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
-create policy document_items_delete_draft on public.document_items
+create policy document_items_delete_draft on public.kp_document_items
 for delete to authenticated
 using (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.documents d where d.id = document_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_documents d where d.id = document_id
               and d.organization_id = document_items.organization_id and d.status = 'draft')
 );
 
-create policy production_batches_select_member on public.production_batches
-for select to authenticated using (private.is_org_member(organization_id));
-create policy production_batches_insert_draft on public.production_batches
+create policy production_batches_select_member on public.kp_production_batches
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy production_batches_insert_draft on public.kp_production_batches
 for insert to authenticated
-with check (status = 'draft' and private.can_edit_org(organization_id));
-create policy production_batches_update_draft on public.production_batches
+with check (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
+create policy production_batches_update_draft on public.kp_production_batches
 for update to authenticated
-using (status = 'draft' and private.can_edit_org(organization_id))
-with check (status = 'draft' and private.can_edit_org(organization_id));
-create policy production_batches_delete_draft on public.production_batches
+using (status = 'draft' and kp_private.kp_can_edit_org(organization_id))
+with check (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
+create policy production_batches_delete_draft on public.kp_production_batches
 for delete to authenticated
-using (status = 'draft' and private.can_edit_org(organization_id));
+using (status = 'draft' and kp_private.kp_can_edit_org(organization_id));
 
-create policy production_batch_inputs_select_member on public.production_batch_inputs
-for select to authenticated using (private.is_org_member(organization_id));
-create policy production_batch_inputs_insert_draft on public.production_batch_inputs
+create policy production_batch_inputs_select_member on public.kp_production_batch_inputs
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy production_batch_inputs_insert_draft on public.kp_production_batch_inputs
 for insert to authenticated
 with check (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.production_batches b where b.id = batch_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_production_batches b where b.id = batch_id
               and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
-create policy production_batch_inputs_update_draft on public.production_batch_inputs
+create policy production_batch_inputs_update_draft on public.kp_production_batch_inputs
 for update to authenticated
 using (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.production_batches b where b.id = batch_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_production_batches b where b.id = batch_id
               and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 )
 with check (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.production_batches b where b.id = batch_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_production_batches b where b.id = batch_id
               and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
-create policy production_batch_inputs_delete_draft on public.production_batch_inputs
+create policy production_batch_inputs_delete_draft on public.kp_production_batch_inputs
 for delete to authenticated
 using (
-  private.can_edit_org(organization_id)
-  and exists (select 1 from public.production_batches b where b.id = batch_id
+  kp_private.kp_can_edit_org(organization_id)
+  and exists (select 1 from public.kp_production_batches b where b.id = batch_id
               and b.organization_id = production_batch_inputs.organization_id and b.status = 'draft')
 );
 
-create policy stock_movements_select_member on public.stock_movements
-for select to authenticated using (private.is_org_member(organization_id));
+create policy stock_movements_select_member on public.kp_stock_movements
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
 
-create policy expense_categories_select_member on public.expense_categories
-for select to authenticated using (private.is_org_member(organization_id));
-create policy expense_categories_insert_entitled on public.expense_categories
-for insert to authenticated with check (private.can_edit_org(organization_id));
-create policy expense_categories_update_entitled on public.expense_categories
+create policy expense_categories_select_member on public.kp_expense_categories
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy expense_categories_insert_entitled on public.kp_expense_categories
+for insert to authenticated with check (kp_private.kp_can_edit_org(organization_id));
+create policy expense_categories_update_entitled on public.kp_expense_categories
 for update to authenticated
-using (private.can_edit_org(organization_id))
-with check (private.can_edit_org(organization_id));
+using (kp_private.kp_can_edit_org(organization_id))
+with check (kp_private.kp_can_edit_org(organization_id));
 
-create policy expenses_select_member on public.expenses
-for select to authenticated using (private.is_org_member(organization_id));
-create policy expenses_insert_entitled on public.expenses
-for insert to authenticated with check (private.can_edit_org(organization_id));
-create policy expenses_update_entitled on public.expenses
+create policy expenses_select_member on public.kp_expenses
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy expenses_insert_entitled on public.kp_expenses
+for insert to authenticated with check (kp_private.kp_can_edit_org(organization_id));
+create policy expenses_update_entitled on public.kp_expenses
 for update to authenticated
-using (not is_voided and private.can_edit_org(organization_id))
-with check (private.can_edit_org(organization_id));
+using (not is_voided and kp_private.kp_can_edit_org(organization_id))
+with check (kp_private.kp_can_edit_org(organization_id));
 
-create policy payments_select_member on public.payments
-for select to authenticated using (private.is_org_member(organization_id));
-create policy payment_allocations_select_member on public.payment_allocations
-for select to authenticated using (private.is_org_member(organization_id));
+create policy payments_select_member on public.kp_payments
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy payment_allocations_select_member on public.kp_payment_allocations
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
 
-create policy subscription_plans_select_active on public.subscription_plans
+create policy subscription_plans_select_active on public.kp_subscription_plans
 for select to authenticated using (is_active);
-create policy organization_subscriptions_select_admin on public.organization_subscriptions
-for select to authenticated using (private.has_org_role(organization_id, array['owner', 'admin']));
+create policy organization_subscriptions_select_admin on public.kp_organization_subscriptions
+for select to authenticated using (kp_private.kp_has_org_role(organization_id, array['owner', 'admin']));
 
-create policy backup_exports_select_member on public.backup_exports
-for select to authenticated using (private.is_org_member(organization_id));
-create policy import_runs_select_member on public.import_runs
-for select to authenticated using (private.is_org_member(organization_id));
-create policy audit_events_select_admin on public.audit_events
-for select to authenticated using (private.has_org_role(organization_id, array['owner', 'admin']));
+create policy backup_exports_select_member on public.kp_backup_exports
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy import_runs_select_member on public.kp_import_runs
+for select to authenticated using (kp_private.kp_is_org_member(organization_id));
+create policy audit_events_select_admin on public.kp_audit_events
+for select to authenticated using (kp_private.kp_has_org_role(organization_id, array['owner', 'admin']));
 
 -- The storage bucket is private. Objects live at <organization-uuid>/products/... or /documents/...
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -1369,7 +1355,7 @@ using (
   bucket_id = 'koptilnya-private'
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    then private.is_org_member(((storage.foldername(name))[1])::uuid)
+    then kp_private.kp_is_org_member(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1379,8 +1365,8 @@ with check (
   bucket_id = 'koptilnya-private'
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
+    then kp_private.kp_is_org_member(((storage.foldername(name))[1])::uuid)
+         and kp_private.kp_can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1390,8 +1376,8 @@ using (
   bucket_id = 'koptilnya-private'
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
+    then kp_private.kp_is_org_member(((storage.foldername(name))[1])::uuid)
+         and kp_private.kp_can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 )
@@ -1399,8 +1385,8 @@ with check (
   bucket_id = 'koptilnya-private'
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
+    then kp_private.kp_is_org_member(((storage.foldername(name))[1])::uuid)
+         and kp_private.kp_can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1410,8 +1396,8 @@ using (
   bucket_id = 'koptilnya-private'
   and case
     when (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    then private.is_org_member(((storage.foldername(name))[1])::uuid)
-         and private.can_edit_org(((storage.foldername(name))[1])::uuid)
+    then kp_private.kp_is_org_member(((storage.foldername(name))[1])::uuid)
+         and kp_private.kp_can_edit_org(((storage.foldername(name))[1])::uuid)
     else false
   end
 );
@@ -1426,7 +1412,7 @@ begin
                             'payments', 'payment_allocations']
   loop
     execute format('drop trigger if exists audit_row_change on public.%I', t);
-    execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function private.audit_row_change()', t);
+    execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function kp_private.kp_audit_row_change()', t);
   end loop;
 end
 $$;
@@ -1440,7 +1426,7 @@ begin
                             'expense_categories', 'expenses']
   loop
     execute format('drop trigger if exists prevent_tenant_reassignment on public.%I', t);
-    execute format('create trigger prevent_tenant_reassignment before update on public.%I for each row execute function private.prevent_tenant_reassignment()', t);
+    execute format('create trigger prevent_tenant_reassignment before update on public.%I for each row execute function kp_private.kp_prevent_tenant_reassignment()', t);
   end loop;
 end
 $$;
@@ -1454,7 +1440,7 @@ begin
                             'subscription_plans', 'organization_subscriptions']
   loop
     execute format('drop trigger if exists touch_updated_at on public.%I', t);
-    execute format('create trigger touch_updated_at before update on public.%I for each row execute function private.touch_updated_at()', t);
+    execute format('create trigger touch_updated_at before update on public.%I for each row execute function kp_private.kp_touch_updated_at()', t);
   end loop;
 end
 $$;

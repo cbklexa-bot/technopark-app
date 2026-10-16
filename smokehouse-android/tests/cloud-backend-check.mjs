@@ -15,10 +15,10 @@ assert.ok(backend.includes('supabase.auth.signUp'), 'Email/password registration
 assert.ok(backend.includes('supabase.auth.resetPasswordForEmail'), 'Password recovery must be implemented');
 assert.ok(backend.includes('supabase.auth.getSession'), 'Saved sessions must be restored after restart');
 assert.ok(backend.includes('supabase.auth.signOut()'), 'Account sign-out must be implemented');
-assert.ok(backend.includes(".from('organization_members')"), 'Every signed-in user must be resolved to an organization membership');
-assert.ok(backend.includes("rpc('create_organization'"), 'First-time owners must be able to initialize a workspace');
-assert.ok(backend.includes(".from('organization_data')"), 'The app must fetch server state, not only localStorage');
-assert.ok(backend.includes("rpc('save_organization_data'"), 'Mutations must persist to the server');
+assert.ok(backend.includes(".from('kp_organization_members')"), 'Every signed-in user must be resolved to an organization membership');
+assert.ok(backend.includes("rpc('kp_create_organization'"), 'First-time owners must be able to initialize a workspace');
+assert.ok(backend.includes(".from('kp_organization_data')"), 'The app must fetch server state, not only localStorage');
+assert.ok(backend.includes("rpc('kp_save_organization_data'"), 'Mutations must persist to the server');
 assert.ok(backend.includes('p_expected_revision: revision'), 'Cloud state writes must use optimistic concurrency checks');
 assert.ok(backend.includes("if (error.code === '40001')"), 'Concurrent edits must fail closed instead of silently overwriting data');
 assert.ok(backend.includes('exportFullArchive'), 'Destructive Excel replacement must first create a ZIP backup');

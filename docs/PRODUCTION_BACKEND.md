@@ -9,7 +9,9 @@
 
 ## Supabase project selection
 
-No connected project was confidently identified as a dedicated Koptilnya project at the time of this audit. Do not link or apply these migrations to an unidentified project, `max-song-app`, or another application's database. Create or explicitly identify a separate project named for Koptilnya first, and confirm its organization/cost. Until then, SQL files in this branch are source only and have not been applied to any database.
+The existing Supabase project `cbklexa-bot's Project` (`ereiiidezagburttpxtn`, `eu-central-1`) contains the Technopark `tp_*` tables. Koptilnya shares this project using `kp_`-prefixed tables, views, indexes, RPCs, and helper functions. Never apply this migration to `max-song-app`.
+
+Auth and Storage are project-wide services, not separate Koptilnya instances. The migration uses the dedicated `koptilnya-private` Storage bucket and organization-membership RLS; it deliberately does not create a global trigger on `auth.users`. Supabase Security Advisor reported the existing `public.users`, `public.notebook`, and `public.user_budgets` tables have RLS disabled. Do not enable RLS on these legacy tables without reviewing policies and testing the Technopark app.
 
 ## Current migration scope
 
@@ -23,7 +25,7 @@ The branch includes:
 The tests are source-controlled, but the integration suite must be reported as passed only after the corresponding CI job finishes green. A green local CI stack is not a substitute for reviewing and applying the migration to a separately identified hosted Koptilnya project.
 
 This is a foundation, not a declaration of product completion. The following work remains before production:
-- Review the migration and apply it to a separate Koptilnya project only after that project and its billing/organization are explicitly identified.
+- Review the namespaced migration and apply it only to `ereiiidezagburttpxtn` (the existing Technopark Supabase project), never to `max-song-app`.
 - Verify two-tenant isolation and business-operation tests in CI; add concurrency-focused tests and Storage object read/write isolation tests as the backend is expanded.
 - Implement frontend Auth screens and bind existing screens to the Supabase data layer. The prototype still uses localStorage until that integration is completed.
 - Configure Google OAuth and an SMS provider; credentials belong only in Supabase Auth settings.
@@ -44,10 +46,10 @@ This is a foundation, not a declaration of product completion. The following wor
 - Historical source names and identifiers should be preserved in staging/legacy fields until mapping and reconciliation are approved.
 - No trial length, subscription price, or payment provider has been assumed in code.
 
-## Setup checklist after a dedicated project is selected
+## Setup checklist after the shared Technopark project is confirmed
 
 1. Install the Supabase CLI and verify its version with `supabase --version`.
-2. In a local checkout of this branch, initialize/link only the dedicated Koptilnya project.
+2. In a local checkout of this branch, link only the identified Technopark Supabase project (`ereiiidezagburttpxtn`).
 3. Create the migration through the CLI, move the reviewed SQL into its generated migration file, and apply it first to a non-production branch/test project.
 4. Run `supabase db lint` if supported by the installed CLI, then `supabase test db` and the project security advisors; fix all warnings before production.
 5. Add project URL and publishable key as deployment configuration. Keep private/payment credentials in server-side secrets only.

@@ -32,15 +32,15 @@ On Windows use `gradlew.bat assembleDebug`.
 
 ## Current functionality and limitations
 
-The Android shell packages the current app interface and the existing accounting/CRM prototype. Data still lives only in the app's local storage on that device; there is no cloud account or cross-device sync yet. The app starts with demonstration records; don't use it as the sole place for real business records.
+The Android shell packages the current app interface and the existing accounting/CRM prototype. The cloud adapter supports email/password Auth and organization-scoped cloud state; live use requires the namespaced migration and public URL/publishable key. The app starts with demonstration records; don't use it as the sole place for real business records.
 
 The app includes a full ZIP archive with a JSON database snapshot, an Excel workbook (summary, products, clients, documents, line items, expenses, payments, production batches, recipes, product sales, services, monthly financial summaries), product photos and document attachments. The ZIP can be restored with the in-app restore control; older JSON backups remain supported. On Android, the archive and CSV exports open the native share/save chooser. Test these flows on a real device, because CI cannot simulate every file manager or share target.
 
-The ZIP/Excel export is local to this test device. It does not replace the future server-side export after subscription expiration; cloud records, account-level export, and account retention still require the production backend.
+ZIP/Excel export is available locally; account-level cloud backup and subscription lifecycle still require further production hardening.
 
-## Remaining product work before production use
+## Remaining product work before a signed Play Store release
 
-1. Provision a **new, separate** production backend; do not connect this to Technopark or song-app databases.
+1. Use only the identified Technopark Supabase project (`ereiiidezagburttpxtn`) with every Koptilnya table/function under the `kp_` namespace; never connect to `max-song-app`.
 2. Implement authentication and tenant isolation (each business sees only its own data), cloud records, file storage, backup and restore.
 3. Add trial/subscription lifecycle and server-side entitlement checks; after expiration switch to read-only and keep the full export available.
 4. Add Google Play Billing when subscription implementation begins.
