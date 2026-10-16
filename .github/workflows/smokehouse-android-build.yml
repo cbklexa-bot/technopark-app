@@ -56,6 +56,9 @@ jobs:
       - name: Generate native Android project
         working-directory: smokehouse-android
         run: npx cap add android
+      - name: Install direct-to-Downloads Android plugin
+        working-directory: smokehouse-android
+        run: node scripts/install-download-plugin.mjs
       - name: Generate branded Android launcher icon and splash assets
         working-directory: smokehouse-android
         run: |
