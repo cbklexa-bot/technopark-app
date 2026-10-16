@@ -24,6 +24,15 @@ create table public.organizations (
   unique (id)
 );
 
+create table public.organization_data (
+  organization_id uuid primary key references public.organizations(id) on delete cascade,
+  state jsonb not null default '{"products":[],"clients":[],"docs":[],"expenses":[],"batches":[],"recipes":[],"payments":[]}'::jsonb
+    check (jsonb_typeof(state) = 'object' and pg_column_size(state) <= 10485760),
+  revision bigint not null default 0 check (revision >= 0),
+  updated_by uuid references auth.users(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
 create table public.organization_members (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -614,11 +623,103 @@ begin
   insert into public.organization_members (organization_id, user_id, role, status)
   values (v_org_id, v_user_id, 'owner', 'active');
 
+  -- Launch access: no paid subscription is required to start using the private owner's workspace.
+  -- This plan is server-controlled and is not a client-editable subscription.
+  insert into public.organization_subscriptions (
+    organization_id, plan_id, status, current_period_start, current_period_end
+  )
+  select v_org_id, p.id, 'active', now(), null
+  from public.subscription_plans p
+  where p.code = 'owner-early-access' and p.billing_interval = 'month';
+
+  if not found then
+    raise exception 'Owner early-access plan has not been provisioned' using errcode = '55000';
+  end if;
+
   return v_org_id;
 end;
 $$;
 revoke all on function public.create_organization(text, text) from public, anon;
 grant execute on function public.create_organization(text, text) to authenticated;
+
+-- Free early-access entitlement so the owner can work while the hosted integration is rolled out.
+-- Paid plans can be introduced later through a verified server-side payment webhook.
+insert into public.subscription_plans (
+  code, name, billing_interval, price_minor_units, currency, trial_days, limits, is_active
+) values (
+  'owner-early-access', 'Owner early access', 'month', 0, 'RUB', 0,
+  '{"mode":"single-owner","limits":"not-enforced-yet"}'::jsonb, true
+)
+on conflict (code, billing_interval) do update
+set is_active = true,
+    price_minor_units = 0,
+    limits = excluded.limits;
+
+create or replace function public.save_organization_data(
+  p_organization_id uuid,
+  p_expected_revision bigint,
+  p_state jsonb
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_user_id uuid := (select auth.uid());
+  v_revision bigint;
+begin
+  if v_user_id is null then
+    raise exception 'Authentication required' using errcode = '28000';
+  end if;
+  if not private.can_edit_org(p_organization_id) then
+    raise exception 'Workspace access denied or workspace is read-only' using errcode = '42501';
+  end if;
+  if p_expected_revision is null or p_expected_revision < 0 then
+    raise exception 'Invalid expected revision' using errcode = '22023';
+  end if;
+  if p_state is null or jsonb_typeof(p_state) <> 'object' or pg_column_size(p_state) > 10485760 then
+    raise exception 'Workspace state must be a JSON object no larger than 10 MiB' using errcode = '22023';
+  end if;
+  if exists (
+    select 1
+    from unnest(array['products','clients','docs','expenses','batches','recipes','payments']) k
+    where p_state ? k and jsonb_typeof(p_state -> k) <> 'array'
+  ) then
+    raise exception 'Workspace collections must be arrays' using errcode = '22023';
+  end if;
+
+  insert into public.organization_data (organization_id, state, revision, updated_by)
+  values (
+    p_organization_id,
+    '{"products":[],"clients":[],"docs":[],"expenses":[],"batches":[],"recipes":[],"payments":[]}'::jsonb,
+    0,
+    v_user_id
+  )
+  on conflict (organization_id) do nothing;
+
+  select d.revision into v_revision
+  from public.organization_data d
+  where d.organization_id = p_organization_id
+  for update;
+
+  if v_revision is distinct from p_expected_revision then
+    raise exception 'Workspace changed on another device. Reload before saving.'
+      using errcode = '40001';
+  end if;
+
+  update public.organization_data
+  set state = p_state,
+      revision = v_revision + 1,
+      updated_by = v_user_id,
+      updated_at = now()
+  where organization_id = p_organization_id;
+
+  return v_revision + 1;
+end;
+$;
+revoke all on function public.save_organization_data(uuid, bigint, jsonb) from public, anon;
+grant execute on function public.save_organization_data(uuid, bigint, jsonb) to authenticated;
 
 create or replace function private.apply_stock_movement()
 returns trigger
@@ -1037,7 +1138,7 @@ declare
   t text;
 begin
   foreach t in array array[
-    'profiles', 'organizations', 'organization_members', 'clients', 'products',
+    'profiles', 'organizations', 'organization_data', 'organization_members', 'clients', 'products',
     'documents', 'document_items', 'production_batches', 'production_batch_inputs',
     'stock_movements', 'expense_categories', 'expenses', 'payments',
     'payment_allocations', 'subscription_plans', 'organization_subscriptions',
@@ -1050,7 +1151,7 @@ end
 $$;
 
 -- Revoke client access by default, then grant only table operations needed by the app.
-revoke all on public.profiles, public.organizations, public.organization_members, public.clients,
+revoke all on public.profiles, public.organizations, public.organization_data, public.organization_members, public.clients,
   public.products, public.documents, public.document_items, public.production_batches,
   public.production_batch_inputs, public.stock_movements, public.expense_categories,
   public.expenses, public.payments, public.payment_allocations, public.subscription_plans,
@@ -1058,7 +1159,7 @@ revoke all on public.profiles, public.organizations, public.organization_members
   public.import_runs, public.import_staging_rows, public.audit_events from anon, authenticated;
 
 grant select, update on public.profiles to authenticated;
-grant select on public.organizations to authenticated;
+grant select on public.organizations, public.organization_data to authenticated;
 grant update (name, timezone) on public.organizations to authenticated;
 grant select on public.organization_members to authenticated;
 grant select, insert, update on public.clients, public.expense_categories to authenticated;
@@ -1095,6 +1196,10 @@ create policy organizations_update_admin on public.organizations
 for update to authenticated
 using (private.has_org_role(id, array['owner', 'admin']))
 with check (private.has_org_role(id, array['owner', 'admin']));
+
+create policy organization_data_select_member on public.organization_data
+for select to authenticated
+using (private.is_org_member(organization_id));
 
 create policy organization_members_select_related on public.organization_members
 for select to authenticated
