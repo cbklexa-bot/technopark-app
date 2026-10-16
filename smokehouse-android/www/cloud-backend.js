@@ -525,7 +525,12 @@ const openAccount = () => {
   const gate = createOverlay('koptilnyaAccountGate', 'Аккаунт', 'Текущий серверный профиль и синхронизация.');
   gate.querySelector('#koptilnyaAccountGateBody').innerHTML = `
     <div class="koptilnyaStatus"><b>Пользователь:</b> ${safeText(user?.email || '')}<br><b>Коптильня:</b> ${safeText(organizationName)}<br><b>Синхронизация:</b> ${safeText(statusText)}<br><b>Ревизия данных:</b> ${revision}</div>
-    <div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaSignOut">Выйти</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaAccountClose">Закрыть</button></div>`;
+    <div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaReload">Обновить с сервера</button><button type="button" class="koptilnyaButton" id="koptilnyaSignOut">Выйти</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaAccountClose">Закрыть</button></div>`;
+  gate.querySelector('#koptilnyaReload').addEventListener('click', async () => {
+    gate.remove();
+    await reloadRemoteState();
+    openAccount();
+  });
   gate.querySelector('#koptilnyaSignOut').addEventListener('click', async () => {
     const {error} = await supabase.auth.signOut();
     if (error) { setOverlayStatus('koptilnyaAccountGate', error.message, 'error'); return; }
@@ -735,7 +740,9 @@ const openImportPicker = () => {
       });
       if (error) throw error;
       revision = Number(data) || revision + 1;
+      cloudActive = false;
       app().setState(parsed.state);
+      pendingState = null;
       cloudActive = true;
       syncBlocked = false;
       gate.remove();
@@ -754,6 +761,7 @@ const reloadRemoteState = async () => {
   revision = Number(data?.revision) || 0;
   syncBlocked = false;
   pendingState = null;
+  cloudActive = false;
   app()?.setState(data?.state || EMPTY_STATE());
   cloudActive = true;
   setCloudStatus('Обновлено', 'ok');
@@ -766,14 +774,6 @@ const init = async () => {
   });
   window.KoptilnyaCloud = { queueSave, reload: reloadRemoteState };
   window.addEventListener('koptilnya-state-change', (event) => queueSave(event.detail));
-  const {data, error} = await supabase.auth.getSession();
-  if (error) { renderAuth('signin', error.message); return; }
-  if (data.session) {
-    session = data.session;
-    await openWorkspace(data.session);
-  } else {
-    renderAuth('signin');
-  }
   supabase.auth.onAuthStateChange((event, nextSession) => {
     if (event === 'SIGNED_OUT') {
       cloudActive = false; session = null; user = null; organizationId = null; organizationName = '';
@@ -793,5 +793,13 @@ const init = async () => {
       });
     }
   });
+  const {data, error} = await supabase.auth.getSession();
+  if (error) { renderAuth('signin', error.message); return; }
+  if (data.session) {
+    session = data.session;
+    await openWorkspace(data.session);
+  } else {
+    renderAuth('signin');
+  }
 };
 void init();
