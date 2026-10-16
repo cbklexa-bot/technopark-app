@@ -1,3 +1,4 @@
+import './cloud-config.js';
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
 import { CANONICAL_CLIENTS, clean, norm, num, stableId, arrayRows, headerValue, dateISO, amountForState, costForState, rowDocType, findSheet, parseWorkbook } from './excel-import.js';
