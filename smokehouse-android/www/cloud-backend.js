@@ -270,6 +270,7 @@ const parseWorkbook = (workbook, filename) => {
       warnings.push('Позиция документа «' + doc.number + '» не содержит однозначного товара или положительного количества.');
       return;
     }
+    if (!productId) warnings.push('В позиции документа «' + doc.number + '» товар «' + productName + '» не сопоставлен активной карточке продукции. Количество и суммы сохранены в позиции как исторический снимок названия.');
     doc.items.push({
       productId: productId || '',
       qty,
@@ -299,7 +300,23 @@ const parseWorkbook = (workbook, filename) => {
     warnings.push('В рабочую базу будут импортированы только строки исходных документов. Проверьте, что файл содержит лист «Документы»; сводки не используются для восстановления отдельных накладных.');
   }
 
-  const docByNumber = new Map(docs.map((d) => [norm(d.number), d]));
+  const docsByNumber = new Map();
+  docs.forEach((d) => {
+    const key = norm(d.number);
+    if (!docsByNumber.has(key)) docsByNumber.set(key, []);
+    docsByNumber.get(key).push(d);
+  });
+  const ambiguousDocNumbers = new Set([...docsByNumber.entries()].filter(([, matches]) => matches.length > 1).map(([key]) => key));
+  rawPayments.forEach((r) => {
+    const allocationText = clean(headerValue(r, ['Распределение платежа', 'Распределение', 'По документам', 'Накладные']));
+    for (const part of allocationText.split(/[;\n]+/)) {
+      const pieces = part.split(/\s[—–-]\s/);
+      if (pieces.length >= 2 && ambiguousDocNumbers.has(norm(pieces[0]))) {
+        warnings.push('Платёж с распределением по «' + pieces[0] + '» невозможно однозначно связать: номер документа повторяется в разных строках истории. Укажите дату/ID документа или исправьте распределение до импорта.');
+      }
+    }
+  });
+  const docByNumber = new Map([...docsByNumber.entries()].filter(([, matches]) => matches.length === 1).map(([key, matches]) => [key, matches[0]]));
   const expenses = rawExpenses.map((r, index) => {
     const date = dateISO(headerValue(r, ['Дата', 'Дата затрат', 'Date']));
     if (date && !['2025','2026'].includes(date.slice(0,4))) return null;
@@ -726,7 +743,7 @@ const openImportPicker = () => {
       const hasSourceDocs = !!parsed.summary.sourceSheets.documents && counts.documents > 0;
       const hasProducts = !!parsed.summary.sourceSheets.products || !!parsed.summary.sourceSheets.stock;
       const hasClients = !!parsed.summary.sourceSheets.clients;
-      const blockingWarnings = parsed.summary.warnings.some((w) => /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа|контрольная запись|контрольную запись/i.test(w));
+      const blockingWarnings = parsed.summary.warnings.some((w) => /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа|себестоимость позиций документа|контрольная запись|контрольную запись|платёж с распределением|строка позиции №|позиция документа/i.test(w));
       confirm.disabled = !hasSourceDocs || !hasProducts || !hasClients || counts.documents === 0 || blockingWarnings;
       setOverlayStatus('koptilnyaImportGate', confirm.disabled
         ? 'Импорт заблокирован: нужен отдельный лист исходных документов с датами и типами; также исправь критические ошибки сопоставления, показанные выше.'
