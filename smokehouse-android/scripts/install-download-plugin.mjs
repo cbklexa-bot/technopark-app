@@ -124,7 +124,7 @@ writeFileSync(activityPath, mainActivity, 'utf8');
 const manifestPath = join(projectRoot, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
 if (!existsSync(manifestPath)) throw new Error('Generated AndroidManifest.xml was not found');
 let manifest = readFileSync(manifestPath, 'utf8');
-const mainActivityPattern = /(<activity\\b(?=[^>]*\\bandroid:name="[^"]*MainActivity")[^>]*>)([\\s\\S]*?)(<\\/activity>)/;
+const mainActivityPattern = /(<activity\b(?=[^>]*\bandroid:name="[^"]*MainActivity")[^>]*>)([\s\S]*?)(<\/activity>)/;
 if (!mainActivityPattern.test(manifest)) throw new Error('Could not locate the Capacitor MainActivity in AndroidManifest.xml');
 manifest = manifest.replace(mainActivityPattern, (whole, opening, body, closing) => {
   if (body.includes('android:scheme="ru.koptilnya.app"')) return whole;
@@ -137,7 +137,7 @@ manifest = manifest.replace(mainActivityPattern, (whole, opening, body, closing)
     '        <data android:scheme="ru.koptilnya.app" android:host="auth" android:path="/callback" />',
     '      </intent-filter>',
     ''
-  ].join('\\n');
+  ].join('\n');
   return opening + body + authIntent + closing;
 });
 writeFileSync(manifestPath, manifest, 'utf8');
