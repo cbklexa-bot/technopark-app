@@ -55,12 +55,12 @@ This is a foundation, not a declaration of product completion. The following wor
 7. Decide trial duration, tariff prices/limits, billing interval, grace period, and payment provider before enabling writes for end users.
 8. Keep the migration report and source archive outside GitHub; store original file checksums with the private import run metadata.
 
-## Test Android build
+## Original prototype baseline build
 
-The latest workflow run checked during this audit succeeded on 2026-10-16:
+Before changes in this branch, the prototype's Android workflow succeeded on 2026-10-16:
 https://github.com/cbklexa-bot/technopark-app/actions/runs/38841744614
 
-It produced the expiring CI artifact `koptilnya-android-test-build`. That is a debug/test package, not a signed production release.
+It produced the CI artifact `koptilnya-android-test-build`. That debug package was a baseline; the newer branch's candidate artifacts are linked below.
 
 ## Latest isolated CI evidence
 
