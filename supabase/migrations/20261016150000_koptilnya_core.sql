@@ -1407,9 +1407,9 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'products', 'documents', 'document_items',
-                            'production_batches', 'production_batch_inputs', 'expenses',
-                            'payments', 'payment_allocations']
+  foreach t in array array['kp_clients', 'kp_products', 'kp_documents', 'kp_document_items',
+                            'kp_production_batches', 'kp_production_batch_inputs', 'kp_expenses',
+                            'kp_payments', 'kp_payment_allocations']
   loop
     execute format('drop trigger if exists audit_row_change on public.%I', t);
     execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function kp_private.kp_audit_row_change()', t);
@@ -1421,9 +1421,9 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'products', 'documents', 'document_items',
-                            'production_batches', 'production_batch_inputs',
-                            'expense_categories', 'expenses']
+  foreach t in array array['kp_clients', 'kp_products', 'kp_documents', 'kp_document_items',
+                            'kp_production_batches', 'kp_production_batch_inputs',
+                            'kp_expense_categories', 'kp_expenses']
   loop
     execute format('drop trigger if exists prevent_tenant_reassignment on public.%I', t);
     execute format('create trigger prevent_tenant_reassignment before update on public.%I for each row execute function kp_private.kp_prevent_tenant_reassignment()', t);
@@ -1435,9 +1435,9 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['profiles', 'organizations', 'clients', 'products', 'documents',
-                            'production_batches', 'expense_categories', 'expenses',
-                            'subscription_plans', 'organization_subscriptions']
+  foreach t in array array['kp_profiles', 'kp_organizations', 'kp_clients', 'kp_products', 'kp_documents',
+                            'kp_production_batches', 'kp_expense_categories', 'kp_expenses',
+                            'kp_subscription_plans', 'kp_organization_subscriptions']
   loop
     execute format('drop trigger if exists touch_updated_at on public.%I', t);
     execute format('create trigger touch_updated_at before update on public.%I for each row execute function kp_private.kp_touch_updated_at()', t);
