@@ -53,7 +53,8 @@ assert.ok(sql.includes('create unique index stock_movement_doc_line_unique'), 'D
 assert.ok(sql.includes('create unique index stock_movement_batch_input_unique'), 'Production inputs must not be deducted twice');
 assert.ok(sql.includes('create unique index stock_movement_batch_output_unique'), 'Production output must not be posted twice');
 assert.ok(sql.includes('unique (organization_id, idempotency_key)'), 'Payments must have organization-scoped idempotency');
-assert.ok(sql.includes('unique (organization_id, post_idempotency_key)'), 'Documents/batches must protect posting against duplicates');
+assert.ok(sql.includes('create unique index documents_post_key_unique'), 'Documents must protect posting against duplicates');
+assert.ok(sql.includes('create unique index production_batches_post_key_unique'), 'Batches must protect posting against duplicates');
 
 assert.ok(sql.includes('with (security_invoker = true)'), 'Financial balance view must obey invoker RLS');
 assert.ok(sql.includes('greatest(d.total_amount - coalesce(a.amount_paid, 0), 0)'), 'Outstanding debt must derive from allocations');
