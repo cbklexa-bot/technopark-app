@@ -239,6 +239,8 @@ const showLicenseGate = (blocking, initialMessage = '') => {
       activeLicense = result.payload;
       currentAccess = { allowed: true, trial: evaluateTrial(trialState.firstRunAt, getEffectiveNow(), TRIAL_DAYS), reason: 'licensed' };
       gate.remove();
+      const bar = document.getElementById('koptilnyaLocalBar');
+      if (bar) bar.style.display = 'flex';
       setLocalStatus(licenseStatusLabel());
       toast('Программа активирована до ' + new Date(activeLicense.exp).toLocaleDateString('ru-RU'));
     } catch (error) {
