@@ -35,6 +35,8 @@ assert.ok(licenseCore.includes("'1m': 30") && licenseCore.includes("'3m': 90") &
 assert.ok(licenseCore.includes('trialDays = 7'), 'Trial evaluation must default to seven days');
 assert.ok(bridge.includes('getLicenseIdentity') && bridge.includes('getTrialState') && bridge.includes('saveTrialState'),
   'Native bridge must expose identity and anti-clock-rollback trial state');
+assert.ok(bridge.includes('WEB_STATE_DB_NAME') && bridge.includes('indexedDB.open(WEB_STATE_DB_NAME, 1)') && bridge.includes('saveWebBusinessState'),
+  'When native storage is unavailable or cache storage is full, the bridge must provide a persistent IndexedDB fallback');
 assert.ok(html.includes("VERSION_KEY='smokehouse_native_state_version_v1'"), 'Cached business state must keep a durable revision number');
 assert.ok(html.includes('cachedVersion>databaseVersion'), 'A newer local cache must win if an SQLite save was interrupted');
 assert.ok(html.includes('localStorage.setItem(VERSION_KEY,String(nativeStateRevision))'), 'Revision must be saved beside the local cache before native persistence');
