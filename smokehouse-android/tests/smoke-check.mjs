@@ -22,10 +22,17 @@ const requiredUi = [
   'id="page-documents"', 'id="page-expenses"', 'id="page-debts"',
   'id="page-reports"', 'id="page-recipes"', 'id="page-settings"', 'id="pageBack"',
   'id="themeSelect"', 'id="licenseSettingsBtn"', 'id="importExcelBtn"', 'id="exportExcelBtn"',
-  'id="exportFullBackup"', 'id="restoreFullBackup"', 'id="exportClientsCsv"', 'id="clientSearchInput"',
+  'id="exportFullBackup"', 'id="restoreFullBackup"', 'id="clientSearchInput"',
   'id="clientStatsPeriod"', 'id="reportStart"', 'id="reportEnd"',
 ];
 for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI marker: ' + marker);
+assert.ok(html.includes('value="smokehouse"'), 'Smokehouse theme must be available');
+assert.ok(html.includes('@keyframes koptilnyaSmokeDrift'), 'Smokehouse theme must include subtle animated smoke');
+assert.ok(!html.includes('id="exportClientsCsv"') && !html.includes('id="csv"'), 'Legacy CSV export buttons must not be visible in Settings');
+assert.ok(html.includes('Полная история: ') && html.includes('Оплачено') && html.includes('Долг'), 'CRM history must show full invoice and payment details');
+assert.ok(html.includes('Поиск клиента по номеру телефона'), 'CRM search must explicitly support phone number lookup');
+assert.ok(html.includes('optional=name===\'note\''), 'Comment fields marked optional must not be required');
+assert.ok(html.includes('return \'\'') && html.includes('Без привязки к клиенту — контакты необязательны'), 'Smokehouse services must be saveable without customer name or phone');
 
 const requiredBusinessLogic = [
   "type==='receipt'", "type==='sale'", "type==='service'",
@@ -39,6 +46,8 @@ const requiredBusinessLogic = [
   'function openCostCalculator',
   'id="chooseProductPhoto"',
   'id="productPhotoPreview"',
+  'photoChoose.onclick=async function()',
+  'photoInput.onchange=async function()',
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
 assert.ok(localBackend.includes('showImportExcel: () => openImportPicker()'), 'Settings import action must open Excel import');
