@@ -27,6 +27,7 @@ const requiredUi = [
 ];
 for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI marker: ' + marker);
 assert.ok(html.includes('value="smokehouse"'), 'Smokehouse theme must be available');
+assert.ok(html.includes('koptilnya-theme-smokehouse-migrated-v1'), 'Smokehouse theme should become the default once when upgrading the existing app');
 assert.ok(html.includes('@keyframes koptilnyaSmokeDrift'), 'Smokehouse theme must include subtle animated smoke');
 assert.ok(!html.includes('id="exportClientsCsv"') && !html.includes('id="csv"'), 'Legacy CSV export buttons must not be visible in Settings');
 assert.ok(html.includes('Полная история: ') && html.includes('Оплачено') && html.includes('Долг'), 'CRM history must show full invoice and payment details');
