@@ -234,7 +234,19 @@ s.servicePresets=Array.isArray(s.servicePresets)?s.servicePresets:[];
 // Migrate legacy payment allocations (document-number strings) to stable document IDs.
 s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
 var page='home',filter='all',reportTab='finance',clientHistoryId='',clientQuery='',clientStatsPeriod='month';
-function save(){localStorage.setItem(KEY,JSON.stringify(s));try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}}
+var nativeStateReady=false,nativeStateRevision=0,nativeStateFailureNotified=false;
+function persistStateToNative(snapshot){
+ if(!nativeStateReady||!window.KoptilnyaNative||!window.KoptilnyaNative.isNative||typeof window.KoptilnyaNative.saveBusinessState!=='function')return;
+ window.KoptilnyaNative.saveBusinessState(snapshot).catch(function(error){
+  if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('SQLite state save failed',error)}
+ });
+}
+function save(){
+ localStorage.setItem(KEY,JSON.stringify(s));
+ nativeStateRevision++;
+ persistStateToNative(s);
+ try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}
+}
 function n(v){return Number(v)||0}
 function money(v){return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n(v))}
 function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -688,5 +700,30 @@ window.KoptilnyaApp={
   },
   showToast:function(message){toast(message)}
 };
+function initNativeBusinessState(){
+ var native=window.KoptilnyaNative;
+ if(!native||!native.isNative||typeof native.loadBusinessState!=='function'||!window.KoptilnyaApp)return;
+ var revisionAtStart=nativeStateRevision;
+ native.loadBusinessState().then(function(stored){
+  if(nativeStateRevision!==revisionAtStart){
+   nativeStateReady=true;
+   persistStateToNative(window.KoptilnyaApp.getState());
+   return;
+  }
+  nativeStateReady=true;
+  if(stored&&stored.found&&stored.state){
+   var restored=JSON.parse(stored.state);
+   if(restored&&typeof restored==='object')window.KoptilnyaApp.setState(restored);
+   else persistStateToNative(window.KoptilnyaApp.getState());
+  }else{
+   persistStateToNative(window.KoptilnyaApp.getState());
+  }
+ }).catch(function(error){
+  console.error('SQLite state load failed',error);
+  window.KoptilnyaApp.showToast('Не удалось открыть SQLite-базу. Локальная копия сохранена; создайте резервную копию.');
+ });
+}
+window.addEventListener('koptilnya-native-ready',initNativeBusinessState);
+if(window.KoptilnyaNative)initNativeBusinessState();
 })();
 </script></body></html>
