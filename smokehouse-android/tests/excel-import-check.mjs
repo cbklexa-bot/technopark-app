@@ -90,4 +90,37 @@ assert.equal(parsed.summary.years[2024].docs, 1);
 assert.ok(parsed.state.clients.some((client) => client.name === 'Старый архивный магазин'),
   'Additional client records must be imported instead of silently discarded');
 
-console.log('Excel import test passed: all clients, historical years, itemized documents, stock balances, expenses, payment allocations, batches, and no summary double counting.');
+// Legacy-workbook regression: non-standard sheet names, title rows before headers, and alternate Russian column labels.
+const legacyWorkbook = XLSX.utils.book_new();
+const addLegacySheet = (name, rows) => XLSX.utils.book_append_sheet(legacyWorkbook, XLSX.utils.aoa_to_sheet(rows), name);
+addLegacySheet('Номенклатура продукции', [
+  ['Экспорт каталога продукции'],
+  ['Код товара','Наименование товара','Тип продукции','Ед. измерения','Фактический остаток','Себестоимость за кг','Закупочная цена','Розничная цена'],
+  ['p-legacy','Грудинка копчёная','Готовая продукция','кг',12,100,130,240],
+]);
+addLegacySheet('Справочник клиентов', [
+  ['База клиентов'],
+  ['ID клиента','ФИО клиента','Мобильный телефон','Тип'],
+  ['c-legacy','Мясная лавка','8 (900) 123-45-67','Магазин'],
+]);
+addLegacySheet('Журнал документов 2025', [
+  ['Архив накладных — данные без изменений'],
+  ['ID документа','Дата накладной','Номер накладной','Тип документа','ФИО клиента','Телефон клиента','ID продукции','Продукция','Вес сырья','Итоговая сумма','Полная себестоимость','Оплаченная сумма','Комментарий'],
+  ['d-legacy','2025-06-12','НК-2025-18','Продажа','Мясная лавка','8 (900) 123-45-67','p-legacy','Грудинка копчёная',2.5,600,250,300,'Старый документ'],
+]);
+const legacyParsed = parseWorkbook(legacyWorkbook, 'legacy-export.xlsx');
+assert.equal(legacyParsed.summary.counts.products, 1, 'Legacy product sheet with a title row should be recognized');
+assert.equal(legacyParsed.summary.counts.clients, 1, 'Legacy customer sheet with alternate headers should be recognized');
+assert.equal(legacyParsed.summary.counts.documents, 1, 'Legacy transaction sheet name and prefatory title row should be recognized');
+assert.equal(legacyParsed.state.products[0].stock, 12, 'Legacy stock quantity should be imported');
+assert.equal(legacyParsed.state.clients[0].name, 'Мясная лавка', 'Legacy client name should be imported');
+assert.equal(legacyParsed.state.clients[0].phone, '8 (900) 123-45-67', 'Legacy phone should be imported');
+assert.equal(legacyParsed.state.docs[0].number, 'НК-2025-18', 'Legacy invoice number should be imported');
+assert.equal(legacyParsed.state.docs[0].items[0].qty, 2.5, 'Legacy document weight should be imported');
+assert.equal(legacyParsed.state.docs[0].manualAmount, undefined, 'Legacy itemized summary should be derived from product amount and quantity');
+assert.equal(legacyParsed.state.docs[0].customerPhone, '8 (900) 123-45-67', 'Legacy document phone should remain available to CRM');
+assert.equal(legacyParsed.summary.years[2025].revenue, 600, 'Legacy historical totals should be retained');
+assert.ok(!legacyParsed.summary.warnings.some((warning) => /не удалось определить тип документа|отсутствует распознаваемая дата/i.test(warning)),
+  'Legacy transaction should not be blocked because of its sheet/header layout');
+
+console.log('Excel import tests passed: native exports, legacy sheet names, leading title rows, alternate headers, contacts, invoice weights, and historical totals.');
