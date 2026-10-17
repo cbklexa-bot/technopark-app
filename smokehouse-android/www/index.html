@@ -500,7 +500,7 @@ if(!serviceName)throw new Error('Укажите наименование усл�
 if(q<=0)throw new Error('Укажите вес сырья больше нуля');
 if(q*pr<(oldService?n(oldService.paid):0))throw new Error('Сумма услуги ниже уже принятой оплаты. Сначала исправьте оплату.');
 var serviceClientId=resolveServiceClient(v,oldService),serviceClient=cli(serviceClientId);
-var serviceDoc={id:oldService?oldService.id:uid(),number:v.number,date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(v.customerName||serviceClient.name||''),productId:v.productId||'',serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?oldService.paid:(v.paid==='all'?q*pr:0),note:String(v.note||serviceName).trim()};
+var serviceDoc={id:oldService?oldService.id:uid(),number:v.number,date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(v.customerName||serviceClient.name||''),productId:v.productId||'',serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?oldService.paid:(v.paid==='all'?q*pr:0),note:String(v.note||'').trim()};
 if(oldService)s.docs=s.docs.map(function(d){return d.id===oldService.id?serviceDoc:d});else s.docs.push(serviceDoc)
 }
 else if(t==='receipt'){
