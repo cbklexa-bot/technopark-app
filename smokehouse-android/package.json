@@ -2,7 +2,7 @@
   "name": "koptilnya-android",
   "version": "0.1.0",
   "private": true,
-  "description": "Android development build for Koptilnya production accounting app",
+  "description": "Offline Android accounting app with local data and signed license keys",
   "engines": {
     "node": ">=22"
   },
@@ -11,18 +11,14 @@
     "android:sync": "cap sync android",
     "android:open": "cap open android",
     "build": "vite build www --outDir ../dist --base=./ --emptyOutDir",
-    "test": "node tests/smoke-check.mjs && node tests/auth-flow-check.mjs && node --check www/auth-logic.js && node --check www/cloud-backend.js && node --check www/excel-import.js && node tests/cloud-backend-check.mjs && node tests/excel-import-check.mjs",
-    "test:cloud": "node tests/cloud-backend-check.mjs"
+    "test": "node tests/smoke-check.mjs && node tests/license-check.mjs && node --check www/license-core.js && node --check www/local-backend.js && node --check www/excel-import.js && node tests/local-mode-check.mjs && node tests/excel-import-check.mjs",
+    "test:local": "node tests/local-mode-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
     "@capacitor/core": "8.5.3",
-    "@capacitor/filesystem": "8.1.5",
-    "@capacitor/share": "8.0.1",
     "jszip": "^3.10.1",
-    "xlsx": "^0.18.5",
-    "@supabase/supabase-js": "^2.57.4",
-    "@capacitor/app": "8.1.2"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",
