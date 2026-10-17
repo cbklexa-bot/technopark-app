@@ -37,6 +37,8 @@ const pluginSource =
   'import android.content.Context;\n' +
   'import android.content.Intent;\n' +
   'import android.database.Cursor;\n' +
+  'import android.database.sqlite.SQLiteDatabase;\n' +
+  'import android.database.sqlite.SQLiteOpenHelper;\n' +
   'import android.content.SharedPreferences;\n' +
   'import android.net.Uri;\n' +
   'import android.os.Build;\n' +
