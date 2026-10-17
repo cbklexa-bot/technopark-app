@@ -162,22 +162,6 @@ if (!existsSync(manifestPath)) throw new Error('Generated AndroidManifest.xml wa
 let manifest = readFileSync(manifestPath, 'utf8');
 const mainActivityPattern = /(<activity\b(?=[^>]*\bandroid:name="[^"]*MainActivity")[^>]*>)([\s\S]*?)(<\/activity>)/;
 if (!mainActivityPattern.test(manifest)) throw new Error('Could not locate the Capacitor MainActivity in AndroidManifest.xml');
-manifest = manifest.replace(mainActivityPattern, (whole, opening, body, closing) => {
-  if (body.includes('android:scheme="ru.koptilnya.app"')) return whole;
-  const authIntent = [
-    '      <!-- Supabase Auth confirmation and password recovery -->',
-    '      <intent-filter>',
-    '        <action android:name="android.intent.action.VIEW" />',
-    '        <category android:name="android.intent.category.DEFAULT" />',
-    '        <category android:name="android.intent.category.BROWSABLE" />',
-    '        <data android:scheme="ru.koptilnya.app" android:host="auth" android:path="/callback" />',
-    '      </intent-filter>',
-    ''
-  ].join('\n');
-  return opening + body + authIntent + closing;
-});
+manifest = manifest.replace(mainActivityPattern, (whole) => whole);
 writeFileSync(manifestPath, manifest, 'utf8');
-if (!manifest.includes('android:scheme="ru.koptilnya.app"') || !manifest.includes('android:path="/callback"')) {
-  throw new Error('Supabase Auth deep-link intent filter was not installed');
-}
-console.log('Registered Downloads plugin and Supabase Auth deep link (ru.koptilnya.app://auth/callback).');
+console.log('Registered Downloads plugin and offline license/trial methods.');
