@@ -412,6 +412,20 @@ async function saveTrialState(state) {
   });
 }
 
+let businessStateSaveQueue = Promise.resolve();
+async function loadBusinessState() {
+  if (!isNative) return null;
+  return await KoptilnyaDownloads.loadBusinessState();
+}
+async function saveBusinessState(state) {
+  if (!isNative) return null;
+  const serialized = typeof state === 'string' ? state : JSON.stringify(state);
+  businessStateSaveQueue = businessStateSaveQueue.catch(() => {}).then(() =>
+    KoptilnyaDownloads.saveBusinessState({ state: serialized }),
+  );
+  return await businessStateSaveQueue;
+}
+
 window.KoptilnyaNative = {
   isNative,
   saveTextFile,
@@ -422,5 +436,7 @@ window.KoptilnyaNative = {
   getLicenseIdentity,
   getTrialState,
   saveTrialState,
+  loadBusinessState,
+  saveBusinessState,
 };
 window.dispatchEvent(new CustomEvent('koptilnya-native-ready'));
