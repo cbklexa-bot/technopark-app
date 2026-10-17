@@ -211,17 +211,28 @@ assert.ok(!html.includes('id="exportClientsCsv">Экспорт базы CSV'), '
 assert.ok(!html.includes('<button class="btn secondary" id="csv">Экспорт CSV</button>'), 'Report export should be inside Settings, not the reports header');
 assert.ok(html.includes('Услуга по копчению'), 'Smoking-service wording missing');
 assert.ok(html.includes('Чистая прибыль'), 'Monthly net profit metric missing');
-assert.ok(html.includes('applyTheme(localStorage.getItem'), 'Persisted theme setting missing');
-assert.ok(html.includes('Комментарий (необязательно)'), 'Expense comment must be optional');
-const recipeStart = html.indexOf('<section id="page-recipes"');
-assert.notEqual(recipeStart, -1, 'Recipe placeholder should remain in navigation');
-const recipeEnd = html.indexOf('</section>', recipeStart);
-assert.notEqual(recipeEnd, -1, 'Recipe placeholder section must be closed');
-const recipeMarkup = html.slice(recipeStart, recipeEnd);
-assert.ok(recipeMarkup.includes('Скоро'), 'Recipe module must display a Coming Soon placeholder');
-assert.ok(!recipeMarkup.includes('data-action=') && !recipeMarkup.includes('ownerModeToggle') && !recipeMarkup.includes('addRecipeButton'),
-  'Recipe placeholder must not expose editable controls');
-for (const disabledMarker of ['OWNER_PIN', 'ownerModeToggle', 'addRecipeButton', 'data-edit-recipe=', 'data-delete-recipe=']) {
-  assert.ok(!html.includes(disabledMarker), 'Unfinished recipe functionality must be disabled: ' + disabledMarker);
+assert.ok(html.includes("applyTheme('light')"), 'The app must force one light theme');
+assert.ok(!html.includes('id="themeSelect"'), 'Theme selection must not be exposed in Settings');
+assert.ok(html.includes('Комментарий (необязательно)'), 'Expense/service comment must be optional');
+const homeStart = html.indexOf('<section id="page-home"');
+const homeEnd = html.indexOf('</section>', homeStart);
+assert.notEqual(homeStart, -1, 'Home section must exist');
+const homeMarkup = html.slice(homeStart, homeEnd);
+assert.equal((homeMarkup.match(/class="quick"/g) || []).length, 6, 'Home must contain exactly six quick actions');
+assert.ok(homeMarkup.includes('class="finance-panel"') && homeMarkup.includes('id="metrics"'), 'Monthly metrics must be grouped inside one finance panel');
+for (const page of ['products','documents','production','services','clients','expenses','debts','payments','reports','recipes','settings']) {
+  assert.ok(html.includes('data-page="' + page + '"'), 'Navigation item missing: ' + page);
+  assert.ok(html.includes('id="page-' + page + '"'), 'Navigation section missing: ' + page);
 }
-console.log('Smoke check passed: source syntax, primary accounting modules, Android file export, ZIP restore, and 13 Excel sheets are present.');
+assert.ok(html.includes('id="serviceDocsTable"'), 'Service history screen must be present');
+assert.ok(html.includes('id="paymentsTable"') && html.includes('data-edit-payment='), 'Payment history must remain visible and editable');
+assert.ok(html.includes('data-edit-service-preset=') && html.includes('data-delete-service-preset='), 'Service templates must be managed in Settings');
+assert.ok(html.includes('data-edit-recipe=') && html.includes('data-delete-recipe='), 'Recipes must support editing and deletion');
+const serviceFormStart = html.indexOf("}else if(type==='service'){", html.indexOf('function open(type,extra)'));
+const serviceFormEnd = html.indexOf("}else if(type==='receipt'){", serviceFormStart);
+assert.ok(serviceFormStart >= 0 && serviceFormEnd > serviceFormStart, 'Client raw-material service form must exist');
+const serviceFormMarkup = html.slice(serviceFormStart, serviceFormEnd);
+assert.ok(serviceFormMarkup.includes('Принято сырья, кг') && serviceFormMarkup.includes('Номер телефона клиента (необязательно)'), 'Service form must include weight and optional phone');
+assert.ok(!serviceFormMarkup.includes('servicePresetPrice') && !serviceFormMarkup.includes('newServicePreset') && !serviceFormMarkup.includes("inp('price'") && !serviceFormMarkup.includes("inp('cost'"), 'Service form must not expose template maintenance or manual price/cost fields');
+assert.ok(html.includes("nextDocNumber('НК')") && html.includes("nextDocNumber('ПР')") && html.includes("nextDocNumber('УС')"), 'Document numbers must be generated automatically');
+console.log('Smoke check passed: compact dashboard, navigation routes, service-template separation, recipes CRUD, local accounting, Android exports, ZIP restore, and Excel sheets are present.');
