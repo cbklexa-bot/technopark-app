@@ -1,13 +1,11 @@
-name: Koptilnya production-branch validation
+name: Koptilnya offline licensing validation
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - koptilnya-production
+      - koptilnya-local-licensing
     paths:
-      - 'supabase/**'
-      - 'scripts/check-production-schema.mjs'
       - 'smokehouse-android/**'
       - '.github/workflows/koptilnya-production-check.yml'
 
@@ -15,62 +13,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: koptilnya-production-check-${{ github.ref }}
+  group: koptilnya-offline-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  schema-contract:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install PostgreSQL SQL parser
-        run: python -m pip install --disable-pip-version-check --no-input pglast
-      - name: Parse migration with PostgreSQL grammar
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          from pglast import parse_sql
-          paths = [
-              Path('supabase/migrations/20261016150000_koptilnya_core.sql'),
-              Path('supabase/tests/koptilnya_tenant_accounting.test.sql'),
-          ]
-          for path in paths:
-              statements = parse_sql(path.read_text(encoding='utf-8'))
-              print(f'PostgreSQL parser accepted {len(statements)} SQL statements in {path}.')
-          PY
-      - name: Check tenant, RLS, accounting, entitlement, and recipe-block contracts
-        run: node scripts/check-production-schema.mjs
-
-  database-integration:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Supabase CLI
-        uses: supabase/setup-cli@v3
-        with:
-          version: latest
-      - name: Confirm the CLI is running
-        run: supabase --version
-      - name: Start an isolated local Supabase stack and apply migrations
-        run: supabase start
-      - name: Run real PostgreSQL RLS and accounting tests using pgTAP
-        run: supabase test db --local
-      - name: Stop local containers
-        if: always()
-        run: supabase stop --no-backup
-
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 35
