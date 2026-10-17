@@ -207,6 +207,19 @@ const pluginSource =
   '      call.reject("Не удалось сохранить файл в Загрузки/Коптильня", error);\n' +
   '    }\n' +
   '  }\n' +
+  '  private static class StateDbHelper extends SQLiteOpenHelper {\n' +
+  '    private static final String DB_NAME = "koptilnya_data.db";\n' +
+  '    StateDbHelper(Context context) { super(context, DB_NAME, null, 1); }\n' +
+  '    @Override public void onCreate(SQLiteDatabase db) {\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL)");\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, applied_at INTEGER NOT NULL)");\n' +
+  '      ContentValues migration = new ContentValues(); migration.put("version", 1); migration.put("applied_at", System.currentTimeMillis());\n' +
+  '      db.insertWithOnConflict("schema_migrations", null, migration, SQLiteDatabase.CONFLICT_IGNORE);\n' +
+  '    }\n' +
+  '    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n' +
+  '      /* Keep existing app_state data intact. Future schema changes must be applied incrementally here. */\n' +
+  '    }\n' +
+  '  }\n' +
   '}\n';
 
 writeFileSync(join(packagePath, 'KoptilnyaDownloadsPlugin.java'), pluginSource, 'utf8');
