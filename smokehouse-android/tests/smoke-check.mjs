@@ -13,39 +13,41 @@ const localBackend = readFileSync(join(root, 'www', 'local-backend.js'), 'utf8')
 const config = JSON.parse(readFileSync(join(root, 'capacitor.config.json'), 'utf8'));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
-const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/);
+const inlineScript = Array.from(html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g), match => match[1]).find(source => source.includes("var KEY='smokehouse_static_preview_v1'"));
 assert.ok(inlineScript, 'The main application script must exist');
-assert.doesNotThrow(() => new Function(inlineScript[1]), 'The main application JavaScript must parse');
+assert.doesNotThrow(() => new Function(inlineScript), 'The main application JavaScript must parse');
 
 const requiredUi = [
   'id="page-products"', 'id="productsGrid"', 'id="page-production"', 'id="page-clients"',
   'id="page-documents"', 'id="page-expenses"', 'id="page-debts"',
   'id="page-reports"', 'id="page-recipes"', 'id="page-settings"', 'id="pageBack"',
-  'id="themeSelect"', 'id="licenseSettingsBtn"', 'id="importExcelBtn"', 'id="exportExcelBtn"',
+  'id="licenseSettingsBtn"', 'id="importExcelBtn"', 'id="exportExcelBtn"',
   'id="exportFullBackup"', 'id="restoreFullBackup"', 'id="clientSearchInput"',
   'id="clientStatsPeriod"', 'id="reportStart"', 'id="reportEnd"',
 ];
 for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI marker: ' + marker);
-assert.ok(html.includes('value="smokehouse"'), 'Smokehouse theme must be available');
-assert.ok(html.includes('koptilnya-theme-smokehouse-migrated-v1'), 'Smokehouse theme should become the default once when upgrading the existing app');
-assert.ok(html.includes('@keyframes koptilnyaSmokeDrift') && html.includes('@keyframes koptilnyaSmokeRise'), 'Smokehouse theme must include animated smoke drift and rise');
+assert.ok(html.includes('data-theme="light"') && html.includes('id="servicePresetList"'), 'A fixed light theme and service catalog must be available');
+assert.ok(!html.includes('id="themeSelect"'), 'There must be only one theme and no theme switcher');
+assert.ok(!html.includes('@keyframes koptilnyaSmoke') && !/data-theme\\s*=\\s*["'](?:dark|smokehouse)["']/.test(html), 'Smoke theme and animation must be removed');
+assert.ok(html.includes('drawer-overlay{z-index:110!important') && html.includes('.side{z-index:120!important'), 'Drawer must be above its overlay so menu items receive taps');
 assert.ok(!html.includes('id="exportClientsCsv"') && !html.includes('id="csv"'), 'Legacy CSV export buttons must not be visible in Settings');
 assert.ok(html.includes('Полная история: ') && html.includes('Оплачено') && html.includes('Долг'), 'CRM history must show full invoice and payment details');
 assert.ok(html.includes('Поиск клиента по номеру телефона'), 'CRM search must explicitly support phone number lookup');
-assert.ok(html.includes('optional=name===\'note\''), 'Comment fields marked optional must not be required');
-assert.ok(html.includes('id="menuToggle"') && html.includes("button.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();go(button.dataset.page)})"), 'Sidebar, bottom navigation and quick action routes must navigate directly');
-assert.ok(html.includes('name="servicePresetId"') && html.includes('id="newServicePreset"') && html.includes('id="saveServicePreset"'), 'Service presets must be user-managed and saved locally');
-assert.ok(!html.includes('name="customerName"'), 'Service form must not ask for customer name');
+assert.ok(html.includes("optional=name==='note'"), 'Comment fields marked optional must not be required');
+assert.ok(html.includes("bindPageNavigation('.side .nav')") && html.includes("bindPageNavigation('.bottom')") && html.includes("bindPageNavigation('.quickgrid')"), 'Sidebar, bottom navigation and quick actions must have explicit navigation handlers');
+assert.ok(html.includes('name="servicePresetId"') && html.includes('id="servicePresetList"') && html.includes('data-action="servicePreset"'), 'User-managed service catalog must exist outside the service-entry form');
+assert.ok(!html.includes('name="customerName"') && !html.includes('name="serviceName"'), 'Service form must not ask for customer name or a free-typed service name');
+assert.ok(!html.includes('Цена услуги, ₽/кг (необязательно)') && !html.includes('Себестоимость, ₽/кг (необязательно)'), 'Service entry must not show manual pricing/cost fields');
 assert.ok(!html.includes('name="receiptPrice"'), 'Stock receipt must not ask for a separate incoming price');
-assert.ok(html.includes("@keyframes koptilnyaSmokeRise") && html.includes('body::after'), 'Smokehouse theme must have a visible rising-smoke layer');
+assert.ok(html.includes("if(!preset)throw new Error('Сначала добавь и выбери услугу в базе услуг')"), 'Service save must require a selected saved preset and use its price/cost');
+assert.ok(html.includes('renderServicePresets()') && html.includes('data-edit-service-preset=') && html.includes('data-delete-service-preset='), 'Service catalog must render and support edit/delete');
 
-const requiredBusinessLogic = [
+const requiredBusinessLogic = [const requiredBusinessLogic = [
   "type==='receipt'", "type==='sale'", "type==='service'",
   "type==='payment'", 'function resolveServiceClient', 'function deleteClient', 'data-delete-product', 'data-delete-expense',
   'function renderReports', 'function docStockDelta', "localStorage.getItem(KEY)",
   "document.getElementById('exportFullBackup').onclick",
   "document.getElementById('backupFile').onchange",
-  "document.getElementById('themeSelect').onchange",
   "document.getElementById('pageBack').onclick",
   'data-delete-doc=',
   'function openCostCalculator',
@@ -55,9 +57,8 @@ const requiredBusinessLogic = [
   'photoInput.onchange=async function()',
   'function addReceiptLine(item)',
   'Стоимость прихода:',
-  'function currentPreset()',
-  'function refreshPresetOptions(selectedId)',
-  'function applyPreset(p)',
+  'function renderServicePresets()',
+  'function bindPageNavigation(containerSelector)',
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
 assert.ok(localBackend.includes('showImportExcel: () => openImportPicker()'), 'Settings import action must open Excel import');
