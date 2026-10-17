@@ -95,6 +95,32 @@ const pluginSource =
   '    call.resolve();\n' +
   '  }\n' +
   '  @PluginMethod\n' +
+  '  public void loadBusinessState(PluginCall call) {\n' +
+  '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
+  '    SQLiteDatabase db = helper.getReadableDatabase();\n' +
+  '    try (Cursor cursor = db.rawQuery("SELECT state_json, updated_at FROM app_state WHERE slot = ?", new String[]{"main"})) {\n' +
+  '      JSObject result = new JSObject();\n' +
+  '      if (cursor.moveToFirst()) { result.put("found", true); result.put("state", cursor.getString(0)); result.put("updatedAt", cursor.getLong(1)); }\n' +
+  '      else { result.put("found", false); result.put("state", ""); result.put("updatedAt", 0); }\n' +
+  '      call.resolve(result);\n' +
+  '    } catch (Exception error) { call.reject("Не удалось прочитать локальную SQLite-базу", error); }\n' +
+  '    finally { db.close(); helper.close(); }\n' +
+  '  }\n' +
+  '  @PluginMethod\n' +
+  '  public void saveBusinessState(PluginCall call) {\n' +
+  '    String state = call.getString("state");\n' +
+  '    if (state == null || state.trim().isEmpty()) { call.reject("Не передано состояние учёта"); return; }\n' +
+  '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
+  '    SQLiteDatabase db = helper.getWritableDatabase();\n' +
+  '    try {\n' +
+  '      ContentValues values = new ContentValues(); values.put("slot", "main"); values.put("state_json", state); values.put("updated_at", System.currentTimeMillis());\n' +
+  '      long row = db.insertWithOnConflict("app_state", null, values, SQLiteDatabase.CONFLICT_REPLACE);\n' +
+  '      if (row < 0) throw new IllegalStateException("SQLite не сохранила данные");\n' +
+  '      JSObject result = new JSObject(); result.put("saved", true); result.put("updatedAt", values.getAsLong("updated_at")); call.resolve(result);\n' +
+  '    } catch (Exception error) { call.reject("Не удалось сохранить данные в SQLite", error); }\n' +
+  '    finally { db.close(); helper.close(); }\n' +
+  '  }\n' +
+  '  @PluginMethod\n' +
   '  public void pickImage(PluginCall call) {\n' +
   '    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);\n' +
   '    intent.addCategory(Intent.CATEGORY_OPENABLE);\n' +
