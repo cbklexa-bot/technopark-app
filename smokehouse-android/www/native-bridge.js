@@ -330,33 +330,51 @@ async function exportExcel(state) {
   const byProduct = new Map(products.map((product) => [product.id, product]));
   const workbook = XLSX.utils.book_new();
   addWorksheet(workbook, 'Продукция', [
-    ['ID', 'Название', 'Остаток, кг', 'Себестоимость, ₽/кг', 'Цена продажи, ₽/кг', 'Единица', 'Фотография сохранена'],
-    ...products.map((p) => [p.id, p.name, num(p.stock), num(p.cost), num(p.sale), p.unit || 'кг', p.image ? 'Да (полный архив)' : 'Нет']),
+    ['ID', 'Название', 'Тип', 'Единица', 'Остаток', 'Себестоимость', 'Цена продажи', 'Фотография сохранена (полный архив)'],
+    ...products.map((p) => [p.id, p.name, p.type || 'Готовая продукция', p.unit || 'кг', num(p.stock), num(p.cost), num(p.sale), p.image ? 'Да' : 'Нет']),
   ]);
   addWorksheet(workbook, 'Клиенты', [
-    ['ID', 'Имя', 'Телефон', 'Тип клиента'],
-    ...clients.map((client) => [client.id, client.name, client.phone || '', client.kind || '']),
+    ['ID', 'Клиент', 'Телефон', 'Тип'],
+    ...clients.map((client) => [client.id, client.name, client.phone || '', client.kind || 'Контрагент']),
   ]);
   addWorksheet(workbook, 'Документы', [
-    ['ID', 'Дата', 'Номер', 'Тип', 'Клиент', 'Продукция / описание', 'Количество, кг', 'Сумма, ₽', 'Себестоимость, ₽', 'Оплачено, ₽', 'Долг, ₽', 'Комментарий'],
+    ['ID', 'Дата', 'Номер', 'Тип', 'Клиент/поставщик', 'Продукция', 'Количество', 'Сумма', 'Себестоимость', 'Оплачено', 'Комментарий'],
     ...docs.map((doc) => [
       doc.id, doc.date, doc.number || '',
-      ({sale:'Продажа',receipt:'Приход продукции',service:'Услуга по копчению'})[doc.type] || docTypeLabel(doc.type),
-      (byClient.get(doc.clientId) || {}).name || doc.customerName || '',
+      ({sale:'Расходный',receipt:'Приходный',service:'Услуга'})[doc.type] || docTypeLabel(doc.type),
+      (byClient.get(doc.clientId) || {}).name || doc.supplier || doc.customerName || '',
       docItems(doc).map((item) => ((byProduct.get(item.productId) || {}).name || item.note || 'Продукция') + ' — ' + num(item.qty)).join('; '),
-      qty(doc), docAmount(doc), docCost(doc), num(doc.paid), Math.max(0, docAmount(doc) - num(doc.paid)), doc.note || '',
+      qty(doc), docAmount(doc), docCost(doc), num(doc.paid), doc.note || '',
     ]),
   ]);
+  const exportDocById = new Map(docs.map((doc) => [doc.id, doc]));
+  const positionRows = docs.flatMap((doc) => docItems(doc)
+    .filter((item) => item.productId && num(item.qty) > 0)
+    .map((item) => [
+      doc.id, doc.date, doc.number || '', item.productId,
+      (byProduct.get(item.productId) || {}).name || item.note || '',
+      num(item.qty), num(item.price), num(item.cost), num(item.qty) * num(item.price), num(item.qty) * num(item.cost),
+    ]));
+  addWorksheet(workbook, 'Позиции', [
+    ['Документ ID', 'Дата', 'Номер', 'ID продукции', 'Продукция', 'Количество', 'Цена за единицу', 'Себестоимость за единицу', 'Сумма позиции', 'Себестоимость позиции'],
+    ...positionRows,
+  ]);
   addWorksheet(workbook, 'Затраты', [
-    ['ID', 'Дата', 'Категория', 'Комментарий', 'Сумма, ₽', 'Учитывать в себестоимости'],
+    ['ID', 'Дата', 'Категория', 'Описание', 'Сумма', 'Уже включено в себестоимость'],
     ...expenses.map((expense) => [expense.id, expense.date, expense.category || '', expense.note || '', num(expense.amount), expense.inCost ? 'Да' : 'Нет']),
   ]);
   addWorksheet(workbook, 'Оплаты', [
-    ['ID', 'Дата', 'Клиент', 'Сумма, ₽', 'Способ', 'Комментарий'],
-    ...payments.map((payment) => [payment.id, payment.date, (byClient.get(payment.clientId) || {}).name || '', num(payment.amount), payment.method || '', payment.note || '']),
+    ['ID', 'Дата', 'Клиент', 'Сумма', 'Способ', 'Распределение платежа', 'Комментарий'],
+    ...payments.map((payment) => [
+      payment.id, payment.date, (byClient.get(payment.clientId) || {}).name || '', num(payment.amount), payment.method || '',
+      (payment.allocations || []).map((allocation) => {
+        const doc = exportDocById.get(allocation.docId);
+        return (doc && doc.number || allocation.docId || 'Документ') + ' — ' + num(allocation.amount);
+      }).join('; '), payment.note || '',
+    ]),
   ]);
   addWorksheet(workbook, 'Партии', [
-    ['ID', 'Дата', 'Готовая продукция', 'Сырьё', 'Вес сырья, кг', 'Выход, кг', 'Затраты, ₽'],
+    ['ID', 'Дата', 'Продукт', 'Сырьё', 'Исходный вес, кг', 'Выход, кг', 'Суммарная себестоимость'],
     ...batches.map((batch) => [batch.id, batch.date, (byProduct.get(batch.productId) || {}).name || '', batch.rawName || '', num(batch.rawQty), num(batch.outputQty), num(batch.totalCost)]),
   ]);
   const exportDate = new Date().toISOString().slice(0, 10);
