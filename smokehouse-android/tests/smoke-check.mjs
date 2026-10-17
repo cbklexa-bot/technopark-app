@@ -13,7 +13,7 @@ const localBackend = readFileSync(join(root, 'www', 'local-backend.js'), 'utf8')
 const config = JSON.parse(readFileSync(join(root, 'capacitor.config.json'), 'utf8'));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
-const inlineScript = Array.from(html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g), match => match[1]).find(source => source.includes("var KEY='smokehouse_static_preview_v1'"));
+const inlineScript = Array.from(html.matchAll(/<script>([\s\S]*?)<\/script>/g), match => match[1]).find(source => source.includes("var KEY='smokehouse_static_preview_v1'"));
 assert.ok(inlineScript, 'The main application script must exist');
 assert.doesNotThrow(() => new Function(inlineScript), 'The main application JavaScript must parse');
 
@@ -42,7 +42,7 @@ assert.ok(!html.includes('name="receiptPrice"'), 'Stock receipt must not ask for
 assert.ok(html.includes("if(!preset)throw new Error('Сначала добавь и выбери услугу в базе услуг')"), 'Service save must require a selected saved preset and use its price/cost');
 assert.ok(html.includes('renderServicePresets()') && html.includes('data-edit-service-preset=') && html.includes('data-delete-service-preset='), 'Service catalog must render and support edit/delete');
 
-const requiredBusinessLogic = [const requiredBusinessLogic = [
+const requiredBusinessLogic = [
   "type==='receipt'", "type==='sale'", "type==='service'",
   "type==='payment'", 'function resolveServiceClient', 'function deleteClient', 'data-delete-product', 'data-delete-expense',
   'function renderReports', 'function docStockDelta', "localStorage.getItem(KEY)",
