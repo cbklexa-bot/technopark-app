@@ -1,12 +1,13 @@
 # Коптильня — автономное Android-приложение
 
-The local-licensing build is designed to work **without account registration, internet access, or Supabase**. All accounting entries remain in the app's local database on the device.
+The local-licensing build is designed to work **without account registration, internet access, or Supabase**. Accounting records are saved locally on the device. The current implementation stores the app's state snapshot as JSON in a native SQLite database; it is not a Room-based, normalized database schema.
 
 ## Trial and activation
 
 - First launch starts a 7-day trial.
 - After the trial, the main workspace is locked until a signed activation key is entered.
-- Activation plans: 1 month (30 days), 3 months (90 days), 6 months (180 days), and 12 months (365 days).
+- Activation plans are calendar terms: 1, 3, 6, or 12 calendar months. The end date is calculated from the activation timestamp; if the corresponding day does not exist in the target month, it is clamped to that month's last day.
+- Compatibility: previously issued signed keys that have no `term` field continue to use the legacy fixed periods of 30, 90, 180, or 365 days.
 - Keys are bound to the device code shown on the License screen. The customer sends that code to the seller; the seller returns a key generated with the separate private-key issuer tool.
 - The private signing key is **not** stored in this public repository or inside the APK. Keep the seller's issuer package backed up securely and never share it.
 - When a trial/license expires, records are not deleted. The License screen keeps an option to export a full backup before reactivation.
@@ -15,9 +16,9 @@ Offline license verification uses an ECDSA P-256 signature. The app embeds only 
 
 ## Data storage and backups
 
-- Product cards, customers, documents, expenses, payments, production batches, and other app state are saved locally.
+- Product cards, customers, documents, expenses, payments, production batches, and other app state are saved in local SQLite storage through the Android bridge, with a localStorage cache/fallback for the embedded interface.
 - Excel import is read on-device, shows a preview, and creates a backup before replacing existing records.
-- **Download full archive** creates a ZIP containing the JSON database, Excel financial reports, product photos, document attachments, and a manifest.
+- **Download full archive** creates a ZIP containing the JSON database snapshot, Excel financial reports, product photos, document attachments, and a manifest.
 - Restore from the ZIP reconstructs photos and document attachments. Keep a copy outside the phone before app reinstall or device replacement.
 - This build does not synchronize between devices. Data on one device does not automatically appear on another.
 
@@ -39,7 +40,7 @@ cd android
 
 On Windows use `gradlew.bat assembleDebug`.
 
-GitHub Actions on branch `koptilnya-local-licensing` runs the tests and builds a debug APK. A debug APK is for test installation and is not a signed Play Store release. Before distributing paid copies long-term, create a stable release keystore and sign every customer APK/update with the same keystore. The current CI debug APK is suitable for testing/initial evaluation, not a substitute for a managed production signing key.
+GitHub Actions on branch `koptilnya-ui-fixes-oct17` runs the Android validation/build workflow on changes under `smokehouse-android/**`. A debug APK is for test installation and is not a signed Play Store release. Before distributing paid copies long-term, create a stable release keystore and sign every customer APK/update with the same keystore. A CI debug APK is suitable for testing/initial evaluation, not a substitute for a managed production signing key.
 
 ## Important operational notes
 
