@@ -41,7 +41,7 @@ const requiredBusinessLogic = [
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
 assert.ok(localBackend.includes('showImportExcel: () => openImportPicker()'), 'Settings import action must open Excel import');
-assert.ok(!localBackend.includes("bar.innerHTML = '<span id=\\"koptilnyaLocalStatus\\""), 'Floating import/license bar should not be recreated');
+assert.ok(!localBackend.includes("bar.innerHTML = '<span"), 'Floating import/license bar should not be recreated');
 
 
 const requiredArchiveLogic = [
