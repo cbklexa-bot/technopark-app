@@ -315,6 +315,67 @@ async function saveTextFile(filename, mimeType, content) {
   return { uri: result && result.uri, filename: safeName, path: 'Download/Коптильня/' + safeName };
 }
 
+
+async function exportExcel(state) {
+  const snapshot = state && typeof state === 'object' ? state : {};
+  const products = Array.isArray(snapshot.products) ? snapshot.products : [];
+  const clients = Array.isArray(snapshot.clients) ? snapshot.clients : [];
+  const docs = Array.isArray(snapshot.docs) ? snapshot.docs : [];
+  const expenses = Array.isArray(snapshot.expenses) ? snapshot.expenses : [];
+  const payments = Array.isArray(snapshot.payments) ? snapshot.payments : [];
+  const batches = Array.isArray(snapshot.batches) ? snapshot.batches : [];
+  const byClient = new Map(clients.map((client) => [client.id, client]));
+  const byProduct = new Map(products.map((product) => [product.id, product]));
+  const workbook = XLSX.utils.book_new();
+  addWorksheet(workbook, 'Продукция', [
+    ['ID', 'Название', 'Остаток, кг', 'Себестоимость, ₽/кг', 'Цена продажи, ₽/кг', 'Единица', 'Фотография сохранена'],
+    ...products.map((p) => [p.id, p.name, num(p.stock), num(p.cost), num(p.sale), p.unit || 'кг', p.image ? 'Да (полный архив)' : 'Нет']),
+  ]);
+  addWorksheet(workbook, 'Клиенты', [
+    ['ID', 'Имя', 'Телефон', 'Тип клиента'],
+    ...clients.map((client) => [client.id, client.name, client.phone || '', client.kind || '']),
+  ]);
+  addWorksheet(workbook, 'Документы', [
+    ['ID', 'Дата', 'Номер', 'Тип', 'Клиент', 'Продукция / описание', 'Количество, кг', 'Сумма, ₽', 'Себестоимость, ₽', 'Оплачено, ₽', 'Долг, ₽', 'Комментарий'],
+    ...docs.map((doc) => [
+      doc.id, doc.date, doc.number || '',
+      ({sale:'Продажа',receipt:'Приход продукции',service:'Услуга по копчению'})[doc.type] || docTypeLabel(doc.type),
+      (byClient.get(doc.clientId) || {}).name || doc.customerName || '',
+      docItems(doc).map((item) => ((byProduct.get(item.productId) || {}).name || item.note || 'Продукция') + ' — ' + num(item.qty)).join('; '),
+      qty(doc), docAmount(doc), docCost(doc), num(doc.paid), Math.max(0, docAmount(doc) - num(doc.paid)), doc.note || '',
+    ]),
+  ]);
+  addWorksheet(workbook, 'Затраты', [
+    ['ID', 'Дата', 'Категория', 'Комментарий', 'Сумма, ₽', 'Учитывать в себестоимости'],
+    ...expenses.map((expense) => [expense.id, expense.date, expense.category || '', expense.note || '', num(expense.amount), expense.inCost ? 'Да' : 'Нет']),
+  ]);
+  addWorksheet(workbook, 'Оплаты', [
+    ['ID', 'Дата', 'Клиент', 'Сумма, ₽', 'Способ', 'Комментарий'],
+    ...payments.map((payment) => [payment.id, payment.date, (byClient.get(payment.clientId) || {}).name || '', num(payment.amount), payment.method || '', payment.note || '']),
+  ]);
+  addWorksheet(workbook, 'Партии', [
+    ['ID', 'Дата', 'Готовая продукция', 'Сырьё', 'Вес сырья, кг', 'Выход, кг', 'Затраты, ₽'],
+    ...batches.map((batch) => [batch.id, batch.date, (byProduct.get(batch.productId) || {}).name || '', batch.rawName || '', num(batch.rawQty), num(batch.outputQty), num(batch.totalCost)]),
+  ]);
+  const exportDate = new Date().toISOString().slice(0, 10);
+  const filename = 'koptilnya-data-' + exportDate + '.xlsx';
+  const base64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64', compression: true });
+  await saveBase64ToDownloads(filename, base64, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  return filename;
+}
+
+async function pickImage() {
+  if (!isNative) return null;
+  const result = await KoptilnyaDownloads.pickImage();
+  if (!result || !result.base64) return null;
+  const mimeType = String(result.mimeType || 'image/jpeg');
+  return {
+    dataUrl: 'data:' + mimeType + ';base64,' + result.base64,
+    fileName: String(result.fileName || 'product-photo'),
+    mimeType,
+  };
+}
+
 async function getLicenseIdentity() {
   if (!isNative) return null;
   return await KoptilnyaDownloads.getLicenseIdentity();
@@ -335,6 +396,8 @@ window.KoptilnyaNative = {
   isNative,
   saveTextFile,
   exportFullArchive,
+  exportExcel,
+  pickImage,
   readBackupFile,
   getLicenseIdentity,
   getTrialState,
