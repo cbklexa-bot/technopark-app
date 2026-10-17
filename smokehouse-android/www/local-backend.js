@@ -256,7 +256,7 @@ const openImportPicker = () => {
   const gate = createOverlay('koptilnyaImportGate', 'Импорт из Excel', 'Файл читается только на этом устройстве. Перед заменой текущих данных приложение сохранит резервную копию.');
   const body = gate.querySelector('#koptilnyaImportGateBody');
   body.innerHTML =
-    '<label class="koptilnyaField" for="koptilnyaExcelFile">Excel-файл (.xlsx, .xls)</label>' +
+    '<label class="koptilnyaField" for="koptilnyaExcelFile">Excel-файл прежней программы (.xlsx, .xls, .xlsm)</label>' +
     '<input id="koptilnyaExcelFile" type="file" accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" />' +
     '<div id="koptilnyaImportPreview"></div>' +
     '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaImportConfirm" disabled>Импортировать и заменить данные</button><button type="button" class="koptilnyaButton secondary" id="koptilnyaImportCancel">Отмена</button></div>';
@@ -305,7 +305,7 @@ const openImportPicker = () => {
       }
       const hasSourceDocs = !!parsed.summary.sourceSheets.documents && counts.documents > 0;
       const hasProducts = !!parsed.summary.sourceSheets.products || !!parsed.summary.sourceSheets.stock;
-      const hasClients = !!parsed.summary.sourceSheets.clients;
+      const hasClients = !!parsed.summary.sourceSheets.clients || counts.clients > 0;
       const blockingWarnings = parsed.summary.warnings.some((warning) =>
         /повтор ключа документа|повторяются идентификаторы документов|не удалось определить тип документа|отсутствует распознаваемая дата|сумма позиций документа|себестоимость позиций документа|контрольная запись|контрольную запись|платёж с распределением|строка позиции №|позиция документа/i.test(warning));
       confirm.disabled = !hasSourceDocs || !hasProducts || !hasClients || counts.documents === 0 || blockingWarnings;
