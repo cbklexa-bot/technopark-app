@@ -51,7 +51,8 @@ assert.equal(config.appId, 'ru.koptilnya.app', 'Android app ID changed unexpecte
 assert.equal(config.appName, 'Коптильня', 'Android app label changed unexpectedly');
 assert.equal(config.webDir, 'dist', 'Capacitor webDir must match Vite output');
 assert.ok(pkg.dependencies['@capacitor/android'], 'Capacitor Android dependency missing');
-assert.ok(pkg.dependencies['@capacitor/app'], 'Capacitor App plugin is required for Android auth deep links');
+assert.ok(!pkg.dependencies['@capacitor/app'], 'Removed auth integration must not retain Capacitor App dependency');
+assert.ok(!pkg.dependencies['@supabase/supabase-js'], 'Offline APK must not include Supabase client dependency');
 assert.ok(pkg.dependencies['@capacitor/filesystem'], 'Native file export dependency missing');
 assert.ok(pkg.dependencies['@capacitor/share'], 'Native share dependency missing');
 assert.ok(pkg.dependencies.jszip, 'ZIP dependency missing');
@@ -148,9 +149,10 @@ try {
 const assetGenerator = readFileSync(join(root, 'scripts', 'generate_assets.py'), 'utf8');
 for (const marker of ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']) assert.ok(assetGenerator.includes(marker), 'Missing branded Android asset: ' + marker);
 const installer = readFileSync(join(root, 'scripts', 'install-download-plugin.mjs'), 'utf8');
-for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','android.intent.action.VIEW','android:scheme="ru.koptilnya.app"','android:host="auth"','android:path="/callback"']) {
-  assert.ok(installer.includes(marker), 'Missing direct Downloads implementation: ' + marker);
+for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','getLicenseIdentity','getTrialState','saveTrialState','Settings.Secure.ANDROID_ID','SharedPreferences']) {
+  assert.ok(installer.includes(marker), 'Missing direct Downloads / offline license implementation: ' + marker);
 }
+assert.ok(!installer.includes('android.intent.action.VIEW'), 'Removed auth integration must not configure a deep link');
 assert.ok(html.includes('name="category" list="expenseCategoryOptions"'), 'Expense category must be free text with suggestions');
 assert.ok(html.includes('Комментарий (необязательно)'), 'Expense comment must be optional');
 const recipeStart = html.indexOf('<section id="page-recipes"');
