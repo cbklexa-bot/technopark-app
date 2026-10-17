@@ -24,9 +24,11 @@ function docItems(doc) {
   return [{ productId: doc.productId, qty: doc.qty, price: doc.price, cost: doc.cost, note: doc.note }];
 }
 function docAmount(doc) {
+  if (doc && doc.manualAmount != null && doc.manualAmount !== '') return num(doc.manualAmount);
   return docItems(doc).reduce((sum, item) => sum + num(item.qty) * num(item.price), 0);
 }
 function docCost(doc) {
+  if (doc && doc.manualCost != null && doc.manualCost !== '') return num(doc.manualCost);
   return docItems(doc).reduce((sum, item) => sum + num(item.qty) * num(item.cost), 0);
 }
 function getProduct(state, id) { return (state.products || []).find((p) => p.id === id) || {}; }
