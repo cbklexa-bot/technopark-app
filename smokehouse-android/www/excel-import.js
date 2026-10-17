@@ -1,8 +1,5 @@
 import * as XLSX from 'xlsx';
 
-const CANONICAL_CLIENTS = [
-  'Тортика', 'Деревенька', 'Пекарня', 'Кочевник', 'Наш', 'Клиенты цеха',
-];
 const clean = (value) => String(value ?? '').replace(/\u00a0/g, ' ').trim();
 const norm = (value) => clean(value).toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').replace(/[\s_.\-—–:№()]/g, '');
 const num = (value) => {
@@ -133,39 +130,36 @@ const parseWorkbook = (workbook, filename) => {
 
   const activeClientByName = new Map();
   const clients = [];
-  const inactiveCounterpartyNames = new Set();
-  if (!sourceNames.clients) warnings.push('В книге не найден лист «Клиенты/Контрагенты». Шесть активных контрагентов будут созданы без телефона и дополнительных реквизитов.');
-  rawClients.forEach((r) => {
-    const name = clean(headerValue(r, ['Клиент', 'Контрагент', 'Название', 'Наименование', 'Покупатель', 'Имя клиента', 'Name']));
-    if (!name) return;
+  const addImportedClient = (nameValue, row, prefix) => {
+    const name = clean(nameValue);
+    if (!name) return null;
     const key = norm(name);
-    const exact = CANONICAL_CLIENTS.find((canonical) => norm(canonical) === key);
-    if (!exact) { inactiveCounterpartyNames.add(name); return; } // Other counterparties stay as document name snapshots, never as active clients.
     if (activeClientByName.has(key)) {
-      warnings.push('Повтор названия активного контрагента «' + exact + '» на листе «' + sourceNames.clients + '». До импорта проверьте этот лист.');
-      return;
+      const existing = clients.find((client) => client.id === activeClientByName.get(key));
+      if (row) warnings.push('Повтор названия клиента «' + name + '» на листе «' + sourceNames.clients + '». Сохранена первая запись; проверьте дубликаты.');
+      return existing || null;
     }
     const client = {
-      id: stableId(headerValue(r, ['ID', 'ID клиента', 'ID контрагента', 'Client ID']), 'import-client'),
-      name: exact,
-      phone: clean(headerValue(r, ['Телефон', 'Номер телефона', 'Phone'])),
-      kind: clean(headerValue(r, ['Тип', 'Вид', 'Категория'])) || 'Контрагент',
+      id: stableId(row ? headerValue(row, ['ID', 'ID клиента', 'ID контрагента', 'Client ID']) : '', prefix || 'import-client'),
+      name,
+      phone: row ? clean(headerValue(row, ['Телефон', 'Номер телефона', 'Phone'])) : '',
+      kind: (row ? clean(headerValue(row, ['Тип', 'Вид', 'Категория'])) : '') || 'Контрагент',
     };
-    activeClientByName.set(key, client.id);
     clients.push(client);
+    activeClientByName.set(key, client.id);
+    return client;
+  };
+  if (!sourceNames.clients) warnings.push('В книге не найден лист «Клиенты/Контрагенты». Карточки клиентов будут созданы по именам из документов, если они есть.');
+  rawClients.forEach((row) => {
+    addImportedClient(headerValue(row, ['Клиент', 'Контрагент', 'Название', 'Наименование', 'Покупатель', 'Имя клиента', 'Name']), row, 'import-client');
   });
-  // Always keep the exact six owner-approved active counterparties; other historical names remain on their documents.
-  if (inactiveCounterpartyNames.size) {
-    warnings.push('Контрагенты вне разрешённой шестёрки останутся только в исторических реквизитах документов и не появятся в активном справочнике: ' + [...inactiveCounterpartyNames].slice(0,30).join(', ') + (inactiveCounterpartyNames.size > 30 ? ', …' : '') + '.');
-  }
-  {
-    CANONICAL_CLIENTS.forEach((name) => {
-      if (activeClientByName.has(norm(name))) return;
-      const client = { id: 'koptilnya-client-' + norm(name), name, phone: '', kind: 'Контрагент' };
-      clients.push(client);
-      activeClientByName.set(norm(name), client.id);
-    });
-  }
+  // Recover clients named on invoices even if the source workbook's client list is missing or incomplete.
+  rawDocs.forEach((row) => {
+    const type = rowDocType(headerValue(row, ['Тип', 'Вид документа', 'Операция']));
+    if (type === 'receipt') return;
+    const name = clean(headerValue(row, ['Клиент/поставщик', 'Клиент', 'Контрагент', 'Поставщик', 'Покупатель']));
+    if (name && !activeClientByName.has(norm(name))) addImportedClient(name, null, 'import-client-from-document');
+  });
 
   const rowKey = (r) => {
     const explicitId = clean(headerValue(r, ['ID', 'ID документа', 'Документ ID', 'Document ID']));
@@ -206,10 +200,7 @@ const parseWorkbook = (workbook, filename) => {
       items: [],
       sourceRow: index + 2,
     };
-    if (date && !['2025','2026'].includes(date.slice(0,4))) {
-      warnings.push('Документ «' + doc.number + '» за ' + date.slice(0,4) + ' год не попадёт в оперативную базу (оставлен за пределами периода 2025–2026).');
-      return;
-    }
+    // Preserve records from every year; historical information is needed for reports and reconciliation.
     const sourceProductId = clean(headerValue(r, ['ID продукции', 'Продукция ID', 'Product ID']));
     const productId = (products.some((p) => p.id === sourceProductId) ? sourceProductId : '')
       || productNames.get(norm(headerValue(r, ['Продукция', 'Товар', 'Наименование продукции'])));
@@ -308,7 +299,6 @@ const parseWorkbook = (workbook, filename) => {
   const docByNumber = new Map([...docsByNumber.entries()].filter(([, matches]) => matches.length === 1).map(([key, matches]) => [key, matches[0]]));
   const expenses = rawExpenses.map((r, index) => {
     const date = dateISO(headerValue(r, ['Дата', 'Дата затрат', 'Date']));
-    if (date && !['2025','2026'].includes(date.slice(0,4))) return null;
     return {
       id: stableId(headerValue(r, ['ID', 'ID затраты']), 'import-expense-' + index),
       date,
@@ -322,7 +312,6 @@ const parseWorkbook = (workbook, filename) => {
 
   const payments = rawPayments.map((r, index) => {
     const date = dateISO(headerValue(r, ['Дата', 'Дата платежа', 'Date']));
-    if (date && !['2025','2026'].includes(date.slice(0,4))) return null;
     const clientName = clean(headerValue(r, ['Клиент', 'Контрагент', 'Покупатель']));
     const allocationText = clean(headerValue(r, ['Распределение платежа', 'Распределение', 'По документам', 'Накладные']));
     const allocations = [];
@@ -346,7 +335,6 @@ const parseWorkbook = (workbook, filename) => {
 
   const batches = rawBatches.map((r, index) => {
     const date = dateISO(headerValue(r, ['Дата', 'Дата производства', 'Date']));
-    if (date && !['2025','2026'].includes(date.slice(0,4))) return null;
     const productName = clean(headerValue(r, ['Продукт', 'Готовая продукция', 'Продукция']));
     const rawName = clean(headerValue(r, ['Сырьё', 'Сырье', 'Наименование сырья']));
     return {
@@ -368,7 +356,12 @@ const parseWorkbook = (workbook, filename) => {
   });
 
   const years = {};
-  [2025, 2026].forEach((year) => {
+  const yearSet = new Set();
+  [...docs, ...expenses, ...payments, ...batches].forEach((record) => {
+    const year = Number(String(record.date || '').slice(0, 4));
+    if (Number.isInteger(year) && year >= 1900 && year <= 9999) yearSet.add(year);
+  });
+  [...yearSet].sort((a, b) => a - b).forEach((year) => {
     const within = docs.filter((d) => d.date && Number(d.date.slice(0,4)) === year && (d.type === 'sale' || d.type === 'service'));
     const expenseWithin = expenses.filter((e) => e.date && Number(e.date.slice(0,4)) === year);
     const batchWithin = batches.filter((b) => b.date && Number(b.date.slice(0,4)) === year);
@@ -381,8 +374,8 @@ const parseWorkbook = (workbook, filename) => {
       docs: within.length,
     };
   });
-  const activeClientSet = new Set(clients.map((c) => c.id));
-  if (docs.some((d) => d.clientId && !activeClientSet.has(d.clientId))) warnings.push('В истории есть документы с контрагентами вне шести разрешённых. В активный справочник они не попадут; исходное название останется в документе.');
+  const activeClientSet = new Set(clients.map((client) => client.id));
+  if (docs.some((d) => d.clientId && !activeClientSet.has(d.clientId))) warnings.push('В истории есть документы со ссылками на отсутствующих клиентов. Проверьте справочник клиентов после импорта.');
   const duplicateIds = (items, key) => {
     const seen = new Set(); const duplicates = new Set();
     items.forEach((item) => { const value = clean(key(item)); if (value && seen.has(value)) duplicates.add(value); else if (value) seen.add(value); });
@@ -405,6 +398,6 @@ const parseWorkbook = (workbook, filename) => {
 const formatMoney = (value) => new Intl.NumberFormat('ru-RU', {style:'currency',currency:'RUB',maximumFractionDigits:0}).format(num(value));
 
 export {
-  CANONICAL_CLIENTS, clean, norm, num, stableId, arrayRows, headerValue, dateISO,
+  clean, norm, num, stableId, arrayRows, headerValue, dateISO,
   amountForState, costForState, rowDocType, findSheet, parseWorkbook,
 };
