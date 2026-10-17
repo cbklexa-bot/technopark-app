@@ -28,12 +28,16 @@ const requiredUi = [
 for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI marker: ' + marker);
 assert.ok(html.includes('value="smokehouse"'), 'Smokehouse theme must be available');
 assert.ok(html.includes('koptilnya-theme-smokehouse-migrated-v1'), 'Smokehouse theme should become the default once when upgrading the existing app');
-assert.ok(html.includes('@keyframes koptilnyaSmokeDrift'), 'Smokehouse theme must include subtle animated smoke');
+assert.ok(html.includes('@keyframes koptilnyaSmokeDrift') && html.includes('@keyframes koptilnyaSmokeRise'), 'Smokehouse theme must include animated smoke drift and rise');
 assert.ok(!html.includes('id="exportClientsCsv"') && !html.includes('id="csv"'), 'Legacy CSV export buttons must not be visible in Settings');
 assert.ok(html.includes('Полная история: ') && html.includes('Оплачено') && html.includes('Долг'), 'CRM history must show full invoice and payment details');
 assert.ok(html.includes('Поиск клиента по номеру телефона'), 'CRM search must explicitly support phone number lookup');
 assert.ok(html.includes('optional=name===\'note\''), 'Comment fields marked optional must not be required');
-assert.ok(html.includes('return \'\'') && html.includes('Без привязки к клиенту — контакты необязательны'), 'Smokehouse services must be saveable without customer name or phone');
+assert.ok(html.includes('id="menuToggle"') && html.includes("button.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();go(button.dataset.page)})"), 'Sidebar, bottom navigation and quick action routes must navigate directly');
+assert.ok(html.includes('name="servicePresetId"') && html.includes('id="newServicePreset"') && html.includes('id="saveServicePreset"'), 'Service presets must be user-managed and saved locally');
+assert.ok(!html.includes('name="customerName"'), 'Service form must not ask for customer name');
+assert.ok(!html.includes('name="receiptPrice"'), 'Stock receipt must not ask for a separate incoming price');
+assert.ok(html.includes("@keyframes koptilnyaSmokeRise") && html.includes('body::after'), 'Smokehouse theme must have a visible rising-smoke layer');
 
 const requiredBusinessLogic = [
   "type==='receipt'", "type==='sale'", "type==='service'",
@@ -49,6 +53,11 @@ const requiredBusinessLogic = [
   'id="productPhotoPreview"',
   'photoChoose.onclick=async function()',
   'photoInput.onchange=async function()',
+  'function addReceiptLine(item)',
+  'Стоимость прихода:',
+  'function currentPreset()',
+  'function refreshPresetOptions(selectedId)',
+  'function applyPreset(p)',
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
 assert.ok(localBackend.includes('showImportExcel: () => openImportPicker()'), 'Settings import action must open Excel import');
