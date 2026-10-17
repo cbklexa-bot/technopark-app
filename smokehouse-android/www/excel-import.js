@@ -16,9 +16,10 @@ const HEADER_MARKERS = new Set([
   'тип','виддокумента','операция','название','наименование','наименованиетовара','продукция',
   'товар','товары','номенклатура','клиент','контрагент','покупатель','заказчик','имяклиента',
   'телефон','номертелефона','мобильныйтелефон','единица','единицаизмерения','количество',
-  'количествокг','вес','вессырья','остаток','фактическийостаток','сумма','итого','цена',
-  'ценапродажи','себестоимость','оплачено','долг','категория','статья','описание',
-  'комментарий','примечание','сырье','выход','выпуск','суммаплатежа','способоплаты',
+  'количествокг','колвокг','колво','вес','вессырья','остаток','фактическийостаток','сумма','итого','итоговаясумма','общаясумма','цена',
+  'ценапродажи','закупочнаяцена','розничнаяцена','себестоимость','себестоимостьзагкг','едизмерения','кодтовара',
+  'наименованиетовара','типпродукции','датанакладной','номернакладной','номернакладной','фиоклиента','оплачено','оплаченнаясумма',
+  'долг','категория','статья','описание','комментарий','примечание','сырье','выход','выпуск','суммаплатежа','способоплаты',
 ].map(norm));
 const arrayRows = (workbook, sheetName) => {
   if (!sheetName || !workbook.Sheets[sheetName]) return [];
@@ -63,7 +64,7 @@ const costForState = (d) => {
 const rowDocType = (value, sheetName = '') => {
   const text = norm(value || sheetName);
   if (text.includes('приход') || text.includes('закуп') || text.includes('receipt')) return 'receipt';
-  if (text.includes('услуг') || text.includes('обработ') || text.includes('service')) return 'service';
+  if (text.includes('услуг') || text.includes('обработ') || text.includes('копчен') || text.includes('переработ') || text.includes('service')) return 'service';
   if (text.includes('продаж') || text.includes('расход') || text.includes('реализац') || text.includes('sale')) return 'sale';
   return '';
 };
@@ -179,7 +180,7 @@ const parseWorkbook = (workbook, filename) => {
   };
   if (!sourceNames.clients) warnings.push('В книге не найден лист «Клиенты/Контрагенты». Карточки клиентов будут созданы по именам из документов, если они есть.');
   rawClients.forEach((row) => {
-    addImportedClient(headerValue(row, ['Клиент', 'Контрагент', 'Название', 'Наименование', 'Покупатель', 'Имя клиента', 'Name']), row, 'import-client');
+    addImportedClient(headerValue(row, ['Клиент', 'Контрагент', 'Название', 'Наименование', 'Покупатель', 'Имя клиента', 'ФИО клиента', 'Код клиента', 'Заказчик', 'Name']), row, 'import-client');
   });
   // Recover clients named on invoices even if the source workbook's client list is missing or incomplete.
   rawDocs.forEach((row) => {
@@ -191,7 +192,7 @@ const parseWorkbook = (workbook, filename) => {
 
   const rowKey = (r) => {
     const explicitId = clean(headerValue(r, ['ID', 'ID документа', 'Документ ID', 'Document ID']));
-    const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
+    const number = clean(headerValue(r, ['Номер', 'Номер документа', 'Номер накладной', 'Номер операции', '№', 'Документ']));
     const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     return explicitId ? 'id:' + explicitId : (number ? 'number:' + norm(number) + '|' + date : '');
   };
@@ -199,7 +200,7 @@ const parseWorkbook = (workbook, filename) => {
   const docs = [];
   const importedDocKeys = new Set();
   rawDocs.forEach((r, index) => {
-    const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
+    const number = clean(headerValue(r, ['Номер', 'Номер документа', 'Номер накладной', 'Номер операции', '№', 'Документ']));
     const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     const key = rowKey(r) || 'row:' + index;
     if (importedDocKeys.has(key)) warnings.push('Повтор ключа документа «' + (number || key) + '» в исходном листе. Эти записи не объединяются автоматически.');
@@ -259,7 +260,7 @@ const parseWorkbook = (workbook, filename) => {
   });
   rawPositions.forEach((r, index) => {
     const explicitId = clean(headerValue(r, ['Документ ID', 'ID документа', 'Код документа', 'Document ID']));
-    const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
+    const number = clean(headerValue(r, ['Номер', 'Номер документа', 'Номер накладной', 'Номер операции', '№', 'Документ']));
     const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     let doc = explicitId ? docMap.get('id:' + explicitId) : null;
     if (!doc && number) doc = byNumberAndDate.get(norm(number) + '|' + date) || docs.find((d) => norm(d.number) === norm(number));
@@ -268,11 +269,11 @@ const parseWorkbook = (workbook, filename) => {
       return;
     }
     if (doc.items.length === 0) { delete doc.manualAmount; delete doc.manualCost; }
-    const productName = clean(headerValue(r, ['Продукция', 'Наименование продукции', 'Товар', 'Product']));
+    const productName = clean(headerValue(r, ['Продукция', 'Наименование продукции', 'Наименование товара', 'Название товара', 'Номенклатура', 'Товар', 'Product']));
     const sourceProductId = clean(headerValue(r, ['ID продукции', 'Продукция ID', 'Product ID']));
     const productId = products.some((p) => p.id === sourceProductId) ? sourceProductId : productNames.get(norm(productName));
-    const qty = num(headerValue(r, ['Количество', 'Количество, кг', 'Вес', 'Вес, кг', 'Qty']));
-    const price = num(headerValue(r, ['Цена за единицу', 'Цена', 'Цена продажи', 'Сумма за единицу']));
+    const qty = num(headerValue(r, ['Количество', 'Кол-во', 'Колво', 'Количество, кг', 'Кол-во кг', 'Вес', 'Вес, кг', 'Вес сырья', 'Принято сырья, кг', 'Qty']));
+    const price = num(headerValue(r, ['Цена за единицу', 'Цена за кг', 'Цена', 'Цена продажи', 'Сумма за единицу']));
     const lineAmount = num(headerValue(r, ['Сумма позиции', 'Сумма', 'Итого']));
     const lineCost = num(headerValue(r, ['Себестоимость позиции', 'Себестоимость', 'Сумма себестоимости']));
     const unitCost = num(headerValue(r, ['Себестоимость за единицу', 'Себестоимость/кг']));
@@ -342,7 +343,7 @@ const parseWorkbook = (workbook, filename) => {
 
   const payments = rawPayments.map((r, index) => {
     const date = dateISO(headerValue(r, ['Дата', 'Дата платежа', 'Date']));
-    const clientName = clean(headerValue(r, ['Клиент', 'Контрагент', 'Покупатель']));
+    const clientName = clean(headerValue(r, ['Клиент', 'Имя клиента', 'ФИО клиента', 'Контрагент', 'Покупатель', 'Заказчик']));
     const allocationText = clean(headerValue(r, ['Распределение платежа', 'Распределение', 'По документам', 'Накладные']));
     const allocations = [];
     for (const part of allocationText.split(/[;\n]+/)) {
@@ -356,7 +357,7 @@ const parseWorkbook = (workbook, filename) => {
       id: stableId(headerValue(r, ['ID', 'ID платежа']), 'import-payment-' + index),
       date,
       clientId: activeClientByName.get(norm(clientName)) || '',
-      amount: num(headerValue(r, ['Сумма', 'Платёж', 'Сумма платежа', 'Amount'])),
+      amount: num(headerValue(r, ['Сумма', 'Платёж', 'Сумма платежа', 'Сумма оплаты', 'Amount'])),
       method: clean(headerValue(r, ['Способ', 'Способ оплаты', 'Метод оплаты', 'Тип оплаты'])) || 'Не указан',
       allocations,
       note: clean(headerValue(r, ['Комментарий', 'Примечание'])),
