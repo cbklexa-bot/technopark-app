@@ -35,6 +35,14 @@ assert.ok(licenseCore.includes("'1m': 30") && licenseCore.includes("'3m': 90") &
 assert.ok(licenseCore.includes('trialDays = 7'), 'Trial evaluation must default to seven days');
 assert.ok(bridge.includes('getLicenseIdentity') && bridge.includes('getTrialState') && bridge.includes('saveTrialState'),
   'Native bridge must expose identity and anti-clock-rollback trial state');
+assert.ok(html.includes("VERSION_KEY='smokehouse_native_state_version_v1'"), 'Cached business state must keep a durable revision number');
+assert.ok(html.includes('cachedVersion>databaseVersion'), 'A newer local cache must win if an SQLite save was interrupted');
+assert.ok(html.includes('localStorage.setItem(VERSION_KEY,String(nativeStateRevision))'), 'Revision must be saved beside the local cache before native persistence');
+assert.ok(bridge.includes('async function saveBusinessState(state, version)') && bridge.includes('version: Math.max(0, Math.trunc(Number(version) || 0))'),
+  'The native bridge must forward the cached-state revision');
+assert.ok(installer.includes('state_version INTEGER NOT NULL DEFAULT 0'), 'SQLite must store the business-state revision');
+assert.ok(installer.includes('ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0'), 'Existing SQLite databases must migrate without discarding saved data');
+assert.ok(installer.includes('result.put("version", cursor.getLong(2))'), 'SQLite hydration must return the stored revision');
 assert.ok(installer.includes('Settings.Secure.ANDROID_ID'), 'Android device ID must be derived from the Android installation identity');
 assert.ok(installer.includes('SharedPreferences'), 'Android trial state must persist outside WebView localStorage');
 assert.ok(!installer.includes('android.intent.action.VIEW'), 'App manifest generator must no longer configure auth deep links');
