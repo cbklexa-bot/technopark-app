@@ -39,7 +39,7 @@ cd android
 
 On Windows use `gradlew.bat assembleDebug`.
 
-GitHub Actions on branch `koptilnya-local-licensing` runs the tests and builds a debug APK. A debug APK is for test installation and is not a signed Play Store release.
+GitHub Actions on branch `koptilnya-local-licensing` runs the tests and builds a debug APK. A debug APK is for test installation and is not a signed Play Store release. Before distributing paid copies long-term, create a stable release keystore and sign every customer APK/update with the same keystore. The current CI debug APK is suitable for testing/initial evaluation, not a substitute for a managed production signing key.
 
 ## Important operational notes
 
