@@ -410,7 +410,7 @@ f='<div class="field full"><label>Шаблон услуги</label><select id="s
  inp('price','Цена услуги, ₽/кг (необязательно)','number',ud?ud.price:'')+
  inp('cost','Себестоимость, ₽/кг (необязательно)','number',ud?ud.cost:'')+
  '<div class="field full"><label>Номер телефона клиента (необязательно)</label><input name="phone" type="tel" value="'+safe(ud?(cli(ud.clientId).phone||ud.customerPhone||''):'')+'" placeholder="+7 900 000-00-00" autocomplete="tel"></div>'+
- sel('paid','Оплата',[{value:'0',label:'Не оплачена'},{value:'all',label:'Оплачена полностью'}])+inp('note','Комментарий (необязательно)','text',ud?ud.note:'',true)
+ (ud&&n(ud.paid)>0?'<div class="field"><label>Оплата</label><select name="paid" disabled><option selected>'+(n(ud.paid)+0.001>=n(ud.qty)*n(ud.price)?'Оплачена полностью':'Оплачена частично')+'</option></select></div>':sel('paid','Оплата',[{value:'0',label:'Не оплачена'},{value:'all',label:'Оплачена полностью'}]))+inp('note','Комментарий (необязательно)','text',ud?ud.note:'',true)
 }else if(type==='receipt'){
 var rd=extra&&extra.editDoc?extra.editDoc:null;title=rd?'Редактировать приход':'Поставить продукцию на остаток';
 f=inp('date','Дата','date',rd?rd.date:new Date().toISOString().slice(0,10))+'<div class="field full"><label>Позиции прихода</label><div id="receiptLines" class="sale-lines"></div><button type="button" class="btn secondary" id="addReceiptLine" style="margin-top:9px">＋ Выбрать продукцию</button><div id="receiptTotal" class="sale-total">Итого по себестоимости: 0 ₽</div><div class="field full product-picker" id="productPicker" style="display:none"><div class="picker-head"><b>Выберите продукцию</b><button type="button" class="picker-close" id="closePicker">Скрыть</button></div><div class="product-picker-grid" id="productPickerGrid"></div></div></div><div class="field full"><label>Комментарий (необязательно)</label><input name="note" type="text" value="'+safe(rd?rd.note:'')+'" placeholder="Комментарий к приходу"></div>'}else if(type==='payment'){
@@ -531,7 +531,7 @@ if(!serviceName)serviceName='Услуга без шаблона';
 if(q<=0)throw new Error('Укажите вес сырья больше нуля');
 if(q*pr<(oldService?n(oldService.paid):0))throw new Error('Сумма услуги ниже уже принятой оплаты. Сначала исправьте оплату.');
 var serviceClientId=resolveServiceClient(v,oldService),serviceClient=cli(serviceClientId);
-var serviceDoc={id:oldService?oldService.id:uid(),number:oldService?oldService.number:'',date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(serviceClient.name||''),productId:'',servicePresetId:String(v.servicePresetId||''),serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?oldService.paid:(v.paid==='all'?q*pr:0),note:String(v.note||'').trim()};
+var serviceDoc={id:oldService?oldService.id:uid(),number:oldService?oldService.number:'',date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(serviceClient.name||''),productId:'',servicePresetId:String(v.servicePresetId||''),serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?(n(oldService.paid)>0?oldService.paid:(v.paid==='all'?q*pr:0)):(v.paid==='all'?q*pr:0),note:String(v.note||'').trim()};
 if(oldService)s.docs=s.docs.map(function(d){return d.id===oldService.id?serviceDoc:d});else s.docs.push(serviceDoc)
 }
 else if(t==='receipt'){
