@@ -223,7 +223,7 @@ body{background:#f5f7fa;color:#1b2735}
 <div class="modalback" id="back"><div class="modal"><div class="modalhead"><h2 id="modalTitle">Новая операция</h2><button class="close" id="close">×</button></div><form id="form"><div class="fields" id="fields"></div><div class="formactions"><button type="button" class="btn secondary" id="cancel">Отмена</button><button class="btn">Сохранить</button></div></form></div></div><div class="toast" id="toast"></div>
 <script>
 (function(){
-var KEY='smokehouse_static_preview_v1';
+var KEY='smokehouse_static_preview_v1',VERSION_KEY='smokehouse_native_state_version_v1';
 function dateDays(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
 function uid(){return 'x'+Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function nextDocNumber(prefix){var stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');var seq=1,candidate='';do{candidate=prefix+'-'+stamp+'-'+String(seq++).padStart(3,'0')}while(s.docs.some(function(d){return d.number===candidate}));return candidate}
@@ -234,16 +234,17 @@ s.servicePresets=Array.isArray(s.servicePresets)?s.servicePresets:[];
 // Migrate legacy payment allocations (document-number strings) to stable document IDs.
 s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
 var page='home',filter='all',reportTab='finance',clientHistoryId='',clientQuery='',clientStatsPeriod='month';
-var nativeStateReady=false,nativeStateRevision=0,nativeStateFailureNotified=false;
+var nativeStateReady=false,nativeStateRevision=(function(){try{return Number(localStorage.getItem(VERSION_KEY))||0}catch(e){return 0}})(),nativeStateFailureNotified=false;
 function persistStateToNative(snapshot){
  if(!nativeStateReady||!window.KoptilnyaNative||!window.KoptilnyaNative.isNative||typeof window.KoptilnyaNative.saveBusinessState!=='function')return;
- window.KoptilnyaNative.saveBusinessState(snapshot).catch(function(error){
+ window.KoptilnyaNative.saveBusinessState(snapshot,nativeStateRevision).catch(function(error){
   if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('SQLite state save failed',error)}
  });
 }
 function save(){
  localStorage.setItem(KEY,JSON.stringify(s));
  nativeStateRevision++;
+ try{localStorage.setItem(VERSION_KEY,String(nativeStateRevision))}catch(e){}
  persistStateToNative(s);
  try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}
 }
@@ -696,7 +697,7 @@ window.KoptilnyaApp={
   hasSavedLocalState:function(){return !!localStorage.getItem(KEY)},
   hasLocalBusinessData:function(){
     var d=this.getLocalState()||{};
-    return ['products','clients','docs','expenses','batches','payments'].some(function(k){return Array.isArray(d[k])&&d[k].length>0});
+    return ['products','clients','docs','expenses','batches','payments','recipes','servicePresets','importHistory'].some(function(k){return Array.isArray(d[k])&&d[k].length>0});
   },
   showToast:function(message){toast(message)}
 };
@@ -711,7 +712,16 @@ function initNativeBusinessState(){
    return;
   }
   nativeStateReady=true;
-  if(stored&&stored.found&&stored.state){
+  var cached=window.KoptilnyaApp.getLocalState();
+  var cachedVersion=nativeStateRevision;
+  var databaseVersion=Number(stored&&stored.version)||0;
+  // Before versioned snapshots existed, prefer a non-empty cache over a version-0 DB row:
+  // localStorage was written before SQLite, so it may contain the last edit interrupted by process death.
+  var preferCache=!!(cached&&typeof cached==='object'&&(cachedVersion>databaseVersion||
+   (cachedVersion===0&&databaseVersion===0&&window.KoptilnyaApp.hasLocalBusinessData())));
+  if(preferCache){
+   window.KoptilnyaApp.setState(cached);
+  }else if(stored&&stored.found&&stored.state){
    var restored=JSON.parse(stored.state);
    if(restored&&typeof restored==='object')window.KoptilnyaApp.setState(restored);
    else persistStateToNative(window.KoptilnyaApp.getState());
