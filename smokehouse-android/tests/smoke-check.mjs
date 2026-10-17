@@ -10,10 +10,10 @@ import { parseWorkbook } from '../www/excel-import.js';
 const root = process.cwd();
 const html = readFileSync(join(root, 'www', 'index.html'), 'utf8');
 let inlineScriptCount = 0;
-for (const match of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)) {
+for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
   const attributes = match[1] || '';
   const source = match[2] || '';
-  if (!source.trim() || /\\bsrc\\s*=/i.test(attributes)) continue;
+  if (!source.trim() || /\bsrc\s*=/i.test(attributes)) continue;
   new Script(source, { filename: 'www/index.html:inline-script-' + (++inlineScriptCount) });
 }
 assert.ok(inlineScriptCount >= 2, 'Inline app scripts must be present and syntactically valid');
