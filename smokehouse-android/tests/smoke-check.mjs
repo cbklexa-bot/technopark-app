@@ -243,8 +243,11 @@ assert.ok(html.includes("metric('Выручка',money(monthRevenue)") && html.i
 assert.ok(html.includes('Цена переработки за 1 кг, ₽') && html.includes('Себестоимость переработки за 1 кг, ₽'), 'Service template prices must be clearly per kilogram');
 assert.ok(html.includes('<button class="btn" type="submit">Сохранить</button>'), 'Forms must use an explicit submit button');
 assert.ok(html.includes('Не удалось сохранить: '), 'Form submission errors must be visible to the user');
-assert.ok(html.includes('grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px') && html.includes('min-height:84px') && html.includes('grid-template-rows:repeat(3,minmax(82px,auto))'), 'Dashboard must use four compact finance metrics and larger two-column quick actions');
-assert.ok(html.includes('businessForm.noValidate=true') && html.includes("f.querySelector(':invalid')") && html.includes("submitButton.textContent='Сохранение…'"), 'Form submissions must run through the app handler, validate fields visibly, and show saving state');
+assert.ok(html.includes('grid-template-columns:repeat(2,minmax(0,1fr))!important') && html.includes('grid-template-rows:repeat(2,minmax(82px,1fr))') && html.includes('flex:1 1 50%'), 'Dashboard finance metrics must occupy roughly half the phone screen in a 2x2 grid');
+assert.ok(html.includes('class="home-actions"') && html.includes('grid-template-rows:repeat(3,minmax(72px,1fr))') && html.includes('min-height:72px;height:100%'), 'Six larger quick actions must fill the lower part of the phone screen');
+assert.ok(html.includes('Local cache unavailable; trying native SQLite persistence') && html.includes("typeof window.KoptilnyaNative.saveBusinessState!=='function'") && html.includes('Не удалось сохранить данные в SQLite'), 'A full WebView cache must trigger direct native SQLite persistence and report native save errors');
+assert.ok(html.includes('var saveResult=save();if(saveResult&&typeof saveResult.then===\'function\')'), 'Form submission must wait for native fallback persistence before closing the form');
+assert.ok(html.includes('businessForm.noValidate=true') && html.includes("f.querySelector(':invalid')") && html.includes("submitButton.textContent='Сохранение…'") && html.includes('6500'), 'Form submissions must validate fields visibly, show saving state, and keep errors visible longer');
 assert.ok(html.includes("f.dataset.saving='false'") && html.includes("Не удалось сохранить: "), 'Form state and errors must be restored/reported on failure');
 assert.ok(html.includes('id="serviceDocsTable"'), 'Service history screen must be present');
 assert.ok(html.includes('id="paymentsTable"') && html.includes('data-edit-payment='), 'Payment history must remain visible and editable');
