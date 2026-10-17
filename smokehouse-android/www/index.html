@@ -348,7 +348,7 @@ function renderClientCRM(){
   return !query||name.indexOf(query)>=0||phone.toLowerCase().indexOf(query)>=0||(queryDigits&&digits.indexOf(queryDigits)>=0)||(queryDigits&&phoneNorm.indexOf(queryDigits)>=0)||(queryPhone&&phoneNorm.indexOf(queryPhone)>=0);
  }).sort(function(a,b){return b.services-a.services||String(a.client.name).localeCompare(String(b.client.name),'ru')});
  if(queryDigits.length>=7&&rows.length){
-  var phoneRows=rows.filter(function(x){var nphone=normalizePhone(x.client.phone);return nphone.indexOf(queryDigits)>=0||queryDigits.indexOf(nphone)>=0||String(x.client.phone||'').replace(/\D/g,'').indexOf(queryDigits)>=0});
+  var phoneRows=rows.filter(function(x){var nphone=normalizePhone(x.client.phone),rawPhone=String(x.client.phone||'').replace(/\D/g,'');return nphone.indexOf(queryDigits)>=0||queryDigits.indexOf(nphone)>=0||rawPhone.indexOf(queryDigits)>=0||(queryPhone&&nphone.indexOf(queryPhone)>=0)||(queryPhone&&queryPhone.indexOf(nphone)>=0)});
   if(phoneRows.length===1)clientHistoryId=phoneRows[0].client.id;
  }
  document.getElementById('clientsTable').innerHTML=rows.map(function(x){return '<tr><td><b>'+safe(x.client.name)+'</b><div class="sub">'+safe(x.client.kind||'Клиент')+'</div></td><td>'+(x.client.phone?'<a href="tel:'+safe(x.client.phone)+'">'+safe(x.client.phone)+'</a>':'<span class="sub">Не указан</span>')+'</td><td><b>'+x.services+'</b></td><td>'+fmtQty(x.qty)+'</td><td>'+money(x.srvRevenue)+'</td><td>'+(x.last||'—')+'</td><td>'+money(x.sales)+'</td><td>'+money(x.paid)+'</td><td><b>'+money(x.debt)+'</b></td><td><div class="client-actions"><button class="btn secondary sm" data-client-history="'+safe(x.client.id)+'">Открыть карточку</button><button class="edit-icon" data-edit-client="'+safe(x.client.id)+'" title="Редактировать клиента">✎</button><button class="btn danger sm" data-delete-client="'+safe(x.client.id)+'">Удалить</button></div></td></tr>'}).join('')||tblEmpty(10,'Клиенты по этому запросу не найдены');
@@ -360,9 +360,8 @@ function renderClientCRM(){
   var history=s.docs.filter(function(d){
    if(d.type==='receipt'||d.hiddenFromDocuments)return false;
    if(d.clientId===clientHistoryId)return true;
-   if(d.type!=='service')return false;
    var docPhone=normalizePhone(d.customerPhone||cli(d.clientId).phone||'');
-   var docName=String(d.customerName||'').trim().toLocaleLowerCase('ru-RU');
+   var docName=String(d.customerName||cli(d.clientId).name||'').trim().toLocaleLowerCase('ru-RU');
    return !!(contactPhone&&docPhone&&contactPhone===docPhone)||(contactName&&docName&&contactName===docName);
   }).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||String(b.number||'').localeCompare(String(a.number||''))});
   var allQty=history.reduce(function(sum,d){return sum+lines(d).reduce(function(z,line){return z+n(line.qty)},0)},0),allAmount=history.reduce(function(sum,d){return sum+amount(d)},0),allPaid=history.reduce(function(sum,d){return sum+Math.min(amount(d),n(d.paid))},0),allDebt=history.reduce(function(sum,d){return sum+debt(d)},0);
@@ -530,7 +529,7 @@ var ec=e.target.closest('[data-edit-client]');if(ec){var clientToEdit=s.clients.
 var dc=e.target.closest('[data-delete-client]');if(dc){deleteClient(dc.dataset.deleteClient);return}
 var edit=e.target.closest('[data-edit]');if(edit){open('product',s.products.find(function(x){return x.id===edit.dataset.edit}));return}
 });
-document.getElementById('clientSearchInput').oninput=function(e){clientQuery=e.target.value;renderClientCRM()};
+document.getElementById('clientSearchInput').oninput=function(e){clientQuery=e.target.value;clientHistoryId='';renderClientCRM()};
 document.getElementById('clientStatsPeriod').onchange=function(e){clientStatsPeriod=e.target.value;renderClientCRM()};
 document.getElementById('closeClientHistory').onclick=function(){clientHistoryId='';renderClientCRM()};
 document.addEventListener('click',function(e){var h=e.target.closest('[data-client-history]');if(h){clientHistoryId=h.dataset.clientHistory;renderClientCRM();var p=document.getElementById('clientHistoryPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'})}});
