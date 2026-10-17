@@ -239,11 +239,13 @@ assert.ok(homeMarkup.includes('<b>Продукция</b>') && homeMarkup.include
 assert.ok(homeMarkup.includes('data-action="service"') && homeMarkup.includes('<b>Услуга по сырью клиента</b>'), 'Dashboard must provide a shortcut to client-raw-material service');
 assert.ok(homeMarkup.includes('data-action="receipt"') && homeMarkup.includes('<b>Новый приход</b>'), 'Dashboard must provide a new receipt shortcut');
 assert.ok(homeMarkup.includes('data-action="sale"') && homeMarkup.includes('<b>Новый расход</b>'), 'Dashboard must provide a new stock-out/sale shortcut');
-assert.ok(html.includes("metric('Выручка',money(monthRevenue)") && html.includes("metric('Долги клиентов',money(monthDebts)") && html.includes("metric('Затраты',money(monthExpenses)"), 'Dashboard must show only monthly revenue, customer debts, and monthly costs');
+assert.ok(html.includes("metric('Выручка',money(monthRevenue)") && html.includes("metric('Долги клиентов',money(monthDebts)") && html.includes("metric('Затраты',money(monthExpenses)") && html.includes("metric('Чистая прибыль',money(monthProfit)"), 'Dashboard must show exactly the four requested monthly finance metrics');
 assert.ok(html.includes('Цена переработки за 1 кг, ₽') && html.includes('Себестоимость переработки за 1 кг, ₽'), 'Service template prices must be clearly per kilogram');
 assert.ok(html.includes('<button class="btn" type="submit">Сохранить</button>'), 'Forms must use an explicit submit button');
 assert.ok(html.includes('Не удалось сохранить: '), 'Form submission errors must be visible to the user');
-assert.ok(html.includes('min-height:65px') && html.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'), 'Dashboard mobile cards must be compact enough to fit on one screen');
+assert.ok(html.includes('grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px') && html.includes('min-height:84px') && html.includes('grid-template-rows:repeat(3,minmax(82px,auto))'), 'Dashboard must use four compact finance metrics and larger two-column quick actions');
+assert.ok(html.includes('businessForm.noValidate=true') && html.includes("f.querySelector(':invalid')") && html.includes("submitButton.textContent='Сохранение…'"), 'Form submissions must run through the app handler, validate fields visibly, and show saving state');
+assert.ok(html.includes("f.dataset.saving='false'") && html.includes("Не удалось сохранить: "), 'Form state and errors must be restored/reported on failure');
 assert.ok(html.includes('id="serviceDocsTable"'), 'Service history screen must be present');
 assert.ok(html.includes('id="paymentsTable"') && html.includes('data-edit-payment='), 'Payment history must remain visible and editable');
 assert.ok(html.includes('data-edit-service-preset=') && html.includes('data-delete-service-preset='), 'Service templates must be managed in Settings');
