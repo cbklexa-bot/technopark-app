@@ -13,9 +13,11 @@ const localBackend = readFileSync(join(root, 'www', 'local-backend.js'), 'utf8')
 const config = JSON.parse(readFileSync(join(root, 'capacitor.config.json'), 'utf8'));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
-const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/);
-assert.ok(inlineScript, 'The main application script must exist');
-assert.doesNotThrow(() => new Function(inlineScript[1]), 'The main application JavaScript must parse');
+const inlineScripts = Array.from(html.matchAll(/<script>([\s\S]*?)<\/script>/g));
+assert.ok(inlineScripts.length >= 2, 'The inline theme and application scripts must exist');
+for (const [index, inlineScript] of inlineScripts.entries()) {
+  assert.doesNotThrow(() => new Function(inlineScript[1]), 'Inline JavaScript block ' + (index + 1) + ' must parse');
+}
 
 const requiredUi = [
   'id="page-products"', 'id="productsGrid"', 'id="page-production"', 'id="page-clients"',
