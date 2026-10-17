@@ -187,7 +187,13 @@ const parseWorkbook = (workbook, filename) => {
     const type = rowDocType(headerValue(row, ['Тип', 'Тип документа', 'Вид', 'Вид документа', 'Операция', 'Тип операции']), sourceNames.documents);
     if (type === 'receipt') return;
     const name = clean(headerValue(row, ['Клиент/поставщик', 'Клиент', 'Имя клиента', 'ФИО клиента', 'Контрагент', 'Поставщик', 'Покупатель', 'Заказчик', 'Наименование клиента']));
-    if (name && !activeClientByName.has(norm(name))) addImportedClient(name, null, 'import-client-from-document');
+    if (!name) return;
+    const key = norm(name);
+    const client = activeClientByName.has(key)
+      ? clients.find((item) => item.id === activeClientByName.get(key))
+      : addImportedClient(name, null, 'import-client-from-document');
+    const phone = clean(headerValue(row, ['Телефон', 'Номер телефона', 'Телефон клиента', 'Мобильный', 'Мобильный телефон', 'Сотовый телефон', 'Контактный телефон', 'Тел.']));
+    if (client && phone && !client.phone) client.phone = phone;
   });
 
   const rowKey = (r) => {
