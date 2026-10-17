@@ -226,6 +226,7 @@ body{background:#f5f7fa;color:#1b2735}
 var KEY='smokehouse_static_preview_v1';
 function dateDays(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
 function uid(){return 'x'+Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function nextDocNumber(prefix){var stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');var seq=1,candidate='';do{candidate=prefix+'-'+stamp+'-'+String(seq++).padStart(3,'0')}while(s.docs.some(function(d){return d.number===candidate}));return candidate}
 var seed={products:[],clients:[],docs:[],expenses:[],batches:[],recipes:[],payments:[],servicePresets:[]};
 var s;try{s=JSON.parse(localStorage.getItem(KEY)||'null')||seed}catch(e){s=seed}
 s.servicePresets=Array.isArray(s.servicePresets)?s.servicePresets:[];
@@ -261,9 +262,9 @@ var nowLocal=new Date();
 var mds=s.docs.filter(function(d){var dt=new Date(d.date+'T12:00:00');return dt.getFullYear()===nowLocal.getFullYear()&&dt.getMonth()===nowLocal.getMonth()&&(d.type==='sale'||d.type==='service')});
 var monthRevenue=mds.reduce(function(a,d){return a+amount(d)},0);
 var monthDebts=s.docs.filter(function(d){return d.type!=='receipt'}).reduce(function(a,d){return a+debt(d)},0);
-var monthExpenses=s.expenses.filter(function(e){var dt=new Date(e.date+'T12:00:00');return dt.getFullYear()===nowLocal.getFullYear()&&dt.getMonth()===nowLocal.getMonth()}).reduce(function(a,e){return a+n(e.amount)},0);
+var monthExpenses=s.expenses.filter(function(e){var dt=new Date(e.date+'T12:00:00');return dt.getFullYear()===nowLocal.getFullYear()&&dt.getMonth()===nowLocal.getMonth()&&!e.inCost}).reduce(function(a,e){return a+n(e.amount)},0);
 var monthCost=mds.reduce(function(a,d){return a+cost(d)},0),monthExtraCosts=s.expenses.filter(function(e){var dt=new Date(e.date+'T12:00:00');return dt.getFullYear()===nowLocal.getFullYear()&&dt.getMonth()===nowLocal.getMonth()&&!e.inCost}).reduce(function(a,e){return a+n(e.amount)},0),monthProfit=monthRevenue-monthCost-monthExtraCosts;
-document.getElementById('metrics').innerHTML=metric('Выручка за месяц',money(monthRevenue),'Продажи и услуги за месяц','↗')+metric('Долги клиентов',money(monthDebts),'Непогашенные документы','₽')+metric('Затраты за месяц',money(monthExpenses),'Все затраты за месяц','↘')+metric('Чистая прибыль',money(monthProfit),'После себестоимости и расходов','✓');
+document.getElementById('metrics').innerHTML=metric('Выручка за месяц',money(monthRevenue),'Продажи и услуги за месяц','↗')+metric('Расходы за месяц',money(monthExpenses),'Без повторного учёта затрат в себестоимости','↘')+metric('Чистая прибыль',money(monthProfit),'После себестоимости и расходов','✓')+metric('Долги клиентов',money(monthDebts),'Непогашенная задолженность','₽');
 document.getElementById('productsGrid').innerHTML=s.products.filter(function(p){return !p.inactive}).map(function(p){var isService=p.type==='Услуга',inStock=n(p.stock)>0,status=isService?'Услуга':inStock?'В наличии':'Нет в наличии';return '<article class="product-card" role="button" tabindex="0" data-edit-product-card="'+safe(p.id)+'"><div class="product-card-photo">'+productVisual(p)+'</div><div class="product-card-body"><div class="product-card-top"><span class="product-status '+(isService?'service':inStock?'available':'unavailable')+'">'+status+'</span><button type="button" class="btn danger sm product-delete-btn" data-delete-product="'+safe(p.id)+'">Удалить</button></div><h3>'+safe(p.name)+'</h3><div class="product-card-stock">'+(isService?'Услуга по сырью клиента':'Остаток: '+n(p.stock)+' '+safe(p.unit||'кг'))+'</div><div class="product-card-price">Цена продажи: <b>'+money(p.sale)+'</b></div><div class="product-card-hint">Нажмите, чтобы открыть карточку</div></div></article>'}).join('')||'<div class="empty">Добавьте продукцию</div>';
 var bp=s.batches.filter(function(b){return inPeriod(b.date)});document.getElementById('batchMetrics').innerHTML=metric('Партий за период',bp.length,'Производственные записи','♨')+metric('Сырья принято',bp.reduce(function(a,b){return a+n(b.rawQty)},0)+' кг','Вес до обработки','↓')+metric('Готового продукта',bp.reduce(function(a,b){return a+n(b.outputQty)},0)+' кг','Фактический выход','↑');document.getElementById('batchesTable').innerHTML=s.batches.slice().reverse().map(function(b){return '<tr><td>'+b.date+'</td><td>'+safe(prod(b.productId).name)+'</td><td>'+safe(b.rawName)+'</td><td>'+n(b.rawQty)+' кг</td><td>'+n(b.outputQty)+' кг</td><td>'+money(n(b.totalCost)/Math.max(.001,n(b.outputQty)))+'</td></tr>'}).join('')||tblEmpty(6,'Партии не добавлены');
 renderClientCRM();
@@ -415,7 +416,7 @@ else if(type==='expense'){var exd=extra&&extra.editExpense?extra.editExpense:nul
 else if(type==='sale'){
 var sd=extra&&extra.editDoc?extra.editDoc:null;title=sd?'Редактировать продажу':'Новая продажа — одна накладная';
 var saleClientOpts=[{value:'c_retail',label:'Розничный покупатель (продажа из цеха)'}].concat(cOpts.filter(function(x){return x.value!=='c_retail'}));
-f=inp('date','Дата продажи','date',sd?sd.date:new Date().toISOString().slice(0,10))+inp('number','Номер накладной','text',sd?sd.number:'НК-'+String(s.docs.length+1).padStart(4,'0'))+sel('clientId','Клиент: магазин или физлицо',saleClientOpts)+'<div class="field full"><label>Позиции одной накладной</label><div id="saleLines" class="sale-lines"></div><button type="button" class="btn secondary" id="addSaleLine" style="margin-top:9px">＋ Выбрать продукцию</button><div id="saleTotal" class="sale-total">Итого: 0 ₽</div><div class="field full product-picker" id="productPicker" style="display:none"><div class="picker-head"><b>Выберите продукцию</b><button type="button" class="picker-close" id="closePicker">Скрыть</button></div><div class="product-picker-grid" id="productPickerGrid"></div></div></div>'+sel('paid','Оплата',[{value:'0',label:'Не оплачена — добавить в долги'},{value:'all',label:'Оплачена полностью'}])+'<div class="field full"><label>Комментарий к накладной (необязательно)</label><input name="note" type="text" value="'+safe(sd?sd.note:'')+'" placeholder="Комментарий"></div><div class="field full"><label>Прикрепить фото, накладную или файл</label><input name="attachments" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">'+(sd?existingAttachmentsMarkup(sd):'')+'</div>'
+f=inp('date','Дата продажи','date',sd?sd.date:new Date().toISOString().slice(0,10))+sel('clientId','Клиент: магазин или физлицо',saleClientOpts)+'<div class="field full"><label>Позиции одной накладной</label><div id="saleLines" class="sale-lines"></div><button type="button" class="btn secondary" id="addSaleLine" style="margin-top:9px">＋ Выбрать продукцию</button><div id="saleTotal" class="sale-total">Итого: 0 ₽</div><div class="field full product-picker" id="productPicker" style="display:none"><div class="picker-head"><b>Выберите продукцию</b><button type="button" class="picker-close" id="closePicker">Скрыть</button></div><div class="product-picker-grid" id="productPickerGrid"></div></div></div>'+sel('paid','Оплата',[{value:'0',label:'Не оплачена — добавить в долги'},{value:'all',label:'Оплачена полностью'}])+'<div class="field full"><label>Комментарий к накладной (необязательно)</label><input name="note" type="text" value="'+safe(sd?sd.note:'')+'" placeholder="Комментарий"></div><div class="field full"><label>Прикрепить фото, накладную или файл</label><input name="attachments" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">'+(sd?existingAttachmentsMarkup(sd):'')+'</div>'
 }else if(type==='service'){
 var ud=extra&&extra.editDoc?extra.editDoc:null;title=ud?'Редактировать услугу':'Услуга по сырью клиента';
 var serviceSelectedPresetId=ud?String(ud.servicePresetId||''):'';
@@ -527,7 +528,23 @@ function normalizeAllocations(payment){var a=Array.isArray(payment.allocations)?
 function rollbackPayment(payment){normalizeAllocations(payment).forEach(function(a){var d=s.docs.find(function(x){return x.id===a.docId});if(d)d.paid=Math.max(0,n(d.paid)-n(a.amount))})}
 
 document.getElementById('form').onsubmit=async function(e){e.preventDefault();var f=e.target,v=Object.fromEntries(new FormData(f).entries()),t=f.dataset.type;try{var selectedPhoto=f._productPhotoTouched?(f._selectedProductPhoto||''):(f._selectedProductPhoto||(editing&&editing.image)||'');if(!selectedPhoto&&f.elements.photo&&f.elements.photo.files&&f.elements.photo.files[0])selectedPhoto=await readCompressedImage(f.elements.photo.files[0]);var selectedAttachments=await readFormAttachments(f);
-if(t==='product'){var r={id:editing?editing.id:uid(),name:v.name,type:editing&&editing.type||'Готовая продукция',stock:n(v.stock),cost:n(v.cost),receipt:n(editing&&editing.receipt!=null?editing.receipt:v.cost),sale:n(v.sale),emoji:editing&&editing.emoji||'📦',unit:v.unit||'кг',image:selectedPhoto};if(editing)s.products=s.products.map(function(x){return x.id===editing.id?r:x});else s.products.push(r)}
+if(t==='servicePreset'){
+ var presetName=String(v.name||'').trim();if(!presetName)throw new Error('Введите название услуги');
+ var presetPrice=Number(v.price),presetCost=Number(v.cost);
+ if(!Number.isFinite(presetPrice)||presetPrice<0)throw new Error('Укажите корректную цену услуги');
+ if(!Number.isFinite(presetCost)||presetCost<0)throw new Error('Укажите корректную себестоимость услуги');
+ var oldPreset=editing&&editing.id?(s.servicePresets||[]).find(function(x){return x.id===editing.id}):null;
+ if((s.servicePresets||[]).some(function(x){return x.id!==(oldPreset&&oldPreset.id)&&String(x.name||'').trim().toLowerCase()===presetName.toLowerCase()}))throw new Error('Услуга с таким названием уже существует');
+ var presetRow={id:oldPreset?oldPreset.id:uid(),name:presetName,price:presetPrice,cost:presetCost};
+ if(oldPreset)s.servicePresets=s.servicePresets.map(function(x){return x.id===oldPreset.id?presetRow:x});else s.servicePresets.push(presetRow);
+}
+else if(t==='recipe'){
+ var recipeName=String(v.name||'').trim();if(!recipeName)throw new Error('Введите название записи');
+ var oldRecipe=editing&&editing.id?(s.recipes||[]).find(function(x){return x.id===editing.id}):null;
+ var recipeRow={id:oldRecipe?oldRecipe.id:uid(),name:recipeName,kind:v.kind||'Рецептура',ingredients:String(v.ingredients||'').trim(),steps:String(v.steps||'').trim(),notes:String(v.notes||'').trim()};
+ if(oldRecipe)s.recipes=s.recipes.map(function(x){return x.id===oldRecipe.id?recipeRow:x});else s.recipes.push(recipeRow);
+}
+else if(t==='product'){var r={id:editing?editing.id:uid(),name:v.name,type:editing&&editing.type||'Готовая продукция',stock:n(v.stock),cost:n(v.cost),receipt:n(editing&&editing.receipt!=null?editing.receipt:v.cost),sale:n(v.sale),emoji:editing&&editing.emoji||'📦',unit:v.unit||'кг',image:selectedPhoto};if(editing)s.products=s.products.map(function(x){return x.id===editing.id?r:x});else s.products.push(r)}
 else if(t==='client'){
  var oldClient=editing&&editing.id?s.clients.find(function(c){return c.id===editing.id}):null;
  var clientName=String(v.name||'').trim(),clientPhone=String(v.phone||'').trim(),clientPhoneNorm=normalizePhone(clientPhone);
@@ -544,23 +561,27 @@ var items=getSaleLines();if(!items.length)throw new Error('Добавьте хо
 var invoiceTotal=items.reduce(function(a,x){return a+x.qty*x.price},0),invoiceCost=items.reduce(function(a,x){return a+x.qty*x.cost},0),qtyTotal=items.reduce(function(a,x){return a+x.qty},0),alreadyPaid=oldSale?n(oldSale.paid):0;
 if(invoiceTotal+0.0001<alreadyPaid)throw new Error('Сумма продажи ниже уже принятой оплаты. Сначала исправьте оплату.');
 docStockDelta(oldSale,items,1,-1);
-var saleDoc={id:oldSale?oldSale.id:uid(),number:v.number,date:v.date,type:'sale',clientId:v.clientId,items:items,productId:items[0].productId,qty:qtyTotal,price:invoiceTotal/Math.max(qtyTotal,.001),cost:invoiceCost/Math.max(qtyTotal,.001),paid:oldSale?oldSale.paid:(v.paid==='all'?invoiceTotal:0),note:v.note||items.map(function(x){return prod(x.productId).name+' '+x.qty+' кг'}).join(', '),attachments:(oldSale&&oldSale.attachments||[]).concat(selectedAttachments)};
+var saleDoc={id:oldSale?oldSale.id:uid(),number:oldSale?(oldSale.number||nextDocNumber('НК')):nextDocNumber('НК'),date:v.date,type:'sale',clientId:v.clientId,items:items,productId:items[0].productId,qty:qtyTotal,price:invoiceTotal/Math.max(qtyTotal,.001),cost:invoiceCost/Math.max(qtyTotal,.001),paid:oldSale?oldSale.paid:(v.paid==='all'?invoiceTotal:0),note:v.note||items.map(function(x){return prod(x.productId).name+' '+x.qty+' кг'}).join(', '),attachments:(oldSale&&oldSale.attachments||[]).concat(selectedAttachments)};
 if(oldSale)s.docs=s.docs.map(function(d){return d.id===oldSale.id?saleDoc:d});else s.docs.push(saleDoc)
 }else if(t==='service'){
-var oldService=editing&&editing.editDoc?s.docs.find(function(d){return d.id===editing.editDoc.id}):null,serviceName=String(v.serviceName||'').trim(),q=n(v.qty),pr=n(v.price),co=n(v.cost),preset=(s.servicePresets||[]).find(function(x){return x.id===String(v.servicePresetId||'')});
-if(!serviceName&&preset)serviceName=preset.name;
-if(!serviceName)serviceName='Услуга без шаблона';
+var oldService=editing&&editing.editDoc?s.docs.find(function(d){return d.id===editing.editDoc.id}):null;
+var preset=(s.servicePresets||[]).find(function(x){return x.id===String(v.servicePresetId||'')});
+if(!preset&&!oldService)throw new Error('Сначала создайте и выберите услугу в базе услуг в настройках');
+var serviceName=String(v.serviceName||'').trim(),q=n(v.qty),pr=n(v.price),co=n(v.cost);
+if(preset&&(!oldService||activeForm._servicePresetChanged)){serviceName=preset.name;pr=n(preset.price);co=n(preset.cost)}
+else if(oldService){serviceName=serviceName||oldService.serviceName||oldService.note||'';pr=n(oldService.price);co=n(oldService.cost)}
+if(!serviceName)throw new Error('Не удалось определить услугу');
 if(q<=0)throw new Error('Укажите вес сырья больше нуля');
 if(q*pr<(oldService?n(oldService.paid):0))throw new Error('Сумма услуги ниже уже принятой оплаты. Сначала исправьте оплату.');
 var serviceClientId=resolveServiceClient(v,oldService),serviceClient=cli(serviceClientId);
-var serviceDoc={id:oldService?oldService.id:uid(),number:oldService?oldService.number:'',date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(serviceClient.name||''),productId:'',servicePresetId:String(v.servicePresetId||''),serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?(n(oldService.paid)>0?oldService.paid:(v.paid==='all'?q*pr:0)):(v.paid==='all'?q*pr:0),note:String(v.note||'').trim()};
+var serviceDoc={id:oldService?oldService.id:uid(),number:oldService?(oldService.number||nextDocNumber('УС')):nextDocNumber('УС'),date:v.date,type:'service',clientId:serviceClientId,customerPhone:String(v.phone||serviceClient.phone||''),customerName:String(serviceClient.name||''),productId:'',servicePresetId:String(v.servicePresetId||oldService&&oldService.servicePresetId||''),serviceName:serviceName,qty:q,price:pr,cost:co,paid:oldService?(n(oldService.paid)>0?oldService.paid:(v.paid==='all'?q*pr:0)):(v.paid==='all'?q*pr:0),note:String(v.note||'').trim()};
 if(oldService)s.docs=s.docs.map(function(d){return d.id===oldService.id?serviceDoc:d});else s.docs.push(serviceDoc)
 }
 else if(t==='receipt'){
 var oldReceipt=editing&&editing.editDoc?s.docs.find(function(d){return d.id===editing.editDoc.id}):null,receiptItems=getReceiptLines();if(!receiptItems.length)throw new Error('Добавьте хотя бы одну позицию прихода');
 docStockDelta(oldReceipt,receiptItems,-1,1);
 var rQty=receiptItems.reduce(function(a,x){return a+x.qty},0),rPrice=receiptItems.reduce(function(a,x){return a+x.qty*x.price},0),rCost=receiptItems.reduce(function(a,x){return a+x.qty*x.cost},0);
-var rDoc={id:oldReceipt?oldReceipt.id:uid(),number:oldReceipt?oldReceipt.number:'',date:v.date,type:'receipt',items:receiptItems,productId:receiptItems[0].productId,qty:rQty,price:rPrice/Math.max(rQty,.001),cost:rCost/Math.max(rQty,.001),paid:0,note:v.note||'Приход продукции',attachments:(oldReceipt&&oldReceipt.attachments||[]).concat(selectedAttachments)};
+var rDoc={id:oldReceipt?oldReceipt.id:uid(),number:oldReceipt?(oldReceipt.number||nextDocNumber('ПР')):nextDocNumber('ПР'),date:v.date,type:'receipt',items:receiptItems,productId:receiptItems[0].productId,qty:rQty,price:rPrice/Math.max(rQty,.001),cost:rCost/Math.max(rQty,.001),paid:0,note:v.note||'Приход продукции',attachments:(oldReceipt&&oldReceipt.attachments||[]).concat(selectedAttachments)};
 if(oldReceipt)s.docs=s.docs.map(function(d){return d.id===oldReceipt.id?rDoc:d});else s.docs.push(rDoc)
 }
 else if(t==='payment'){var amount=n(v.amount);if(amount<=0)throw new Error('Введите сумму платежа');var oldPayment=editing&&editing.editPayment?s.payments.find(function(p){return p.id===editing.editPayment.id}):null;if(oldPayment)rollbackPayment(oldPayment);var targetDocId=!oldPayment&&editing&&editing.doc?String(editing.doc):'',allocation;if(targetDocId){var targetDoc=s.docs.find(function(d){return d.id===targetDocId&&d.clientId===v.clientId&&d.type!=='receipt'});if(!targetDoc)throw new Error('Выбранная накладная не относится к выбранному клиенту');var targetDebt=debt(targetDoc);if(amount>targetDebt+0.001)throw new Error('Сумма больше остатка по этой накладной');targetDoc.paid=n(targetDoc.paid)+amount;allocation={allocations:[{docId:targetDoc.id,amount:amount}],unallocated:0}}else allocation=allocatePayment(v.clientId,amount);var paymentRow={id:oldPayment?oldPayment.id:uid(),date:v.date,clientId:v.clientId,amount:amount,method:v.method,allocations:allocation.allocations,unallocated:allocation.unallocated};if(oldPayment)s.payments=s.payments.map(function(p){return p.id===oldPayment.id?paymentRow:p});else s.payments.push(paymentRow);if(allocation.unallocated>0)toast('Сумма сверх задолженности: '+money(allocation.unallocated)+' не распределена')}
@@ -643,8 +664,9 @@ window.KoptilnyaApp={
       docs:Array.isArray(next.docs)?next.docs:[],
       expenses:Array.isArray(next.expenses)?next.expenses:[],
       batches:Array.isArray(next.batches)?next.batches:[],
-      recipes:[],
+      recipes:Array.isArray(next.recipes)?next.recipes:s.recipes,
       payments:Array.isArray(next.payments)?next.payments:[],
+      servicePresets:Array.isArray(next.servicePresets)?next.servicePresets:s.servicePresets,
       importHistory:Array.isArray(next.importHistory)?next.importHistory:[]
     };
     s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
