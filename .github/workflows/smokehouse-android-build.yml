@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - smokehouse-android
+      - koptilnya-ui-fixes-oct17
     paths:
       - 'smokehouse-android/**'
       - '.github/workflows/smokehouse-android-build.yml'
