@@ -221,10 +221,29 @@ assert.notEqual(homeStart, -1, 'Home section must exist');
 const homeMarkup = html.slice(homeStart, homeEnd);
 assert.equal((homeMarkup.match(/class="quick"/g) || []).length, 6, 'Home must contain exactly six quick actions');
 assert.ok(homeMarkup.includes('class="finance-panel"') && homeMarkup.includes('id="metrics"'), 'Monthly metrics must be grouped inside one finance panel');
-for (const page of ['products','documents','production','services','clients','expenses','debts','payments','reports','recipes','settings']) {
-  assert.ok(html.includes('data-page="' + page + '"'), 'Navigation item missing: ' + page);
-  assert.ok(html.includes('id="page-' + page + '"'), 'Navigation section missing: ' + page);
+const sidebarStart = html.indexOf('<nav class="nav">');
+const sidebarEnd = html.indexOf('</nav>', sidebarStart);
+assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart, 'Sidebar navigation must exist');
+const sidebarMarkup = html.slice(sidebarStart, sidebarEnd);
+for (const page of ['home','products','documents','services','clients','expenses','debts','reports','settings']) {
+  assert.ok(sidebarMarkup.includes('data-page="' + page + '"'), 'Required sidebar item missing: ' + page);
 }
+for (const page of ['production','payments','recipes']) {
+  assert.ok(!sidebarMarkup.includes('data-page="' + page + '"'), 'Unrequested sidebar item must be removed: ' + page);
+}
+for (const page of ['products','documents','production','services','clients','expenses','debts','payments','reports','recipes','settings']) {
+  assert.ok(html.includes('id="page-' + page + '"'), 'Application section missing: ' + page);
+}
+assert.ok(!html.includes('История оплат</button>'), 'Separate payment history shortcut must not appear in debts');
+assert.ok(homeMarkup.includes('<b>Продукция</b>') && homeMarkup.includes('<b>Документы</b>') && homeMarkup.includes('<b>Затраты</b>'), 'Dashboard must expose product catalog, documents, and expenses');
+assert.ok(homeMarkup.includes('data-action="service"') && homeMarkup.includes('<b>Услуга по сырью клиента</b>'), 'Dashboard must provide a shortcut to client-raw-material service');
+assert.ok(homeMarkup.includes('data-action="receipt"') && homeMarkup.includes('<b>Новый приход</b>'), 'Dashboard must provide a new receipt shortcut');
+assert.ok(homeMarkup.includes('data-action="sale"') && homeMarkup.includes('<b>Новый расход</b>'), 'Dashboard must provide a new stock-out/sale shortcut');
+assert.ok(html.includes("metric('Выручка',money(monthRevenue)") && html.includes("metric('Долги клиентов',money(monthDebts)") && html.includes("metric('Затраты',money(monthExpenses)"), 'Dashboard must show only monthly revenue, customer debts, and monthly costs');
+assert.ok(html.includes('Цена переработки за 1 кг, ₽') && html.includes('Себестоимость переработки за 1 кг, ₽'), 'Service template prices must be clearly per kilogram');
+assert.ok(html.includes('<button class="btn" type="submit">Сохранить</button>'), 'Forms must use an explicit submit button');
+assert.ok(html.includes('Не удалось сохранить: '), 'Form submission errors must be visible to the user');
+assert.ok(html.includes('min-height:65px') && html.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'), 'Dashboard mobile cards must be compact enough to fit on one screen');
 assert.ok(html.includes('id="serviceDocsTable"'), 'Service history screen must be present');
 assert.ok(html.includes('id="paymentsTable"') && html.includes('data-edit-payment='), 'Payment history must remain visible and editable');
 assert.ok(html.includes('data-edit-service-preset=') && html.includes('data-delete-service-preset='), 'Service templates must be managed in Settings');
