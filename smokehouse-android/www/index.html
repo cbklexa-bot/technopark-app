@@ -234,17 +234,25 @@ s.servicePresets=Array.isArray(s.servicePresets)?s.servicePresets:[];
 // Migrate legacy payment allocations (document-number strings) to stable document IDs.
 s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
 var page='home',filter='all',reportTab='finance',clientHistoryId='',clientQuery='',clientStatsPeriod='month';
-var nativeStateReady=false,nativeStateRevision=(function(){try{return Number(localStorage.getItem(VERSION_KEY))||0}catch(e){return 0}})(),nativeStateFailureNotified=false;
+var nativeStateReady=false,nativeStateRevision=(function(){try{var stored=Number(localStorage.getItem(VERSION_KEY))||0;var cached=JSON.parse(localStorage.getItem(KEY)||'null');return Math.max(stored,Number(cached&&cached._koptilnyaLocalRevision)||0)}catch(e){return 0}})(),nativeStateFailureNotified=false;
 function persistStateToNative(snapshot){
  if(!nativeStateReady||!window.KoptilnyaNative||!window.KoptilnyaNative.isNative||typeof window.KoptilnyaNative.saveBusinessState!=='function')return;
  window.KoptilnyaNative.saveBusinessState(snapshot,nativeStateRevision).catch(function(error){
-  if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('SQLite state save failed',error)}
+  if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('SQLite state save failed',error);if(window.KoptilnyaApp&&typeof window.KoptilnyaApp.showToast==='function')window.KoptilnyaApp.showToast('Не удалось подтвердить сохранение в SQLite. Проверь свободное место и создай резервную копию.')}
  });
 }
 function save(){
- localStorage.setItem(KEY,JSON.stringify(s));
  nativeStateRevision++;
- try{localStorage.setItem(VERSION_KEY,String(nativeStateRevision))}catch(e){}
+ var cacheSaved=false;
+ try{
+  var cacheSnapshot=Object.assign({},s,{_koptilnyaLocalRevision:nativeStateRevision});
+  localStorage.setItem(KEY,JSON.stringify(cacheSnapshot));
+  cacheSaved=true;
+ }catch(e){
+  if(!window.KoptilnyaNative||!window.KoptilnyaNative.isNative)throw e;
+  console.warn('Local cache unavailable; continuing with native SQLite persistence',e);
+ }
+ if(cacheSaved){try{localStorage.setItem(VERSION_KEY,String(nativeStateRevision))}catch(e){}}
  persistStateToNative(s);
  try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}
 }
