@@ -11,9 +11,26 @@ const stableId = (value, prefix) => {
   const id = clean(value);
   return id || prefix + '-' + crypto.randomUUID();
 };
+const HEADER_MARKERS = new Set([
+  'id','ид','idпродукции','idдокумента','номер','номердокумента','дата','датадокумента',
+  'тип','виддокумента','операция','название','наименование','наименованиетовара','продукция',
+  'товар','товары','номенклатура','клиент','контрагент','покупатель','заказчик','имяклиента',
+  'телефон','номертелефона','мобильныйтелефон','единица','единицаизмерения','количество',
+  'количествокг','вес','вессырья','остаток','фактическийостаток','сумма','итого','цена',
+  'ценапродажи','себестоимость','оплачено','долг','категория','статья','описание',
+  'комментарий','примечание','сырье','выход','выпуск','суммаплатежа','способоплаты',
+].map(norm));
 const arrayRows = (workbook, sheetName) => {
   if (!sheetName || !workbook.Sheets[sheetName]) return [];
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '', raw: true });
+  const sheet = workbook.Sheets[sheetName];
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true, blankrows: false });
+  let headerRow = 0;
+  for (let index = 0; index < Math.min(8, matrix.length); index++) {
+    const row = Array.isArray(matrix[index]) ? matrix[index] : [];
+    const markers = row.filter((value) => HEADER_MARKERS.has(norm(value))).length;
+    if (markers >= 2) { headerRow = index; break; }
+  }
+  return XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true, range: headerRow, blankrows: false });
 };
 const headerValue = (row, aliases) => {
   const wanted = new Set(aliases.map(norm));
@@ -51,19 +68,30 @@ const rowDocType = (value, sheetName = '') => {
   return '';
 };
 const findSheet = (workbook, aliases) => {
-  const wanted = new Set(aliases.map(norm));
-  return workbook.SheetNames.find((name) => wanted.has(norm(name))) || '';
+  const normalizedAliases = aliases.map(norm).filter(Boolean);
+  const wanted = new Set(normalizedAliases);
+  const exact = workbook.SheetNames.find((name) => wanted.has(norm(name)));
+  if (exact) return exact;
+  const excludedSummaryNames = new Set([
+    'сводка','итоги','итог','отчет','отчеты','финансовыйотчет','помесяцам',
+    'продажи','услуги','файлы','summary','salesreport','servicesreport',
+  ]);
+  return workbook.SheetNames.find((name) => {
+    const candidate = norm(name);
+    if (!candidate || excludedSummaryNames.has(candidate)) return false;
+    return normalizedAliases.some((alias) => alias.length >= 5 && (candidate.startsWith(alias) || candidate.endsWith(alias)));
+  }) || '';
 };
 const parseWorkbook = (workbook, filename) => {
   const sourceNames = {
-    products: findSheet(workbook, ['Продукция', 'Товары', 'Справочник продукции', 'Products']),
-    stock: findSheet(workbook, ['Остатки', 'Остатки продукции', 'Stock balances']),
-    clients: findSheet(workbook, ['Клиенты', 'Контрагенты', 'Покупатели', 'Clients']),
-    documents: findSheet(workbook, ['Документы', 'Накладные', 'Documents']),
-    positions: findSheet(workbook, ['Позиции', 'Позиции накладных', 'Строки документов', 'Document items']),
-    expenses: findSheet(workbook, ['Затраты', 'Расходы', 'Expenses']),
-    payments: findSheet(workbook, ['Оплаты', 'Платежи', 'Payments']),
-    batches: findSheet(workbook, ['Партии', 'Производство', 'Выпуск', 'Производство и выпуск', 'Производственные партии', 'Production']),
+    products: findSheet(workbook, ['Продукция', 'Товары', 'Список товаров', 'Номенклатура', 'Товары и услуги', 'Справочник продукции', 'Products']),
+    stock: findSheet(workbook, ['Остатки', 'Остатки продукции', 'Остатки товаров', 'Склад', 'Складские остатки', 'Stock balances']),
+    clients: findSheet(workbook, ['Клиенты', 'Контрагенты', 'Покупатели', 'Заказчики', 'Справочник клиентов', 'Список клиентов', 'Clients']),
+    documents: findSheet(workbook, ['Документы', 'Документы клиентов', 'Журнал документов', 'История документов', 'Накладные', 'Накладные клиентов', 'Расходные накладные', 'Журнал операций', 'Операции учёта', 'Documents']),
+    positions: findSheet(workbook, ['Позиции', 'Позиции накладных', 'Состав накладных', 'Состав документов', 'Строки документов', 'Товары в накладных', 'Document items']),
+    expenses: findSheet(workbook, ['Затраты', 'Расходы', 'Расходы предприятия', 'Журнал затрат', 'Статьи расходов', 'Expenses']),
+    payments: findSheet(workbook, ['Оплаты', 'Платежи', 'Поступления оплат', 'Платежи клиентов', 'История оплат', 'Payments']),
+    batches: findSheet(workbook, ['Партии', 'Производство', 'Выпуск', 'Выпуск продукции', 'Производство и выпуск', 'Производственные партии', 'Production']),
     checksums: findSheet(workbook, ['Контрольные суммы и расхождения', 'Контрольные суммы', 'Сверка']),
   };
   const rawProducts = arrayRows(workbook, sourceNames.products);
@@ -82,21 +110,21 @@ const parseWorkbook = (workbook, filename) => {
   if (!sourceNames.products && !sourceNames.stock) warnings.push('Не найден лист продукции или остатков. Без него нельзя достоверно связать позиции с карточками товаров.');
   if (sourceNames.checksums && !rawChecksums.length) warnings.push('Лист сверки найден, но в нём не распознаны строки. Проверьте содержимое вручную.');
   const products = rawProducts.map((r) => {
-    const rawType = clean(headerValue(r, ['Тип', 'Категория', 'Вид продукции']));
+    const rawType = clean(headerValue(r, ['Тип', 'Тип продукции', 'Категория', 'Вид продукции', 'Группа']));
     let type = 'Готовая продукция';
     if (norm(rawType).includes('сыр')) type = 'Сырьё';
     else if (norm(rawType).includes('полу')) type = 'Полуфабрикат';
     else if (norm(rawType).includes('услуг')) type = 'Услуга';
     return {
-      id: stableId(headerValue(r, ['ID', 'ID продукции', 'Product ID']), 'import-product'),
-      name: clean(headerValue(r, ['Название', 'Наименование', 'Продукция', 'Товар', 'Product'])),
+      id: stableId(headerValue(r, ['ID', 'ID продукции', 'ID товара', 'Код товара', 'Артикул', 'Product ID']), 'import-product'),
+      name: clean(headerValue(r, ['Название', 'Название товара', 'Название продукта', 'Наименование', 'Наименование товара', 'Наименование продукции', 'Продукция', 'Товар', 'Номенклатура', 'Product'])),
       type,
       emoji: '',
-      unit: clean(headerValue(r, ['Единица', 'Единица измерения', 'Ед.изм.', 'Ед.'])) || 'кг',
+      unit: clean(headerValue(r, ['Единица', 'Единица измерения', 'Ед.изм.', 'Ед. измерения', 'Ед.'])) || 'кг',
       stock: num(headerValue(r, ['Остаток', 'Количество на складе', 'Остатки', 'Наличие'])),
-      cost: num(headerValue(r, ['Себестоимость за единицу', 'Себестоимость', 'Средняя себестоимость', 'Себестоимость/кг'])),
-      receipt: num(headerValue(r, ['Приходная цена', 'Цена прихода', 'Цена закупки', 'Закупочная цена'])),
-      sale: num(headerValue(r, ['Цена продажи', 'Цена реализации', 'Продажная цена', 'Цена'])),
+      cost: num(headerValue(r, ['Себестоимость за единицу', 'Себестоимость единицы', 'Себестоимость за кг', 'Себестоимость', 'Средняя себестоимость', 'Себестоимость/кг'])),
+      receipt: num(headerValue(r, ['Приходная цена', 'Цена прихода', 'Цена закупки', 'Закупочная цена', 'Закупка за единицу', 'Цена закупки за кг'])),
+      sale: num(headerValue(r, ['Цена продажи', 'Цена реализации', 'Продажная цена', 'Розничная цена', 'Цена за единицу', 'Цена'])),
       image: '',
     };
   }).filter((p) => p.name);
@@ -104,7 +132,7 @@ const parseWorkbook = (workbook, filename) => {
   products.forEach((p) => { const key = norm(p.name); if (key && !productNames.has(key)) productNames.set(key, p.id); });
   rawStock.forEach((r, index) => {
     const name = clean(headerValue(r, ['Продукция', 'Название', 'Наименование', 'Товар', 'Продукт']));
-    const sourceId = clean(headerValue(r, ['ID', 'ID продукции', 'Product ID']));
+    const sourceId = clean(headerValue(r, ['ID', 'ID продукции', 'ID товара', 'Код товара', 'Артикул', 'Product ID']));
     if (!name) return;
     let product = (sourceId ? products.find((p) => p.id === sourceId) : null) || products.find((p) => norm(p.name) === norm(name));
     if (!product) {
@@ -140,9 +168,9 @@ const parseWorkbook = (workbook, filename) => {
       return existing || null;
     }
     const client = {
-      id: stableId(row ? headerValue(row, ['ID', 'ID клиента', 'ID контрагента', 'Client ID']) : '', prefix || 'import-client'),
+      id: stableId(row ? headerValue(row, ['ID', 'ID клиента', 'ID контрагента', 'Код клиента', 'Client ID']) : '', prefix || 'import-client'),
       name,
-      phone: row ? clean(headerValue(row, ['Телефон', 'Номер телефона', 'Phone'])) : '',
+      phone: row ? clean(headerValue(row, ['Телефон', 'Номер телефона', 'Телефон клиента', 'Мобильный', 'Мобильный телефон', 'Сотовый телефон', 'Контактный телефон', 'Тел.', 'Phone'])) : '',
       kind: (row ? clean(headerValue(row, ['Тип', 'Вид', 'Категория'])) : '') || 'Контрагент',
     };
     clients.push(client);
@@ -155,16 +183,16 @@ const parseWorkbook = (workbook, filename) => {
   });
   // Recover clients named on invoices even if the source workbook's client list is missing or incomplete.
   rawDocs.forEach((row) => {
-    const type = rowDocType(headerValue(row, ['Тип', 'Вид документа', 'Операция']));
+    const type = rowDocType(headerValue(row, ['Тип', 'Тип документа', 'Вид', 'Вид документа', 'Операция', 'Тип операции']), sourceNames.documents);
     if (type === 'receipt') return;
-    const name = clean(headerValue(row, ['Клиент/поставщик', 'Клиент', 'Контрагент', 'Поставщик', 'Покупатель']));
+    const name = clean(headerValue(row, ['Клиент/поставщик', 'Клиент', 'Имя клиента', 'ФИО клиента', 'Контрагент', 'Поставщик', 'Покупатель', 'Заказчик', 'Наименование клиента']));
     if (name && !activeClientByName.has(norm(name))) addImportedClient(name, null, 'import-client-from-document');
   });
 
   const rowKey = (r) => {
     const explicitId = clean(headerValue(r, ['ID', 'ID документа', 'Документ ID', 'Document ID']));
     const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
-    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Date']));
+    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     return explicitId ? 'id:' + explicitId : (number ? 'number:' + norm(number) + '|' + date : '');
   };
   const docMap = new Map();
@@ -172,30 +200,32 @@ const parseWorkbook = (workbook, filename) => {
   const importedDocKeys = new Set();
   rawDocs.forEach((r, index) => {
     const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
-    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Date']));
+    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     const key = rowKey(r) || 'row:' + index;
     if (importedDocKeys.has(key)) warnings.push('Повтор ключа документа «' + (number || key) + '» в исходном листе. Эти записи не объединяются автоматически.');
     importedDocKeys.add(key);
-    const type = rowDocType(headerValue(r, ['Тип', 'Вид документа', 'Операция']));
+    const type = rowDocType(headerValue(r, ['Тип', 'Тип документа', 'Вид', 'Вид документа', 'Операция', 'Тип операции']), sourceNames.documents);
     if (!type) {
       warnings.push('Не удалось определить тип документа «' + (number || key) + '». Строка не импортирована.');
       return;
     }
-    const counterpartyName = clean(headerValue(r, ['Клиент/поставщик', 'Клиент', 'Контрагент', 'Поставщик', 'Покупатель']));
+    const counterpartyName = clean(headerValue(r, ['Клиент/поставщик', 'Клиент', 'Имя клиента', 'ФИО клиента', 'Контрагент', 'Поставщик', 'Покупатель', 'Заказчик', 'Наименование клиента']));
     const clientId = activeClientByName.get(norm(counterpartyName)) || '';
     const id = stableId(headerValue(r, ['ID', 'ID документа', 'Document ID']), 'import-doc-' + index);
-    const amount = num(headerValue(r, ['Сумма', 'Итого', 'Сумма документа', 'Выручка']));
-    const cost = num(headerValue(r, ['Себестоимость', 'Сумма себестоимости', 'Себестоимость документа']));
-    const rawPaid = headerValue(r, ['Оплачено', 'Оплата', 'Сумма оплат']);
+    const amount = num(headerValue(r, ['Сумма', 'Итого', 'Итоговая сумма', 'Общая сумма', 'Сумма документа', 'Сумма накладной', 'Выручка', 'Всего']));
+    const cost = num(headerValue(r, ['Себестоимость', 'Сумма себестоимости', 'Себестоимость документа', 'Полная себестоимость', 'Себестоимость накладной']));
+    const rawPaid = headerValue(r, ['Оплачено', 'Оплаченная сумма', 'Оплата', 'Сумма оплат', 'Сумма оплаты', 'Уплачено']);
     const doc = {
       id,
       date,
       number: number || ('ИМП-' + (index + 1)),
       type,
       clientId,
+      customerName: clean(headerValue(r, ['Имя клиента', 'ФИО клиента', 'Клиент', 'Контрагент', 'Покупатель', 'Заказчик'])),
+      customerPhone: clean(headerValue(r, ['Телефон', 'Номер телефона', 'Телефон клиента', 'Мобильный', 'Мобильный телефон', 'Сотовый телефон', 'Контактный телефон', 'Тел.'])),
       supplier: type === 'receipt' ? counterpartyName : (!clientId ? counterpartyName : ''),
-      note: clean(headerValue(r, ['Комментарий', 'Примечание', 'Описание', 'Заметка'])),
-      qty: num(headerValue(r, ['Количество', 'Вес', 'Количество, кг', 'Вес, кг'])),
+      note: clean(headerValue(r, ['Комментарий', 'Примечание', 'Описание', 'Заметка', 'Примечания', 'Примечание документа'])),
+      qty: num(headerValue(r, ['Количество', 'Кол-во', 'Колво', 'Количество, кг', 'Вес', 'Вес, кг', 'Вес сырья', 'Принято сырья, кг', 'Объём, кг', 'Кол-во кг'])),
       paid: num(rawPaid),
       items: [],
       sourceRow: index + 2,
@@ -228,9 +258,9 @@ const parseWorkbook = (workbook, filename) => {
     if (!byNumberAndDate.has(key)) byNumberAndDate.set(key, d);
   });
   rawPositions.forEach((r, index) => {
-    const explicitId = clean(headerValue(r, ['Документ ID', 'ID документа', 'Document ID']));
+    const explicitId = clean(headerValue(r, ['Документ ID', 'ID документа', 'Код документа', 'Document ID']));
     const number = clean(headerValue(r, ['Номер', 'Номер документа', '№', 'Документ']));
-    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Date']));
+    const date = dateISO(headerValue(r, ['Дата', 'Дата документа', 'Дата операции', 'Дата накладной', 'Дата создания', 'Date']));
     let doc = explicitId ? docMap.get('id:' + explicitId) : null;
     if (!doc && number) doc = byNumberAndDate.get(norm(number) + '|' + date) || docs.find((d) => norm(d.number) === norm(number));
     if (!doc) {
