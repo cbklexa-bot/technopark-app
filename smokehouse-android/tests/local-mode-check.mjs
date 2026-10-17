@@ -24,7 +24,7 @@ assert.ok(backend.includes('verifyLicenseToken'), 'Activation must cryptographic
 assert.ok(backend.includes('evaluateTrial(trialState.firstRunAt, now, TRIAL_DAYS)'), 'Trial must use first launch and configured trial duration');
 assert.ok(backend.includes('await exportFullBackup();'), 'Import must create a backup before replacing user data');
 assert.ok(backend.includes('app()?.setState(parsed.state)'), 'Excel import must save imported state through the local app');
-assert.ok(backend.includes('Импорт Excel'), 'Excel import action must remain available');
+assert.ok(html.includes('id="importExcelBtn"') && backend.includes('showImportExcel: () => openImportPicker()'), 'Excel import action must remain available from Settings');
 assert.ok(backend.includes('Сохранить резервную копию'), 'Expired users must still be able to export their data');
 assert.ok(backend.includes('koptilnya-state-change'), 'Local saves should refresh the app status');
 assert.ok(licenseCore.includes('ECDSA'), 'License token must use asymmetric digital signatures');
