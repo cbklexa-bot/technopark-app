@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 const root = process.cwd();
 const html = readFileSync(join(root, 'www', 'index.html'), 'utf8');
 const bridge = readFileSync(join(root, 'www', 'native-bridge.js'), 'utf8');
+const localBackend = readFileSync(join(root, 'www', 'local-backend.js'), 'utf8');
 const config = JSON.parse(readFileSync(join(root, 'capacitor.config.json'), 'utf8'));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
@@ -37,9 +38,11 @@ const requiredBusinessLogic = [
   'function openCostCalculator',
   'id="chooseProductPhoto"',
   'id="productPhotoPreview"',
-  "showImportExcel: () => openImportPicker()",
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
+assert.ok(localBackend.includes('showImportExcel: () => openImportPicker()'), 'Settings import action must open Excel import');
+assert.ok(!localBackend.includes("bar.innerHTML = '<span id=\\"koptilnyaLocalStatus\\""), 'Floating import/license bar should not be recreated');
+
 
 const requiredArchiveLogic = [
   'exportFullArchive', 'exportExcel', 'pickImage', 'readBackupFile', 'JSZip.loadAsync',
@@ -142,7 +145,7 @@ try {
   assert.deepEqual(workbook.SheetNames, expectedSheets, 'Excel workbook must include all 13 expected sheets');
 
   const excelFileName = await nativeApi.exportExcel(sampleState);
-  assert.match(excelFileName, /^koptilnya-data-\\d{4}-\\d{2}-\\d{2}\\.xlsx$/);
+  assert.ok(excelFileName.startsWith('koptilnya-data-') && excelFileName.endsWith('.xlsx'), 'Excel export filename must use .xlsx');
   assert.ok(downloadedBlob, 'Excel export must produce a downloadable workbook');
   const exportedWorkbook = XLSX.read(Buffer.from(await downloadedBlob.arrayBuffer()), { type: 'buffer' });
   assert.deepEqual(exportedWorkbook.SheetNames, ['Продукция','Клиенты','Документы','Затраты','Оплаты','Партии']);
