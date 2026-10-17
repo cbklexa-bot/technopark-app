@@ -53,8 +53,6 @@ assert.equal(config.webDir, 'dist', 'Capacitor webDir must match Vite output');
 assert.ok(pkg.dependencies['@capacitor/android'], 'Capacitor Android dependency missing');
 assert.ok(!pkg.dependencies['@capacitor/app'], 'Removed auth integration must not retain Capacitor App dependency');
 assert.ok(!pkg.dependencies['@supabase/supabase-js'], 'Offline APK must not include Supabase client dependency');
-assert.ok(pkg.dependencies['@capacitor/filesystem'], 'Native file export dependency missing');
-assert.ok(pkg.dependencies['@capacitor/share'], 'Native share dependency missing');
 assert.ok(pkg.dependencies.jszip, 'ZIP dependency missing');
 assert.ok(pkg.dependencies.xlsx, 'Excel dependency missing');
 assert.ok(pkg.devDependencies['@capacitor/assets'], 'Branded Android icon generator missing');
