@@ -417,11 +417,11 @@ async function loadBusinessState() {
   if (!isNative) return null;
   return await KoptilnyaDownloads.loadBusinessState();
 }
-async function saveBusinessState(state) {
+async function saveBusinessState(state, version) {
   if (!isNative) return null;
   const serialized = typeof state === 'string' ? state : JSON.stringify(state);
   businessStateSaveQueue = businessStateSaveQueue.catch(() => {}).then(() =>
-    KoptilnyaDownloads.saveBusinessState({ state: serialized }),
+    KoptilnyaDownloads.saveBusinessState({ state: serialized, version: Math.max(0, Math.trunc(Number(version) || 0)) }),
   );
   return await businessStateSaveQueue;
 }
