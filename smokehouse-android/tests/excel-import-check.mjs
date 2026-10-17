@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as XLSX from 'xlsx';
-import { parseWorkbook, CANONICAL_CLIENTS } from '../www/excel-import.js';
+import { parseWorkbook } from '../www/excel-import.js';
 
 const workbook = XLSX.utils.book_new();
 const addSheet = (name, rows) => XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), name);
@@ -29,6 +29,7 @@ addSheet('Документы', [
   ['ID','Дата','Номер','Тип','Клиент/поставщик','Сумма','Себестоимость','Оплачено','Комментарий'],
   ['doc-2025','2025-03-01','R-2025-001','Расходный','Тортика',800,400,400,'Продажа с двумя позициями'],
   ['doc-2026','2026-02-10','S-2026-002','Услуга','Пекарня',500,200,0,'Обработка сырья клиента'],
+  ['doc-2024','2024-01-10','R-2024-003','Расходный','Тортика',100,50,0,'Историческая продажа для проверки импорта старых лет'],
 ]);
 addSheet('Позиции', [
   ['Документ ID','Дата','Номер','ID продукции','Продукция','Количество','Цена за единицу','Себестоимость за единицу','Сумма позиции','Себестоимость позиции'],
@@ -57,9 +58,9 @@ addSheet('По месяцам', [['Месяц','Выручка'],['2025-03',9999
 
 const parsed = parseWorkbook(workbook, 'koptilnya-fixture.xlsx');
 assert.equal(parsed.summary.counts.products, 2, 'Products are read from their source sheet');
-assert.equal(parsed.summary.counts.clients, 6, 'Only the six canonical active counterparties remain');
-assert.deepEqual(parsed.state.clients.map((c) => c.name).sort(), [...CANONICAL_CLIENTS].sort());
-assert.equal(parsed.summary.counts.documents, 2, 'Only source documents, not report sheets, become operations');
+assert.equal(parsed.summary.counts.clients, 7, 'All customer rows, including additional historical customers, are imported');
+assert.deepEqual(parsed.state.clients.map((c) => c.name).sort(), ['Деревенька','Клиенты цеха','Кочевник','Наш','Пекарня','Старый архивный магазин','Тортика'].sort());
+assert.equal(parsed.summary.counts.documents, 3, 'Source documents from every year import; report sheets stay excluded');
 assert.equal(parsed.summary.counts.positions, 2, 'Both invoice position rows must survive parsing');
 assert.equal(parsed.summary.counts.expenses, 3);
 assert.equal(parsed.summary.counts.payments, 1);
@@ -69,6 +70,8 @@ assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2025').items.length, 2)
 assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2025').manualAmount, undefined, 'Itemized documents should derive totals from positions');
 assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2026').manualAmount, 500, 'Unitemized service preserves the exact source header total');
 assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2026').manualCost, 200);
+assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2024').manualAmount, 100, 'Historical document totals remain available for reports');
+assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2024').manualCost, 50);
 assert.equal(parsed.state.docs.find((d) => d.id === 'doc-2025').paid, 400, 'Payment allocation maps to the specific source document');
 
 assert.equal(parsed.summary.years[2025].revenue, 800);
@@ -81,8 +84,10 @@ assert.equal(parsed.summary.years[2026].cost, 200);
 assert.equal(parsed.summary.years[2026].expenses, 70);
 assert.equal(parsed.summary.years[2026].productionKg, 2);
 assert.equal(parsed.summary.years[2026].docs, 1);
-assert.ok(parsed.summary.warnings.some((w) => w.includes('Старый архивный магазин')),
-  'Historical clients outside the allowed six must be reported but not activated');
-assert.deepEqual(parsed.state.clients.map((c) => c.name).sort(), [...CANONICAL_CLIENTS].sort());
+assert.equal(parsed.summary.years[2024].revenue, 100, 'Historical years must be included in summary totals');
+assert.equal(parsed.summary.years[2024].cost, 50);
+assert.equal(parsed.summary.years[2024].docs, 1);
+assert.ok(parsed.state.clients.some((client) => client.name === 'Старый архивный магазин'),
+  'Additional client records must be imported instead of silently discarded');
 
-console.log('Excel import test passed: two years, itemized documents, client allowlist, stock balances, expenses, payment allocations, batches, and no summary double counting.');
+console.log('Excel import test passed: all clients, historical years, itemized documents, stock balances, expenses, payment allocations, batches, and no summary double counting.');
