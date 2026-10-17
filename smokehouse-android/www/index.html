@@ -287,9 +287,10 @@ s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
 var page='home',filter='all',reportTab='finance',clientHistoryId='',clientQuery='',clientStatsPeriod='month';
 var nativeStateReady=false,nativeStateRevision=(function(){try{var stored=Number(localStorage.getItem(VERSION_KEY))||0;var cached=JSON.parse(localStorage.getItem(KEY)||'null');return Math.max(stored,Number(cached&&cached._koptilnyaLocalRevision)||0)}catch(e){return 0}})(),nativeStateFailureNotified=false;
 function persistStateToNative(snapshot){
- if(!nativeStateReady||!window.KoptilnyaNative||!window.KoptilnyaNative.isNative||typeof window.KoptilnyaNative.saveBusinessState!=='function')return;
- window.KoptilnyaNative.saveBusinessState(snapshot,nativeStateRevision).catch(function(error){
-  if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('SQLite state save failed',error);if(window.KoptilnyaApp&&typeof window.KoptilnyaApp.showToast==='function')window.KoptilnyaApp.showToast('Не удалось подтвердить сохранение в SQLite. Проверь свободное место и создай резервную копию.')}
+ var native=window.KoptilnyaNative;
+ if(!native||typeof native.saveBusinessState!=='function'||(native.isNative&&!nativeStateReady))return;
+ native.saveBusinessState(snapshot,nativeStateRevision).catch(function(error){
+  if(!nativeStateFailureNotified){nativeStateFailureNotified=true;console.error('Device snapshot persistence failed',error);toast('Не удалось подтвердить сохранение резервной копии на устройстве: '+(error&&error.message?error.message:'ошибка записи')+'. Сохраните ZIP-архив.',6500)}
  });
 }
 function notifyStateChange(){try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}}
@@ -303,8 +304,8 @@ function save(){
  }catch(e){
   cacheError=e;
   console.warn('Local cache unavailable; trying native SQLite persistence',e);
-  if(!window.KoptilnyaNative||!window.KoptilnyaNative.isNative||typeof window.KoptilnyaNative.saveBusinessState!=='function'){
-   throw new Error('Локальное хранилище переполнено или недоступно. Не удалось сохранить изменения: '+(e&&e.message?e.message:'ошибка записи')+'. Сохраните резервную копию и освободите место.');
+  if(!window.KoptilnyaNative||typeof window.KoptilnyaNative.saveBusinessState!=='function'){
+   throw new Error('Локальное хранилище переполнено или недоступно, а резервное хранилище не подключено. Не удалось сохранить изменения: '+(e&&e.message?e.message:'ошибка записи')+'. Сохраните резервную копию и освободите место.');
   }
  }
  if(cacheSaved){
@@ -319,7 +320,7 @@ function save(){
    return true;
   }).catch(function(error){
    console.error('Native SQLite fallback save failed',error);
-   toast('Не удалось сохранить данные в SQLite: '+(error&&error.message?error.message:'ошибка записи')+'. Повторите попытку и сохраните резервную копию.',6500);
+   toast('Не удалось сохранить данные на устройстве: '+(error&&error.message?error.message:'ошибка записи')+'. Повторите попытку и сохраните резервную копию.',6500);
    return false;
   });
  }
@@ -780,7 +781,7 @@ window.KoptilnyaApp={
 };
 function initNativeBusinessState(){
  var native=window.KoptilnyaNative;
- if(!native||!native.isNative||typeof native.loadBusinessState!=='function'||!window.KoptilnyaApp)return;
+ if(!native||typeof native.loadBusinessState!=='function'||!window.KoptilnyaApp)return;
  var revisionAtStart=nativeStateRevision;
  native.loadBusinessState().then(function(stored){
   if(nativeStateRevision!==revisionAtStart){
