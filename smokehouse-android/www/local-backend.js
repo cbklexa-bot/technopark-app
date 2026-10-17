@@ -164,7 +164,7 @@ const exportFullBackup = async () => {
   a.href = url;
   a.download = 'koptilnya-backup-' + new Date().toISOString().slice(0, 10) + '.json';
   document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
   toast('Резервная копия подготовлена');
   return a.download;
 };
@@ -350,6 +350,20 @@ const openImportPicker = () => {
   });
 };
 
+const refreshAccessState = async () => {
+  const wasAllowed = currentAccess.allowed;
+  trialState.lastSeenAt = Math.max(Number(trialState.lastSeenAt) || 0, Date.now());
+  await saveTrialState();
+  currentAccess = await assessAccess();
+  const bar = document.getElementById('koptilnyaLocalBar');
+  if (bar) bar.style.display = currentAccess.allowed ? 'flex' : 'none';
+  setLocalStatus(licenseStatusLabel());
+  if (!currentAccess.allowed && (wasAllowed || !document.getElementById('koptilnyaLicenseGate'))) {
+    const reason = currentAccess.reason === 'license_expired' ? 'Срок лицензии закончился.' : 'Семидневный пробный период завершён.';
+    showLicenseGate(true, reason + ' Данные не удалены; до активации можно сохранить резервную копию.');
+  }
+};
+
 const initLocalApp = async () => {
   deviceId = await resolveDeviceId();
   await mergeTrialState();
@@ -373,6 +387,9 @@ const initLocalApp = async () => {
     const reason = currentAccess.reason === 'license_expired' ? 'Срок лицензии закончился.' : 'Семидневный пробный период завершён.';
     showLicenseGate(true, reason + ' Данные не удалены; до активации можно сохранить резервную копию.');
   }
+  window.addEventListener('focus', () => { void refreshAccessState(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) void refreshAccessState(); });
+  setInterval(() => { if (!document.hidden) void refreshAccessState(); }, 60_000);
 };
 void initLocalApp().catch((error) => {
   console.error('Koptilnya local initialization failed', error);
