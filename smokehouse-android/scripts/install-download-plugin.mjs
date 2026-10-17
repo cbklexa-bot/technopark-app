@@ -98,9 +98,9 @@ const pluginSource =
   '  public void loadBusinessState(PluginCall call) {\n' +
   '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
   '    SQLiteDatabase db = helper.getReadableDatabase();\n' +
-  '    try (Cursor cursor = db.rawQuery("SELECT state_json, updated_at FROM app_state WHERE slot = ?", new String[]{"main"})) {\n' +
+  '    try (Cursor cursor = db.rawQuery("SELECT state_json, updated_at, state_version FROM app_state WHERE slot = ?", new String[]{"main"})) {\n' +
   '      JSObject result = new JSObject();\n' +
-  '      if (cursor.moveToFirst()) { result.put("found", true); result.put("state", cursor.getString(0)); result.put("updatedAt", cursor.getLong(1)); }\n' +
+  '      if (cursor.moveToFirst()) { result.put("found", true); result.put("state", cursor.getString(0)); result.put("updatedAt", cursor.getLong(1)); result.put("version", cursor.getLong(2)); }\n' +
   '      else { result.put("found", false); result.put("state", ""); result.put("updatedAt", 0); }\n' +
   '      call.resolve(result);\n' +
   '    } catch (Exception error) { call.reject("Не удалось прочитать локальную SQLite-базу", error); }\n' +
@@ -110,13 +110,15 @@ const pluginSource =
   '  public void saveBusinessState(PluginCall call) {\n' +
   '    String state = call.getString("state");\n' +
   '    if (state == null || state.trim().isEmpty()) { call.reject("Не передано состояние учёта"); return; }\n' +
+  '    long version = call.getData().optLong("version", 0L);\n' +
+  '    if (version < 0L) { call.reject("Неверная версия локального состояния"); return; }\n' +
   '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
   '    SQLiteDatabase db = helper.getWritableDatabase();\n' +
   '    try {\n' +
-  '      ContentValues values = new ContentValues(); values.put("slot", "main"); values.put("state_json", state); values.put("updated_at", System.currentTimeMillis());\n' +
+  '      ContentValues values = new ContentValues(); values.put("slot", "main"); values.put("state_json", state); values.put("updated_at", System.currentTimeMillis()); values.put("state_version", version);\n' +
   '      long row = db.insertWithOnConflict("app_state", null, values, SQLiteDatabase.CONFLICT_REPLACE);\n' +
   '      if (row < 0) throw new IllegalStateException("SQLite не сохранила данные");\n' +
-  '      JSObject result = new JSObject(); result.put("saved", true); result.put("updatedAt", values.getAsLong("updated_at")); call.resolve(result);\n' +
+  '      JSObject result = new JSObject(); result.put("saved", true); result.put("updatedAt", values.getAsLong("updated_at")); result.put("version", values.getAsLong("state_version")); call.resolve(result);\n' +
   '    } catch (Exception error) { call.reject("Не удалось сохранить данные в SQLite", error); }\n' +
   '    finally { db.close(); helper.close(); }\n' +
   '  }\n' +
@@ -209,15 +211,21 @@ const pluginSource =
   '  }\n' +
   '  private static class StateDbHelper extends SQLiteOpenHelper {\n' +
   '    private static final String DB_NAME = "koptilnya_data.db";\n' +
-  '    StateDbHelper(Context context) { super(context, DB_NAME, null, 1); }\n' +
+  '    StateDbHelper(Context context) { super(context, DB_NAME, null, 2); }\n' +
   '    @Override public void onCreate(SQLiteDatabase db) {\n' +
-  '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL)");\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL, state_version INTEGER NOT NULL DEFAULT 0)");\n' +
   '      db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, applied_at INTEGER NOT NULL)");\n' +
   '      ContentValues migration = new ContentValues(); migration.put("version", 1); migration.put("applied_at", System.currentTimeMillis());\n' +
   '      db.insertWithOnConflict("schema_migrations", null, migration, SQLiteDatabase.CONFLICT_IGNORE);\n' +
+  '      ContentValues migrationV2 = new ContentValues(); migrationV2.put("version", 2); migrationV2.put("applied_at", System.currentTimeMillis());\n' +
+  '      db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
   '    }\n' +
   '    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n' +
-  '      /* Keep existing app_state data intact. Future schema changes must be applied incrementally here. */\n' +
+  '      if (oldVersion < 2) {\n' +
+  '        db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
+  '        ContentValues migrationV2 = new ContentValues(); migrationV2.put("version", 2); migrationV2.put("applied_at", System.currentTimeMillis());\n' +
+  '        db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
+  '      }\n' +
   '    }\n' +
   '  }\n' +
   '}\n';
