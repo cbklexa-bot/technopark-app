@@ -18,8 +18,9 @@ assert.doesNotThrow(() => new Function(inlineScript[1]), 'The main application J
 const requiredUi = [
   'id="page-products"', 'id="productsGrid"', 'id="page-production"', 'id="page-clients"',
   'id="page-documents"', 'id="page-expenses"', 'id="page-debts"',
-  'id="page-reports"', 'id="page-recipes"', 'id="exportFullBackup"',
-  'id="restoreFullBackup"', 'id="exportClientsCsv"', 'id="clientSearchInput"',
+  'id="page-reports"', 'id="page-recipes"', 'id="page-settings"', 'id="pageBack"',
+  'id="themeSelect"', 'id="licenseSettingsBtn"', 'id="importExcelBtn"', 'id="exportExcelBtn"',
+  'id="exportFullBackup"', 'id="restoreFullBackup"', 'id="exportClientsCsv"', 'id="clientSearchInput"',
   'id="clientStatsPeriod"', 'id="reportStart"', 'id="reportEnd"',
 ];
 for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI marker: ' + marker);
@@ -30,11 +31,18 @@ const requiredBusinessLogic = [
   'function renderReports', 'function docStockDelta', "localStorage.getItem(KEY)",
   "document.getElementById('exportFullBackup').onclick",
   "document.getElementById('backupFile').onchange",
+  "document.getElementById('themeSelect').onchange",
+  "document.getElementById('pageBack').onclick",
+  'data-delete-doc=',
+  'function openCostCalculator',
+  'id="chooseProductPhoto"',
+  'id="productPhotoPreview"',
+  "showImportExcel: () => openImportPicker()",
 ];
 for (const marker of requiredBusinessLogic) assert.ok(html.includes(marker), 'Missing business logic: ' + marker);
 
 const requiredArchiveLogic = [
-  'exportFullArchive', 'readBackupFile', 'JSZip.loadAsync',
+  'exportFullArchive', 'exportExcel', 'pickImage', 'readBackupFile', 'JSZip.loadAsync',
   'reports/koptilnya-financial-reports.xlsx', 'data/database.json',
   'photos/products/', 'attachments/', "addWorksheet(workbook,'Сводка'",
   "addWorksheet(workbook,'Продукция'", "addWorksheet(workbook,'Клиенты'",
@@ -89,6 +97,9 @@ try {
   const nativeApi = globalThis.window.KoptilnyaNative;
   assert.ok(nativeApi, 'Native bridge must register its export interface');
   assert.equal(nativeApi.isNative, false, 'Node test should exercise web export path');
+  assert.equal(typeof nativeApi.exportExcel, 'function', 'Excel export API must be registered');
+  assert.equal(typeof nativeApi.pickImage, 'function', 'Native image picker API must be registered');
+  assert.equal(await nativeApi.pickImage(), null, 'Browser-mode image picker should fall back to the file input');
 
   const photoData = 'data:image/png;base64,iVBORw0KGgo=';
   const attachmentData = 'data:application/pdf;base64,JVBERi0xLjQK';
@@ -130,6 +141,17 @@ try {
   const expectedSheets = ['Сводка','Продукция','Клиенты','Документы','Позиции','Затраты','Оплаты','Партии','Рецепты','Продажи','Услуги','По месяцам','Файлы'];
   assert.deepEqual(workbook.SheetNames, expectedSheets, 'Excel workbook must include all 13 expected sheets');
 
+  const excelFileName = await nativeApi.exportExcel(sampleState);
+  assert.match(excelFileName, /^koptilnya-data-\\d{4}-\\d{2}-\\d{2}\\.xlsx$/);
+  assert.ok(downloadedBlob, 'Excel export must produce a downloadable workbook');
+  const exportedWorkbook = XLSX.read(Buffer.from(await downloadedBlob.arrayBuffer()), { type: 'buffer' });
+  assert.deepEqual(exportedWorkbook.SheetNames, ['Продукция','Клиенты','Документы','Затраты','Оплаты','Партии']);
+  const productRows = XLSX.utils.sheet_to_json(exportedWorkbook.Sheets['Продукция'], { header: 1 });
+  assert.equal(productRows[1][1], 'Грудинка копчёная');
+  const clientRows = XLSX.utils.sheet_to_json(exportedWorkbook.Sheets['Клиенты'], { header: 1 });
+  assert.equal(clientRows[1][1], 'Тестовый клиент');
+  console.log('Runtime Excel export test passed: product, client, document, expense, payment and production-batch sheets.');
+
   const fileForRestore = Buffer.from(zipBuffer);
   fileForRestore.name = 'koptilnya-backup-test.zip';
   const restored = await nativeApi.readBackupFile(fileForRestore);
@@ -147,11 +169,19 @@ try {
 const assetGenerator = readFileSync(join(root, 'scripts', 'generate_assets.py'), 'utf8');
 for (const marker of ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']) assert.ok(assetGenerator.includes(marker), 'Missing branded Android asset: ' + marker);
 const installer = readFileSync(join(root, 'scripts', 'install-download-plugin.mjs'), 'utf8');
-for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','getLicenseIdentity','getTrialState','saveTrialState','Settings.Secure.ANDROID_ID','SharedPreferences']) {
+for (const marker of ['MediaStore.Downloads.EXTERNAL_CONTENT_URI','MediaStore.MediaColumns.RELATIVE_PATH','registerPlugin(KoptilnyaDownloadsPlugin.class)','Environment.DIRECTORY_DOWNLOADS','getLicenseIdentity','getTrialState','saveTrialState','pickImage','ACTION_OPEN_DOCUMENT','ActivityCallback','Settings.Secure.ANDROID_ID','SharedPreferences']) {
   assert.ok(installer.includes(marker), 'Missing direct Downloads / offline license implementation: ' + marker);
 }
 assert.ok(!installer.includes('android.intent.action.VIEW'), 'Removed auth integration must not configure a deep link');
 assert.ok(html.includes('name="category" list="expenseCategoryOptions"'), 'Expense category must be free text with suggestions');
+assert.ok(!html.includes('<b>ДЕМО-РЕЖИМ</b>'), 'Demo mode warning should not appear in the product UI');
+assert.ok(!html.includes('<label>Поставщик</label>'), 'Receipt form should not require a supplier');
+assert.ok(!html.includes("sel('type','Тип'"), 'Product type selector should be removed');
+assert.ok(!html.includes('id="exportClientsCsv">Экспорт базы CSV'), 'Client CSV export belongs in Settings, not the client screen');
+assert.ok(!html.includes('<button class="btn secondary" id="csv">Экспорт CSV</button>'), 'Report export should be inside Settings, not the reports header');
+assert.ok(html.includes('Услуга по копчению'), 'Smoking-service wording missing');
+assert.ok(html.includes('Чистая прибыль'), 'Monthly net profit metric missing');
+assert.ok(html.includes('applyTheme(localStorage.getItem'), 'Persisted theme setting missing');
 assert.ok(html.includes('Комментарий (необязательно)'), 'Expense comment must be optional');
 const recipeStart = html.indexOf('<section id="page-recipes"');
 assert.notEqual(recipeStart, -1, 'Recipe placeholder should remain in navigation');
