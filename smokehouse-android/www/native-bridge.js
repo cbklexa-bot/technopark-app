@@ -315,10 +315,29 @@ async function saveTextFile(filename, mimeType, content) {
   return { uri: result && result.uri, filename: safeName, path: 'Download/Коптильня/' + safeName };
 }
 
+async function getLicenseIdentity() {
+  if (!isNative) return null;
+  return await KoptilnyaDownloads.getLicenseIdentity();
+}
+async function getTrialState() {
+  if (!isNative) return null;
+  return await KoptilnyaDownloads.getTrialState();
+}
+async function saveTrialState(state) {
+  if (!isNative) return;
+  await KoptilnyaDownloads.saveTrialState({
+    firstRunAt: Number(state && state.firstRunAt) || 0,
+    lastSeenAt: Number(state && state.lastSeenAt) || 0,
+  });
+}
+
 window.KoptilnyaNative = {
   isNative,
   saveTextFile,
   exportFullArchive,
   readBackupFile,
+  getLicenseIdentity,
+  getTrialState,
+  saveTrialState,
 };
 window.dispatchEvent(new CustomEvent('koptilnya-native-ready'));
