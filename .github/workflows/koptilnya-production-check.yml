@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - koptilnya-local-licensing
+      - koptilnya-ui-improvements
     paths:
       - 'smokehouse-android/**'
       - '.github/workflows/koptilnya-production-check.yml'
