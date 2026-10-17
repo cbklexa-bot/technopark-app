@@ -65,6 +65,8 @@ const setOverlayStatus = (id, message, kind = '') => {
 const setLocalStatus = (label) => {
   const node = document.getElementById('koptilnyaLocalStatus');
   if (node) node.textContent = label;
+  const summary = document.getElementById('koptilnyaLicenseSummary');
+  if (summary) summary.textContent = label;
 };
 const getCurrentState = () => app()?.getState?.() || app()?.getLocalState?.() || {
   products: [], clients: [], docs: [], expenses: [], batches: [], recipes: [], payments: [], importHistory: [],
@@ -127,15 +129,9 @@ const assessAccess = async () => {
   return currentAccess;
 };
 const makeBar = () => {
-  let bar = document.getElementById('koptilnyaLocalBar');
-  if (bar) return bar;
-  bar = document.createElement('div');
-  bar.id = 'koptilnyaLocalBar';
-  bar.innerHTML = '<span id="koptilnyaLocalStatus">Локальная база</span><button type="button" class="koptilnyaMini" id="koptilnyaImportBtn">Импорт Excel</button><button type="button" class="koptilnyaMini" id="koptilnyaLicenseBtn">Лицензия</button>';
-  document.body.appendChild(bar);
-  bar.querySelector('#koptilnyaImportBtn').addEventListener('click', () => openImportPicker());
-  bar.querySelector('#koptilnyaLicenseBtn').addEventListener('click', () => showLicenseGate(false));
-  return bar;
+  // Remove the legacy floating controls; import and licensing now live in Settings.
+  document.getElementById('koptilnyaLocalBar')?.remove();
+  return null;
 };
 const licenseStatusLabel = () => {
   if (activeLicense) {
@@ -357,8 +353,6 @@ const refreshAccessState = async () => {
   trialState.lastSeenAt = Math.max(Number(trialState.lastSeenAt) || 0, Date.now());
   await saveTrialState();
   currentAccess = await assessAccess();
-  const bar = document.getElementById('koptilnyaLocalBar');
-  if (bar) bar.style.display = currentAccess.allowed ? 'flex' : 'none';
   setLocalStatus(licenseStatusLabel());
   if (!currentAccess.allowed && (wasAllowed || !document.getElementById('koptilnyaLicenseGate'))) {
     const reason = currentAccess.reason === 'license_expired' ? 'Срок лицензии закончился.' : 'Семидневный пробный период завершён.';
@@ -370,8 +364,7 @@ const initLocalApp = async () => {
   deviceId = await resolveDeviceId();
   await mergeTrialState();
   currentAccess = await assessAccess();
-  const bar = makeBar();
-  bar.style.display = currentAccess.allowed ? 'flex' : 'none';
+  makeBar();
   setLocalStatus(licenseStatusLabel());
   window.addEventListener('koptilnya-state-change', () => {
     // The accounting interface itself saves every mutation to localStorage.
@@ -383,6 +376,7 @@ const initLocalApp = async () => {
     getDeviceId: () => deviceId,
     getAccess: () => ({ ...currentAccess }),
     showLicense: () => showLicenseGate(false),
+    showImportExcel: () => openImportPicker(),
     exportBackup: exportFullBackup,
   });
   if (!currentAccess.allowed) {
