@@ -235,4 +235,6 @@ const serviceFormMarkup = html.slice(serviceFormStart, serviceFormEnd);
 assert.ok(serviceFormMarkup.includes('Принято сырья, кг') && serviceFormMarkup.includes('Номер телефона клиента (необязательно)'), 'Service form must include weight and optional phone');
 assert.ok(!serviceFormMarkup.includes('servicePresetPrice') && !serviceFormMarkup.includes('newServicePreset') && !serviceFormMarkup.includes("inp('price'") && !serviceFormMarkup.includes("inp('cost'"), 'Service form must not expose template maintenance or manual price/cost fields');
 assert.ok(html.includes("nextDocNumber('НК')") && html.includes("nextDocNumber('ПР')") && html.includes("nextDocNumber('УС')"), 'Document numbers must be generated automatically');
+assert.equal((html.match(/<section\\b/g) || []).length, (html.match(/<\\/section>/g) || []).length, 'HTML sections must be balanced');
+assert.equal((html.match(/<nav\\b/g) || []).length, (html.match(/<\\/nav>/g) || []).length, 'HTML navigation elements must be balanced');
 console.log('Smoke check passed: compact dashboard, navigation routes, service-template separation, recipes CRUD, local accounting, Android exports, ZIP restore, and Excel sheets are present.');
