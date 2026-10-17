@@ -42,7 +42,7 @@ assert.ok(html.includes('cachedVersion>databaseVersion'), 'A newer local cache m
 assert.ok(html.includes('localStorage.setItem(VERSION_KEY,String(nativeStateRevision))'), 'Revision must be saved beside the local cache before native persistence');
 assert.ok(html.includes('_koptilnyaLocalRevision'), 'The cached snapshot must preserve its revision even when the separate revision key cannot be written');
 assert.ok(html.includes('Local cache unavailable; trying native SQLite persistence') && html.includes('saveBusinessState(s,nativeStateRevision)'), 'A full WebView cache must trigger a direct native SQLite write even before normal state sync is ready');
-assert.ok(html.includes('Не удалось подтвердить сохранение в SQLite'), 'A failed native save must notify the user instead of failing silently');
+assert.ok(html.includes('Не удалось подтвердить сохранение резервной копии на устройстве'), 'A failed native or browser fallback save must notify the user instead of failing silently');
 assert.ok(bridge.includes('async function saveBusinessState(state, version)') && bridge.includes('version: Math.max(0, Math.trunc(Number(version) || 0))'),
   'The native bridge must forward the cached-state revision');
 assert.ok(installer.includes('state_version INTEGER NOT NULL DEFAULT 0'), 'SQLite must store the business-state revision');
