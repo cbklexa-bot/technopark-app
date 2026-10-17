@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { Buffer } from 'node:buffer';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
+import { parseWorkbook } from '../www/excel-import.js';
 
 const root = process.cwd();
 const html = readFileSync(join(root, 'www', 'index.html'), 'utf8');
@@ -148,12 +149,19 @@ try {
   assert.ok(excelFileName.startsWith('koptilnya-data-') && excelFileName.endsWith('.xlsx'), 'Excel export filename must use .xlsx');
   assert.ok(downloadedBlob, 'Excel export must produce a downloadable workbook');
   const exportedWorkbook = XLSX.read(Buffer.from(await downloadedBlob.arrayBuffer()), { type: 'buffer' });
-  assert.deepEqual(exportedWorkbook.SheetNames, ['Продукция','Клиенты','Документы','Затраты','Оплаты','Партии']);
+  assert.deepEqual(exportedWorkbook.SheetNames, ['Продукция','Клиенты','Документы','Позиции','Затраты','Оплаты','Партии']);
   const productRows = XLSX.utils.sheet_to_json(exportedWorkbook.Sheets['Продукция'], { header: 1 });
   assert.equal(productRows[1][1], 'Грудинка копчёная');
   const clientRows = XLSX.utils.sheet_to_json(exportedWorkbook.Sheets['Клиенты'], { header: 1 });
   assert.equal(clientRows[1][1], 'Тестовый клиент');
-  console.log('Runtime Excel export test passed: product, client, document, expense, payment and production-batch sheets.');
+  const roundTrip = parseWorkbook(exportedWorkbook, excelFileName);
+  assert.equal(roundTrip.summary.counts.products, sampleState.products.length, 'Excel export should re-import all product cards');
+  assert.equal(roundTrip.summary.counts.clients, sampleState.clients.length, 'Excel export should re-import all client cards');
+  assert.equal(roundTrip.summary.counts.documents, sampleState.docs.length, 'Excel export should re-import itemized and service documents');
+  assert.equal(roundTrip.summary.counts.expenses, sampleState.expenses.length, 'Excel export should re-import expenses');
+  assert.equal(roundTrip.summary.counts.payments, sampleState.payments.length, 'Excel export should re-import payments and allocation links');
+  assert.equal(roundTrip.summary.counts.batches, sampleState.batches.length, 'Excel export should re-import production batches');
+  console.log('Runtime Excel round-trip passed: products, clients, documents, expenses, payments and production batches.');
 
   const fileForRestore = Buffer.from(zipBuffer);
   fileForRestore.name = 'koptilnya-backup-test.zip';
