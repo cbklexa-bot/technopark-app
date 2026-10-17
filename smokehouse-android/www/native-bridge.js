@@ -412,16 +412,70 @@ async function saveTrialState(state) {
   });
 }
 
+const WEB_STATE_DB_NAME = 'koptilnya-device-state-v1';
+const WEB_STATE_STORE = 'snapshots';
+function openWebStateDatabase() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB не поддерживается этим WebView'));
+      return;
+    }
+    const request = indexedDB.open(WEB_STATE_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(WEB_STATE_STORE)) db.createObjectStore(WEB_STATE_STORE);
+    };
+    request.onerror = () => reject(request.error || new Error('Не удалось открыть локальную базу IndexedDB'));
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+async function loadWebBusinessState() {
+  const db = await openWebStateDatabase();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(WEB_STATE_STORE, 'readonly');
+    const request = tx.objectStore(WEB_STATE_STORE).get('business-state');
+    request.onsuccess = () => resolve(request.result || { found: false, state: null, version: 0 });
+    request.onerror = () => reject(request.error || new Error('Не удалось прочитать локальную базу'));
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => { db.close(); reject(tx.error || new Error('Ошибка чтения локальной базы')); };
+  });
+}
+async function saveWebBusinessState(serialized, version) {
+  const db = await openWebStateDatabase();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(WEB_STATE_STORE, 'readwrite');
+    tx.objectStore(WEB_STATE_STORE).put({
+      found: true,
+      state: serialized,
+      version: Math.max(0, Math.trunc(Number(version) || 0)),
+    }, 'business-state');
+    tx.oncomplete = () => {
+      db.close();
+      resolve({ saved: true, version: Math.max(0, Math.trunc(Number(version) || 0)) });
+    };
+    tx.onerror = () => {
+      const error = tx.error || new Error('Не удалось записать локальную базу');
+      db.close();
+      reject(error);
+    };
+    tx.onabort = () => {
+      const error = tx.error || new Error('Запись в локальную базу отменена');
+      db.close();
+      reject(error);
+    };
+  });
+}
 let businessStateSaveQueue = Promise.resolve();
 async function loadBusinessState() {
-  if (!isNative) return null;
+  if (!isNative) return await loadWebBusinessState();
   return await KoptilnyaDownloads.loadBusinessState();
 }
 async function saveBusinessState(state, version) {
-  if (!isNative) return null;
   const serialized = typeof state === 'string' ? state : JSON.stringify(state);
+  const revision = Math.max(0, Math.trunc(Number(version) || 0));
+  if (!isNative) return await saveWebBusinessState(serialized, revision);
   businessStateSaveQueue = businessStateSaveQueue.catch(() => {}).then(() =>
-    KoptilnyaDownloads.saveBusinessState({ state: serialized, version: Math.max(0, Math.trunc(Number(version) || 0)) }),
+    KoptilnyaDownloads.saveBusinessState({ state: serialized, version: revision }),
   );
   return await businessStateSaveQueue;
 }
