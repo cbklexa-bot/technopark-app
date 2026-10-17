@@ -32,22 +32,30 @@ mkdirSync(packagePath, { recursive: true });
 
 const pluginSource =
   'package ' + packageName + ';\n\n' +
+  'import android.app.Activity;\n' +
   'import android.content.ContentValues;\n' +
   'import android.content.Context;\n' +
+  'import android.content.Intent;\n' +
+  'import android.database.Cursor;\n' +
   'import android.content.SharedPreferences;\n' +
   'import android.net.Uri;\n' +
   'import android.os.Build;\n' +
   'import android.os.Environment;\n' +
   'import android.provider.MediaStore;\n' +
+  'import android.provider.OpenableColumns;\n' +
   'import android.provider.Settings;\n' +
   'import android.util.Base64;\n' +
+  'import androidx.activity.result.ActivityResult;\n' +
   'import com.getcapacitor.JSObject;\n' +
   'import com.getcapacitor.Plugin;\n' +
   'import com.getcapacitor.PluginCall;\n' +
   'import com.getcapacitor.PluginMethod;\n' +
+  'import com.getcapacitor.annotation.ActivityCallback;\n' +
   'import com.getcapacitor.annotation.CapacitorPlugin;\n' +
+  'import java.io.ByteArrayOutputStream;\n' +
   'import java.io.File;\n' +
   'import java.io.FileOutputStream;\n' +
+  'import java.io.InputStream;\n' +
   'import java.io.OutputStream;\n' +
   'import java.util.UUID;\n\n' +
   '@CapacitorPlugin(name = "KoptilnyaDownloads")\n' +
@@ -83,6 +91,47 @@ const pluginSource =
   '    long nextLast = Math.max(oldLast, incomingLast);\n' +
   '    prefs.edit().putLong("firstRunAt", nextFirst).putLong("lastSeenAt", nextLast).apply();\n' +
   '    call.resolve();\n' +
+  '  }\n' +
+  '  @PluginMethod\n' +
+  '  public void pickImage(PluginCall call) {\n' +
+  '    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);\n' +
+  '    intent.addCategory(Intent.CATEGORY_OPENABLE);\n' +
+  '    intent.setType("image/*");\n' +
+  '    startActivityForResult(call, intent, "handleImagePicked");\n' +
+  '  }\n' +
+  '  @ActivityCallback\n' +
+  '  private void handleImagePicked(PluginCall call, ActivityResult result) {\n' +
+  '    if (call == null) return;\n' +
+  '    if (result == null || result.getResultCode() != Activity.RESULT_OK) { call.reject("Выбор изображения отменён"); return; }\n' +
+  '    Intent data = result.getData();\n' +
+  '    Uri uri = data == null ? null : data.getData();\n' +
+  '    if (uri == null) { call.reject("Изображение не выбрано"); return; }\n' +
+  '    try {\n' +
+  '      String fileName = "product-photo";\n' +
+  '      Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);\n' +
+  '      if (cursor != null) {\n' +
+  '        try {\n' +
+  '          if (cursor.moveToFirst()) {\n' +
+  '            int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);\n' +
+  '            if (nameIndex >= 0) { String candidate = cursor.getString(nameIndex); if (candidate != null && !candidate.trim().isEmpty()) fileName = candidate; }\n' +
+  '          }\n' +
+  '        } finally { cursor.close(); }\n' +
+  '      }\n' +
+  '      byte[] bytes;\n' +
+  '      try (InputStream input = getContext().getContentResolver().openInputStream(uri); ByteArrayOutputStream output = new ByteArrayOutputStream()) {\n' +
+  '        if (input == null) throw new IllegalStateException("Не удалось открыть выбранное изображение");\n' +
+  '        byte[] buffer = new byte[16384]; int read; long total = 0;\n' +
+  '        while ((read = input.read(buffer)) != -1) { total += read; if (total > 15L * 1024 * 1024) throw new IllegalArgumentException("Фото больше 15 МБ. Выберите изображение меньшего размера."); output.write(buffer, 0, read); }\n' +
+  '        bytes = output.toByteArray();\n' +
+  '      }\n' +
+  '      String mimeType = getContext().getContentResolver().getType(uri);\n' +
+  '      if (mimeType == null || !mimeType.startsWith("image/")) mimeType = "image/jpeg";\n' +
+  '      JSObject response = new JSObject();\n' +
+  '      response.put("base64", Base64.encodeToString(bytes, Base64.NO_WRAP));\n' +
+  '      response.put("mimeType", mimeType);\n' +
+  '      response.put("fileName", fileName);\n' +
+  '      call.resolve(response);\n' +
+  '    } catch (Exception error) { call.reject("Не удалось прочитать изображение: " + error.getMessage(), error); }\n' +
   '  }\n' +
   '  @PluginMethod\n' +
   '  public void saveToDownloads(PluginCall call) {\n' +
