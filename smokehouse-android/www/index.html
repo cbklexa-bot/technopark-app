@@ -187,56 +187,56 @@ body{background:#f5f7fa;color:#1b2735}
 .recipe-content{font-size:12px;color:#5f6c7b;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}
 .recipe-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 @media(max-width:650px){.main{padding:12px 10px 16px}.finance-panel{padding:10px 8px;border-radius:13px;margin-bottom:12px}.finance-panel-head h2{font-size:15px}.finance-details{font-size:10px}#page-home .home-metrics .card{padding:10px 7px}#page-home .home-metrics .label{font-size:10px;line-height:1.2}#page-home .home-metrics .value{font-size:clamp(15px,4vw,19px);margin:6px 0 3px}#page-home .home-metrics .sub{font-size:9px}#page-home .quickgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#page-home .quick{min-height:72px;padding:9px 7px;gap:6px}#page-home .quick .quick-icon{flex-basis:29px;width:29px;height:29px;font-size:17px}#page-home .quick b{font-size:11px}#page-home .quick small{font-size:9px}.service-preset-row{align-items:flex-start;flex-direction:column}}
-/* Dashboard v3: finance and actions share the visible phone screen */
+/* Dashboard v4: quick-action cards +20%, finance cards about -20% on phones */
 @media(max-width:760px){
  #page-home.section.active{
-  display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+  display:flex;flex-direction:column;justify-content:space-between;gap:10px;
   min-height:calc(100vh - 110px);min-height:calc(100dvh - 110px);
  }
  #page-home .finance-panel{
-  flex:1 1 50%;min-height:0;display:flex;flex-direction:column;
-  padding:12px;border-radius:16px;background:#fff;border:1px solid var(--line);
+  flex:0 1 40%;min-height:0;display:flex;flex-direction:column;
+  padding:10px;border-radius:16px;background:#fff;border:1px solid var(--line);
  }
- #page-home .finance-panel-head{margin-bottom:10px}
- #page-home .finance-panel-head h2{font-size:17px}
- #page-home .finance-details{font-size:11px}
+ #page-home .finance-panel-head{margin-bottom:7px}
+ #page-home .finance-panel-head h2{font-size:15px}
+ #page-home .finance-details{font-size:10px}
  #page-home .home-metrics{
   flex:1;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  grid-template-rows:repeat(2,minmax(82px,1fr));gap:8px;
+  grid-template-rows:repeat(2,minmax(66px,1fr));gap:6px;
  }
  #page-home .home-metrics .card{
-  min-height:82px;padding:11px 10px;border-radius:13px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-height:66px;padding:8px;border-radius:11px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
  }
- #page-home .home-metrics .label{font-size:11px;line-height:1.2;overflow-wrap:anywhere}
- #page-home .home-metrics .value{font-size:clamp(16px,4.3vw,21px);line-height:1.2;letter-spacing:-.03em;margin:6px 0 2px;text-align:left;overflow-wrap:anywhere}
- #page-home .home-metrics .sub{display:block;font-size:9px;line-height:1.15}
- #page-home .home-actions{flex:1 1 50%;min-height:0;display:flex;flex-direction:column}
- #page-home .home-actions .head{margin:3px 0 9px}
+ #page-home .home-metrics .label{font-size:9px;line-height:1.2;overflow-wrap:anywhere}
+ #page-home .home-metrics .value{font-size:clamp(13px,3.4vw,17px);line-height:1.2;letter-spacing:-.03em;margin:4px 0 1px;text-align:left;overflow-wrap:anywhere}
+ #page-home .home-metrics .sub{display:block;font-size:8px;line-height:1.15}
+ #page-home .home-actions{flex:1 1 60%;min-height:0;display:flex;flex-direction:column}
+ #page-home .home-actions .head{margin:2px 0 7px}
  #page-home .home-actions .head h2{font-size:17px}
  #page-home .home-actions .head p{font-size:10px}
  #page-home .quickgrid{
   flex:1;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-template-rows:repeat(3,minmax(72px,1fr));gap:8px;
+  grid-template-rows:repeat(3,minmax(86px,1fr));gap:8px;
  }
  #page-home .quick{
-  min-height:72px;height:100%;padding:10px 9px;gap:8px;border-radius:13px;
+  min-height:86px;height:100%;padding:12px 10px;gap:9px;border-radius:13px;
   align-items:center;box-shadow:0 4px 14px #192b2510;
  }
- #page-home .quick span:first-child{width:36px;height:36px;flex:0 0 36px;border-radius:10px;font-size:20px}
- #page-home .quick b{font-size:12px;line-height:1.2}
- #page-home .quick small{font-size:10px;line-height:1.2;margin-top:4px}
+ #page-home .quick span:first-child{width:43px;height:43px;flex:0 0 43px;border-radius:11px;font-size:24px}
+ #page-home .quick b{font-size:14px;line-height:1.2}
+ #page-home .quick small{font-size:12px;line-height:1.2;margin-top:4px}
 }
 @media(max-width:400px){
- #page-home .finance-panel{padding:9px}
- #page-home .home-metrics{gap:6px}
- #page-home .home-metrics .card{padding:9px 7px}
- #page-home .home-metrics .label{font-size:10px}
- #page-home .home-metrics .value{font-size:clamp(14px,4vw,18px)}
+ #page-home .finance-panel{padding:7px}
+ #page-home .home-metrics{gap:5px}
+ #page-home .home-metrics .card{padding:7px 6px;min-height:60px}
+ #page-home .home-metrics .label{font-size:8px}
+ #page-home .home-metrics .value{font-size:clamp(12px,3.2vw,14px)}
  #page-home .home-actions .quickgrid{gap:6px}
- #page-home .quick{padding:8px 6px;gap:6px}
- #page-home .quick span:first-child{width:30px;height:30px;flex-basis:30px;font-size:18px}
- #page-home .quick b{font-size:11px}
- #page-home .quick small{font-size:9px}
+ #page-home .quick{padding:9px 6px;gap:6px;min-height:82px}
+ #page-home .quick span:first-child{width:36px;height:36px;flex-basis:36px;font-size:22px}
+ #page-home .quick b{font-size:13px}
+ #page-home .quick small{font-size:11px}
 }
 </style><script type="module" src="./native-bridge.js"></script><script type="module" src="./local-backend.js"></script></head><body>
 <div class="drawer-overlay" id="drawerOverlay"></div><div class="layout"><aside class="side"><div class="brand"><div class="logo">К</div><div><b>Коптильня</b><small>учёт производства</small></div></div><nav class="nav"><button class="active" data-page="home">⌂　Главная</button><button data-page="products">▦　Продукция и склад</button><button data-page="documents">▤　Документы</button><button data-page="services">♨　Услуги по сырью клиентов</button><button data-page="clients">♙　Клиенты / CRM</button><button data-page="expenses">↘　Затраты</button><button data-page="debts">₽　Долги</button><button data-page="reports">▥　Отчёты</button><button data-page="settings">⚙　Настройки</button></nav></aside>
@@ -249,7 +249,7 @@ body{background:#f5f7fa;color:#1b2735}
 <div class="tablewrap"><table><thead><tr><th>Клиент</th><th>Телефон</th><th>Услуг за период</th><th>Сырьё, кг</th><th>Услуги, ₽</th><th>Последнее обращение</th><th>Продажи товара</th><th>Оплачено</th><th>Текущий долг</th><th>Действия</th></tr></thead><tbody id="clientsTable"></tbody></table></div>
 <div class="box client-history" id="clientHistoryPanel" style="display:none"><div class="head"><div><h3 id="clientHistoryTitle">Карточка клиента</h3><p id="clientHistorySubtitle"></p></div><button class="btn secondary" type="button" id="closeClientHistory">Закрыть</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>Накладная</th><th>Операция</th><th>Продукция / услуга</th><th>Количество, кг</th><th>Сумма</th><th>Оплачено</th><th>Долг</th><th>Комментарий</th></tr></thead><tbody id="clientHistoryTable"></tbody></table></div></div>
 <div class="notice">Заполняйте номер телефона при оформлении услуги — приложение сможет связывать повторные обращения с одним контактом. В демо-режиме данные хранятся на этом устройстве. Полный JSON-архив содержит записи, фотографии товаров и вложения документов, если они сохранены в приложении.</div></section>
-<section id="page-documents" class="section"><div class="head"><div><h2>Документы</h2><p>Приходы, продажи и выполненные услуги</p></div><div><button class="btn secondary" data-action="receipt">＋ Приход</button> <button class="btn" data-action="sale">＋ Продажа</button></div></div><div class="tabs" id="docTabs"><button class="active" data-filter="all">Все документы</button><button data-filter="receipt">Приходные</button><button data-filter="sale">Расходные</button><button data-filter="service">Услуги</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>№</th><th>Тип</th><th>Клиент</th><th>Сумма</th><th>Себестоимость</th><th>Оплата</th><th>Действия</th></tr></thead><tbody id="docsTable"></tbody></table></div></section><section id="page-services" class="section"><div class="head"><div><h2>Услуги по сырью клиентов</h2><p>История, выручка, оплата и долг</p></div><button class="btn" type="button" data-action="service">＋ Оформить услугу</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>Услуга</th><th>Сырьё, кг</th><th>Контакт</th><th>Сумма</th><th>Оплачено</th><th>Долг</th><th>Действия</th></tr></thead><tbody id="serviceDocsTable"></tbody></table></div><div class="notice">Сырьё клиента не увеличивает складские остатки предприятия.</div></section><section id="page-expenses" class="section"><div class="head"><div><h2>Затраты</h2><p>Расходы производства и бизнеса</p></div><button class="btn" data-action="expense">＋ Новые затраты</button></div><div class="cards" id="expenseMetrics"></div><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Дата</th><th>Категория</th><th>Описание</th><th>Сумма</th><th>В себестоимости?</th><th>Действия</th></tr></thead><tbody id="expensesTable"></tbody></table></div></section>
+<section id="page-documents" class="section"><div class="head"><div><h2>Документы</h2><p>Приходы, продажи и выполненные услуги</p></div></div><div class="tabs" id="docTabs"><button class="active" data-filter="all">Все документы</button><button data-filter="receipt">Приходные</button><button data-filter="sale">Расходные</button><button data-filter="service">Услуги</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>№</th><th>Тип</th><th>Клиент</th><th>Сумма</th><th>Себестоимость</th><th>Оплата</th><th>Действия</th></tr></thead><tbody id="docsTable"></tbody></table></div></section><section id="page-services" class="section"><div class="head"><div><h2>Услуги по сырью клиентов</h2><p>История, выручка, оплата и долг</p></div><button class="btn" type="button" data-action="service">＋ Оформить услугу</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>Услуга</th><th>Сырьё, кг</th><th>Контакт</th><th>Сумма</th><th>Оплачено</th><th>Долг</th><th>Действия</th></tr></thead><tbody id="serviceDocsTable"></tbody></table></div><div class="notice">Сырьё клиента не увеличивает складские остатки предприятия.</div></section><section id="page-expenses" class="section"><div class="head"><div><h2>Затраты</h2><p>Расходы производства и бизнеса</p></div><button class="btn" data-action="expense">＋ Новые затраты</button></div><div class="cards" id="expenseMetrics"></div><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Дата</th><th>Категория</th><th>Описание</th><th>Сумма</th><th>В себестоимости?</th><th>Действия</th></tr></thead><tbody id="expensesTable"></tbody></table></div></section>
 <section id="page-debts" class="section"><div class="head"><div><h2>Долги клиентов</h2><p>Все неоплаченные и частично оплаченные документы</p></div></div><div class="cards" id="debtMetrics"></div><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Дата</th><th>Документ</th><th>Клиент / контакт</th><th>Сумма</th><th>Оплачено</th><th>Остаток</th><th>Действия</th></tr></thead><tbody id="debtsTable"></tbody></table></div></section><section id="page-payments" class="section"><div class="head"><div><h2>Оплаты</h2><p>Поступившие деньги и распределение по документам</p></div><button class="btn" type="button" data-action="payment">＋ Внести оплату</button></div><div class="tablewrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th>Сумма</th><th>Способ</th><th>Распределение</th><th>Действия</th></tr></thead><tbody id="paymentsTable"></tbody></table></div></section><section id="page-reports" class="section">
 <div class="head"><div><h2>Отчёты</h2><p id="reportRangeLabel">За текущий месяц</p></div></div>
 <div class="box report-controls"><div class="tabs" id="reportPeriodTabs"><button type="button" data-report-period="day">За день</button><button type="button" class="active" data-report-period="month">За месяц</button><button type="button" data-report-period="custom">Произвольный период</button></div>
@@ -535,7 +535,7 @@ var epay=extra&&extra.editPayment?extra.editPayment:null;title=epay?'Редак�
 }else if(type==='batch'){title='Производственная партия';f=inp('date','Дата','date',new Date().toISOString().slice(0,10))+sel('productId','Готовый продукт',pOpts.filter(function(x){return !serviceOpts.some(function(y){return y.value===x.value})}))+inp('rawName','Сырьё','text','Мясо')+inp('rawQty','Вес сырья, кг','number','')+inp('outputQty','Выход, кг','number','')+inp('totalCost','Полные затраты партии, ₽','number','')}
 
 if(type==='product'){f+='<div class="field full"><label>Фотография продукции</label><div class="photo-editor"><img id="productPhotoPreview" alt="Предпросмотр фото" src="'+safe(editing&&editing.image||'')+'" '+(editing&&editing.image?'':'hidden')+'><div class="photo-actions"><button type="button" class="btn secondary" id="chooseProductPhoto">Выбрать фото</button><button type="button" class="btn light" id="removeProductPhoto">Убрать</button><input name="photo" type="file" accept="image/*" class="photo-file-input" aria-label="Выбрать фотографию продукции"></div></div></div>'}
-document.getElementById('modalTitle').textContent=title;document.getElementById('fields').innerHTML=f;document.getElementById('back').classList.add('open');document.getElementById('form').dataset.type=type;
+document.getElementById('modalTitle').textContent=title;document.getElementById('fields').innerHTML=f;document.getElementById('back').classList.add('open');document.getElementById('form').dataset.type=type;var sharedSubmitButton=document.querySelector('#form button[type="submit"]');if(sharedSubmitButton){sharedSubmitButton.disabled=false;sharedSubmitButton.textContent='Сохранить'};
 var activeForm=document.getElementById('form'),editDocRecord=extra&&extra.editDoc?extra.editDoc:null,editExpenseRecord=extra&&extra.editExpense?extra.editExpense:null,editPaymentRecord=extra&&extra.editPayment?extra.editPayment:null;
 var photoInput=activeForm.querySelector('input[name="photo"]'),photoPreview=activeForm.querySelector('#productPhotoPreview'),photoChoose=activeForm.querySelector('#chooseProductPhoto'),photoRemove=activeForm.querySelector('#removeProductPhoto');
 if(photoChoose&&photoInput&&photoPreview){
