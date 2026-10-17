@@ -8,6 +8,10 @@ on:
     paths:
       - 'smokehouse-android/**'
       - '.github/workflows/koptilnya-production-check.yml'
+  pull_request:
+    paths:
+      - 'smokehouse-android/**'
+      - '.github/workflows/koptilnya-production-check.yml'
 
 permissions:
   contents: read
