@@ -425,10 +425,11 @@ var ud=extra&&extra.editDoc?extra.editDoc:null;title=ud?'Редактирова�
 var serviceSelectedPresetId=ud?String(ud.servicePresetId||''):'';
 if(ud&&!serviceSelectedPresetId){var matchedServicePreset=(s.servicePresets||[]).find(function(p){return p.name===ud.serviceName});if(matchedServicePreset)serviceSelectedPresetId=matchedServicePreset.id}
 var servicePresetOptions=(s.servicePresets||[]).map(function(p){return '<option value="'+safe(p.id)+'" '+(p.id===serviceSelectedPresetId?'selected':'')+'>'+safe(p.name)+'</option>'}).join('');
+if(ud&&!serviceSelectedPresetId)servicePresetOptions='<option value="" selected>Историческая услуга — '+safe(ud.serviceName||ud.note||'Услуга')+'</option>'+servicePresetOptions;
 if(!(s.servicePresets||[]).length&&!ud){
  f='<div class="field full"><p>База услуг пока пуста. Сначала создайте услугу с ценой и себестоимостью в настройках.</p><button type="button" class="btn" id="goToServiceSettings">Открыть базу услуг</button></div>';
 }else{
- f='<div class="field full"><label for="servicePresetSelect">Услуга</label><select id="servicePresetSelect" name="servicePresetId" required><option value="">Выберите услугу</option>'+servicePresetOptions+'</select><p class="settings-hint">Цена и себестоимость берутся из базы услуг.</p></div>'+
+ f='<div class="field full"><label for="servicePresetSelect">Услуга</label><select id="servicePresetSelect" name="servicePresetId" '+(ud?'':'required')+'><option value="">Выберите услугу</option>'+servicePresetOptions+'</select><p class="settings-hint">Цена и себестоимость берутся из базы услуг. При редактировании исторического документа сохраняются исходные значения.</p></div>'+
  inp('date','Дата','date',ud?ud.date:new Date().toISOString().slice(0,10))+
  inp('qty','Принято сырья, кг','number',ud?ud.qty:'')+
  '<div class="field full"><label for="servicePhone">Номер телефона клиента (необязательно)</label><input id="servicePhone" name="phone" type="tel" value="'+safe(ud?(cli(ud.clientId).phone||ud.customerPhone||''):'')+'" placeholder="+7 900 000-00-00" autocomplete="tel"></div>'+
