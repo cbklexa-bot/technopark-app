@@ -88,7 +88,7 @@ const requiredArchiveLogic = [
 ];
 for (const marker of requiredArchiveLogic) assert.ok(bridge.includes(marker), 'Missing archive logic: ' + marker);
 
-assert.equal(config.appId, 'ru.koptilnya.app', 'Android app ID changed unexpectedly');
+assert.equal(config.appId, 'ru.koptilnya.app.recovery', 'Recovery Android app ID must remain separate from the existing install');
 assert.equal(config.appName, 'Коптильня', 'Android app label changed unexpectedly');
 assert.equal(config.webDir, 'dist', 'Capacitor webDir must match Vite output');
 assert.ok(pkg.dependencies['@capacitor/android'], 'Capacitor Android dependency missing');

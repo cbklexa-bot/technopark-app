@@ -47,6 +47,7 @@ assert.ok(bridge.includes('async function saveBusinessState(state, version)') &&
   'The native bridge must forward the cached-state revision');
 assert.ok(installer.includes('state_version INTEGER NOT NULL DEFAULT 0'), 'SQLite must store the business-state revision');
 assert.ok(installer.includes('ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0'), 'Existing SQLite databases must migrate without discarding saved data');
+assert.ok(installer.includes('@Override public void onOpen(SQLiteDatabase db)') && installer.includes('if (!hasStateVersion && !db.isReadOnly()) db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0")'), 'SQLite schema must self-repair on open when an older database has a stale schema version');
 assert.ok(installer.includes('cursor.getLong(2)') && installer.includes('state_version FROM app_state'), 'SQLite hydration must return the stored revision');
 assert.ok(installer.includes('Settings.Secure.ANDROID_ID'), 'Android device ID must be derived from the Android installation identity');
 assert.ok(installer.includes('SharedPreferences'), 'Android trial state must persist outside WebView localStorage');
