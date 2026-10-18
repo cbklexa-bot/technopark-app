@@ -6,11 +6,13 @@ import { chromium } from 'playwright';
 const root = process.cwd();
 const port = 4173;
 const origin = 'http://127.0.0.1:' + port;
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '..', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: root,
-  stdio: 'ignore',
+  stdio: ['ignore', 'ignore', 'pipe'],
   env: process.env,
 });
+let serverErrors = '';
+server.stderr.on('data', (chunk) => { serverErrors += chunk.toString(); });
 let browser;
 const fatalPageErrors = [];
 async function navigate(page, destination) {
@@ -313,7 +315,7 @@ try {
       ready = true; break;
     } catch { await delay(250); }
   }
-  if (!ready) throw new Error('Vite preview did not start on port ' + port);
+  if (!ready) throw new Error('Vite preview did not start on port ' + port + ': ' + serverErrors);
   await main();
 } finally {
   if (browser) await browser.close();
