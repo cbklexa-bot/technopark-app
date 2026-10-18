@@ -48,12 +48,15 @@ jobs:
       - name: Install JavaScript dependencies
         working-directory: smokehouse-android
         run: npm install --no-audit --no-fund
-      - name: Validate critical app features and JavaScript syntax
+      - name: Install Chromium for UI integration tests
         working-directory: smokehouse-android
-        run: npm test
+        run: npx playwright install --with-deps chromium
       - name: Build bundled web assets
         working-directory: smokehouse-android
         run: npm run build
+      - name: Validate critical app features and functional UI flows
+        working-directory: smokehouse-android
+        run: npm test
       - name: Generate native Android project
         working-directory: smokehouse-android
         run: npx cap add android
@@ -72,10 +75,17 @@ jobs:
       - name: Build debug APK
         working-directory: smokehouse-android/android
         run: ./gradlew assembleDebug --no-daemon
-      - name: Upload installable Android test APK
+      - name: Package APK ZIP for convenient download
+        shell: bash
+        run: |
+          cd smokehouse-android/android/app/build/outputs/apk/debug
+          zip -j koptilnya-android-debug.zip app-debug.apk
+      - name: Upload installable Android test APK and ZIP
         uses: actions/upload-artifact@v4
         with:
           name: koptilnya-android-test-build
           if-no-files-found: error
-          path: smokehouse-android/android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            smokehouse-android/android/app/build/outputs/apk/debug/app-debug.apk
+            smokehouse-android/android/app/build/outputs/apk/debug/koptilnya-android-debug.zip
           retention-days: 14
