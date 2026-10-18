@@ -101,7 +101,11 @@ async function main() {
   await page.locator('#form [name="name"]').fill(clientName);
   await page.locator('#form [name="phone"]').fill('+37060012345');
   await submitAndWait(page);
-  await page.locator('#page-clients').getByText(clientName, { exact: true }).waitFor();
+  await page.locator('#clientCrmMetrics .card').first().click();
+  await page.locator('#clientDirectoryModal').getByText(clientName, { exact: true }).waitFor();
+  await page.locator('#clientDirectoryModal [data-client-history]').filter({ hasText: clientName }).click();
+  await page.locator('#clientDetailModal').getByText(clientName, { exact: false }).waitFor();
+  await page.locator('#closeClientDetail').click();
 
   // 2. Expense creation and financial/report refresh.
   await navigate(page, 'expenses');
@@ -163,7 +167,29 @@ async function main() {
   state = await page.evaluate(() => window.KoptilnyaApp.getState());
   product = state.products.find((p) => p.name === 'E2E курица');
   assert.equal(product.stock, 8, 'Sale must decrease stock from 10 kg to 8 kg');
-  assert.ok(state.docs.some((d) => d.type === 'sale' && d.clientId === state.clients.find((c) => c.name === 'E2E клиент сохранение').id), 'Sale document should be linked to the client');
+  const saleDoc = state.docs.find((d) => d.type === 'sale' && d.clientId === state.clients.find((c) => c.name === 'E2E клиент сохранение').id);
+  assert.ok(saleDoc, 'Sale document should be linked to the client');
+  const originalSaleAmount = saleDoc.items.reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
+
+  // Editing an old invoice must switch payment status both ways without changing its financial values or stock.
+  await navigate(page, 'documents');
+  await page.locator('[data-edit-doc="' + saleDoc.id + '"]').click();
+  await page.locator('#form [name="paid"]').selectOption('all');
+  await submitAndWait(page);
+  state = await page.evaluate(() => window.KoptilnyaApp.getState());
+  let editedSale = state.docs.find((d) => d.id === saleDoc.id);
+  assert.equal(Number(editedSale.paid), originalSaleAmount, 'Marking an invoice paid must update its paid amount');
+  await page.locator('[data-edit-doc="' + saleDoc.id + '"]').click();
+  await page.locator('#form [name="paid"]').selectOption('0');
+  await submitAndWait(page);
+  state = await page.evaluate(() => window.KoptilnyaApp.getState());
+  editedSale = state.docs.find((d) => d.id === saleDoc.id);
+  assert.equal(Number(editedSale.paid), 0, 'Marking an invoice unpaid must clear the paid amount');
+  assert.equal(state.products.find((p) => p.name === 'E2E курица').stock, 8, 'Payment-status edits must not change stock');
+  assert.equal(editedSale.items.reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0), originalSaleAmount, 'Payment-status edits must not change sale totals');
+  await navigate(page, 'debts');
+  await page.locator('#debtsTable').getByText(saleDoc.number, { exact: true }).waitFor();
+  
 
   // 6. Service from a client's raw material creates a service document with computed amount.
   await navigate(page, 'home');
@@ -180,7 +206,24 @@ async function main() {
   assert.equal(service.price, 250);
   assert.equal(service.cost, 100);
 
-  // 7. Validation and failed persistent storage must leave the form open and entered values intact.
+  // 7. Phone search suggestions, service/sale client detail, and arbitrary date range.
+  await navigate(page, 'clients');
+  await page.locator('#clientSearchInput').fill('+37060012345');
+  await page.locator('#clientSearchResults [data-client-history]').filter({ hasText: clientName }).waitFor();
+  await page.locator('#clientSearchResults [data-client-history]').filter({ hasText: clientName }).click();
+  await page.locator('#clientDetailModal').waitFor();
+  await page.locator('#clientDetailContent').getByText('E2E копчение', { exact: true }).waitFor();
+  await page.locator('#closeClientDetail').click();
+  const today = new Date().toISOString().slice(0, 10);
+  await page.locator('#clientStatsPeriod').selectOption('custom');
+  await page.locator('#clientRangeStart').fill(today);
+  await page.locator('#clientRangeEnd').fill(today);
+  await page.locator('#applyClientRange').click();
+  await page.locator('#clientCrmMetrics').getByText('Обращений за период').waitFor();
+  const serviceCountText = await page.locator('#clientCrmMetrics .card').nth(2).innerText();
+  assert.match(serviceCountText, /1/, 'Custom date range should count the service created today');
+
+  // 8. Validation and failed persistent storage must leave the form open and entered values intact.
   await navigate(page, 'clients');
   await page.locator('#page-clients [data-action="client"]').click();
   await page.locator('#form [name="name"]').fill('');
