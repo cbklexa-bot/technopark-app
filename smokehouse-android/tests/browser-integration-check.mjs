@@ -71,7 +71,7 @@ async function checkDashboard(page, width, height) {
     assert.ok(card.x >= -1 && card.y >= -1 && card.right <= width + 1 && card.bottom <= height + 1, 'Dashboard card exceeds viewport at ' + width + 'x' + height);
     for (const child of card.children) {
       assert.ok(child.left >= card.x - 1 && child.right <= card.right + 1, 'Text overflows card horizontally: ' + child.text);
-      assert.ok(child.top >= card.y - 1 && child.bottom <= card.bottom + 1, 'Text overflows card vertically: ' + child.text);
+      assert.ok(child.top >= card.y - 1 && child.bottom <= card.bottom + 1, 'Text overflows card vertically at ' + width + 'x' + height + ': ' + child.text + ' child=' + JSON.stringify({top:child.top,bottom:child.bottom,height:child.bottom-child.top}) + ' card=' + JSON.stringify({top:card.y,bottom:card.bottom,height:card.height}));
       assert.ok(child.scrollWidth <= child.clientWidth + 2, 'Text is clipped horizontally: ' + child.text);
       assert.ok(child.scrollHeight <= child.clientHeight + 3, 'Text is clipped vertically: ' + child.text);
     }
