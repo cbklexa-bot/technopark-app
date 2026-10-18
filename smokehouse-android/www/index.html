@@ -512,8 +512,8 @@ async function deleteClient(clientId){
  var c=s.clients.find(function(x){return x.id===clientId});if(!c||c.removedFromDirectory)return;
  if(clientId==='c_retail'){toast('Системный профиль розничных продаж удалить нельзя');return}
  var displayName=String(c.name||'Клиент').trim();
- var question='Убрать клиента «'+displayName+'» из справочника?\\n\\n'+
-  'Карточка исчезнет из списка клиентов. Исторические документы, оплаты, выручка, продажи, производство, долги и отчёты останутся без изменений. Клиент сохранится в архивных данных, чтобы история операций не потерялась.\\n\\n'+
+ var question='Убрать клиента «'+displayName+'» из справочника?\n\n'+
+  'Карточка исчезнет из списка клиентов. Исторические документы, оплаты, выручка, продажи, производство, долги и отчёты останутся без изменений. Клиент сохранится в архивных данных, чтобы история операций не потерялась.\n\n'+
   'Продолжить?';
  if(!window.confirm(question))return;
  var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;
