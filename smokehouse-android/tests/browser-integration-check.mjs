@@ -60,9 +60,9 @@ async function checkDashboard(page, width, height) {
       actions:{y:actions.y,height:actions.height,bottom:actions.bottom},
       metrics,quick,docHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight };
   });
-  assert.equal(result.metrics.length, 4, 'Dashboard needs four finance cards');
+  assert.equal(result.metrics.length, 3, 'Dashboard needs exactly three finance cards: revenue, debts, costs');
   assert.equal(result.quick.length, 6, 'Dashboard needs six quick actions');
-  assertRectsEqual(result.metrics, 'Finance metrics at ' + width + 'x' + height);
+  assertRectsEqual(result.metrics, 'Three finance metrics at ' + width + 'x' + height);
   assertRectsEqual(result.quick, 'Quick actions at ' + width + 'x' + height);
   const ratio=result.finance.height/(result.finance.height+result.actions.height);
   assert.ok(ratio >= 0.37 && ratio <= 0.43, 'Finance/action blocks are not 40/60 at ' + width + 'x' + height + ': ' + ratio.toFixed(3));
