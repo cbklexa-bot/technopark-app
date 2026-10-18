@@ -11,7 +11,7 @@
     "android:sync": "cap sync android",
     "android:open": "cap open android",
     "build": "vite build www --outDir ../dist --base=./ --emptyOutDir",
-    "test": "node tests/smoke-check.mjs && node tests/client-directory-delete-check.mjs && node tests/license-check.mjs && node --check www/license-core.js && node --check www/local-backend.js && node --check www/native-bridge.js && node --check www/excel-import.js && node tests/local-mode-check.mjs && node tests/excel-import-check.mjs && node tests/browser-integration-check.mjs",
+    "test": "node tests/smoke-check.mjs && node tests/client-directory-delete-check.mjs && node tests/license-check.mjs && node --check www/license-core.js && node --check www/local-backend.js && node --check www/native-bridge.js && node --check www/excel-import.js && node tests/local-mode-check.mjs && node tests/excel-import-check.mjs && npm run build && node tests/browser-integration-check.mjs",
     "test:local": "node tests/local-mode-check.mjs",
     "test:e2e": "node tests/browser-integration-check.mjs"
   },
