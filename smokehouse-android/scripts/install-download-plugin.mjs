@@ -224,6 +224,16 @@ const pluginSource =
   '      ContentValues migrationV2 = new ContentValues(); migrationV2.put("version", 2); migrationV2.put("applied_at", System.currentTimeMillis());\n' +
   '      db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
   '    }\n' +
+  '    @Override public void onOpen(SQLiteDatabase db) {\n' +
+  '      super.onOpen(db);\n' +
+  '      // Repair databases whose user_version is already 2 but whose table missed a prior column migration.\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL, state_version INTEGER NOT NULL DEFAULT 0)");\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, applied_at INTEGER NOT NULL)");\n' +
+  '      boolean hasStateVersion = false;\n' +
+  '      try (Cursor columns = db.rawQuery("PRAGMA table_info(app_state)", null)) { while (columns.moveToNext()) { if ("state_version".equals(columns.getString(1))) { hasStateVersion = true; break; } } }\n' +
+  '      if (!hasStateVersion && !db.isReadOnly()) db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
+  '      for (int v = 1; v <= 2; v++) { ContentValues migration = new ContentValues(); migration.put("version", v); migration.put("applied_at", System.currentTimeMillis()); db.insertWithOnConflict("schema_migrations", null, migration, SQLiteDatabase.CONFLICT_IGNORE); }\n' +
+  '    }\n' +
   '    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n' +
   '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL, state_version INTEGER NOT NULL DEFAULT 0)");\n' +
   '      db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, applied_at INTEGER NOT NULL)");\n' +
