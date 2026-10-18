@@ -40,7 +40,7 @@ for (const marker of requiredUi) assert.ok(html.includes(marker), 'Missing UI ma
 assert.ok(html.includes("applyTheme('light')"), 'The app must use a single forced light theme');
 assert.ok(!html.includes('id="themeSelect"'), 'Theme selector must not be present');
 assert.ok(!html.includes('id="exportClientsCsv"') && !html.includes('id="csv"'), 'Legacy CSV export buttons must not be visible in Settings');
-assert.ok(html.includes('Полная история: ') && html.includes('Оплачено') && html.includes('Долг'), 'CRM history must show full invoice and payment details');
+assert.ok(html.includes('function clientSummaryMarkup') && html.includes('Прибыль от продаж') && html.includes('clientDetailTitle') && html.includes('clientDirectoryModal') && html.includes('option value="custom"'), 'CRM must support client detail cards and arbitrary date ranges');
 assert.ok(html.includes('Поиск клиента по номеру телефона'), 'CRM search must explicitly support phone number lookup');
 assert.ok(html.includes('optional=name===\'note\''), 'Comment fields marked optional must not be required');
 assert.ok(html.includes('id="menuToggle"') && html.includes("button.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();go(button.dataset.page)})"), 'Sidebar, bottom navigation and quick action routes must navigate directly');
