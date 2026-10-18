@@ -637,7 +637,7 @@ if(photoChoose&&photoInput&&photoPreview){
  if(photoRemove)photoRemove.onclick=function(){activeForm._selectedProductPhoto='';activeForm._productPhotoTouched=true;photoInput.value='';photoPreview.removeAttribute('src');photoPreview.hidden=true};
 }
 if(type==='client'&&editing){activeForm.elements.kind.value=editing.kind||'Частный клиент'}if(type==='recipe'&&editing){activeForm.elements.kind.value=editing.kind||'Технология'}
-if(type==='sale'){if(editDocRecord){activeForm.elements.clientId.value=editDocRecord.clientId||'';activeForm.elements.paid.disabled=true;if(n(editDocRecord.paid)>0)activeForm.elements.clientId.disabled=true;lines(editDocRecord).forEach(function(x){addSaleLine(x)})}document.getElementById('addSaleLine').onclick=function(){openProductPicker('sale')};}
+if(type==='sale'){if(editDocRecord){activeForm.elements.clientId.value=editDocRecord.clientId||'';if(n(editDocRecord.paid)>0)activeForm.elements.clientId.disabled=true;lines(editDocRecord).forEach(function(x){addSaleLine(x)})}document.getElementById('addSaleLine').onclick=function(){openProductPicker('sale')};}
 if(type==='receipt'){if(editDocRecord){activeForm.elements.note.value=editDocRecord.note||'';lines(editDocRecord).forEach(function(x){addReceiptLine(x)})}document.getElementById('addReceiptLine').onclick=function(){openProductPicker('receipt')};}
 var pickerClose=document.getElementById('closePicker');if(pickerClose)pickerClose.onclick=function(){document.getElementById('productPicker').style.display='none'};
 if(type==='service'){
