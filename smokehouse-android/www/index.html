@@ -255,34 +255,34 @@ body{background:#f5f7fa;color:#1b2735}
  }
  .top{flex:0 0 auto;margin-bottom:10px;min-height:40px}
  #page-home.section.active{
-  flex:1 1 auto;min-height:0;height:auto;overflow:hidden;
+  flex:1 1 auto;min-height:0;min-width:0;width:100%;height:auto;overflow:hidden;
   display:grid;grid-template-rows:minmax(0,2fr) minmax(0,3fr);gap:8px;
  }
  #page-home .finance-panel{
-  min-width:0;min-height:0;height:auto;flex:none;overflow:hidden;
+  min-width:0;width:100%;max-width:100%;box-sizing:border-box;min-height:0;height:auto;flex:none;overflow:hidden;
   display:flex;flex-direction:column;padding:8px;border-radius:13px;
  }
  #page-home .finance-panel-head{flex:0 0 auto;min-height:22px;margin:0 0 5px;gap:5px}
  #page-home .finance-panel-head h2{font-size:14px;line-height:1.2}
  #page-home .finance-details{font-size:10px;line-height:1.2}
  #page-home .home-metrics{
-  flex:1 1 auto;min-height:0;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  flex:1 1 auto;min-width:0;width:100%;max-width:100%;box-sizing:border-box;min-height:0;grid-template-columns:repeat(3,minmax(0,1fr))!important;
   grid-template-rows:minmax(0,1fr);gap:5px;margin:0;
  }
  #page-home .home-metrics .card{
-  min-width:0;min-height:0;height:100%;padding:7px;border:1px solid #e5e9e2;
+  min-width:0;width:100%;max-width:100%;aspect-ratio:auto!important;min-height:0;height:100%;padding:7px;border:1px solid #e5e9e2;
   border-radius:9px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
  }
  #page-home .home-metrics .label{font-size:clamp(9px,2.8vw,12px);line-height:1.2;gap:3px;overflow-wrap:anywhere}
  #page-home .home-metrics .metric-icon{width:19px;height:19px;flex:0 0 19px;font-size:11px;margin:0}
  #page-home .home-metrics .value{font-size:clamp(13px,3.4vw,19px);line-height:1.15;letter-spacing:-.025em;margin:4px 0 2px;overflow-wrap:anywhere;word-break:normal}
  #page-home .home-metrics .sub{display:block;font-size:clamp(8px,2.3vw,10px);line-height:1.15;overflow-wrap:anywhere}
- #page-home .home-actions{min-width:0;min-height:0;height:auto;flex:none;overflow:hidden;display:flex;flex-direction:column}
+ #page-home .home-actions{min-width:0;width:100%;max-width:100%;box-sizing:border-box;min-height:0;height:auto;flex:none;overflow:hidden;display:flex;flex-direction:column}
  #page-home .home-actions .head{flex:0 0 auto;margin:0 0 5px;min-height:24px}
  #page-home .home-actions .head h2{font-size:16px;line-height:1.2}
  #page-home .home-actions .head p{font-size:10px;line-height:1.2}
  #page-home .quickgrid{
-  flex:1 1 auto;min-height:0;min-width:0;display:grid;
+  flex:1 1 auto;min-height:0;min-width:0;width:100%;max-width:100%;box-sizing:border-box;display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:6px;
  }
  #page-home .quick{
