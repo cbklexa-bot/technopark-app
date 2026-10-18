@@ -212,7 +212,7 @@ async function main() {
   await page.locator('#clientSearchResults [data-client-history]').filter({ hasText: clientName }).waitFor();
   await page.locator('#clientSearchResults [data-client-history]').filter({ hasText: clientName }).click();
   await page.locator('#clientDetailModal').waitFor();
-  await page.locator('#clientDetailContent').getByText('E2E копчение', { exact: true }).waitFor();
+  await page.locator('#clientDetailContent').getByText('E2E копчение', { exact: true }).first().waitFor();
   await page.locator('#closeClientDetail').click();
   const today = new Date().toISOString().slice(0, 10);
   await page.locator('#clientStatsPeriod').selectOption('custom');
