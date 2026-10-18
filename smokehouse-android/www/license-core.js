@@ -27,6 +27,18 @@ export function decodeLicensePayload(token) {
   return { payloadPart: parts[0], signature: decodeBase64Url(parts[1]), payload };
 }
 
+export function addCalendarMonths(timestampMs, months) {
+  const source = new Date(Number(timestampMs));
+  if (!Number.isFinite(source.getTime()) || !Number.isInteger(months) || months < 1 || months > 12) return NaN;
+  const day = source.getUTCDate();
+  const target = new Date(source.getTime());
+  target.setUTCDate(1);
+  target.setUTCMonth(target.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.getTime();
+}
+
 export async function verifyLicenseToken(token, expectedDeviceId, nowMs = Date.now()) {
   try {
     if (!globalThis.crypto?.subtle) return { valid: false, reason: 'crypto_unavailable' };
@@ -52,7 +64,11 @@ export async function verifyLicenseToken(token, expectedDeviceId, nowMs = Date.n
     if (!Object.hasOwn(PLAN_DAYS, payload.plan)) return { valid: false, reason: 'wrong_plan' };
     if (!Number.isFinite(payload.iat) || !Number.isFinite(payload.exp)) return { valid: false, reason: 'bad_dates' };
     const expectedDuration = PLAN_DAYS[payload.plan] * 24 * 60 * 60 * 1000;
-    if (Math.abs((payload.exp - payload.iat) - expectedDuration) > 60_000) return { valid: false, reason: 'bad_duration' };
+    const fixedDayDurationValid = Math.abs((payload.exp - payload.iat) - expectedDuration) <= 60_000;
+    const calendarMonthDurationValid = Number.isFinite(payload.iat) && Number.isFinite(payload.exp) &&
+      Math.abs(payload.exp - addCalendarMonths(payload.iat, Number(payload.plan.replace('m', '')))) <= 60_000;
+    // Accept existing fixed-day keys and true calendar-month keys from the issuer's calendar-month edition.
+    if (!fixedDayDurationValid && !calendarMonthDurationValid) return { valid: false, reason: 'bad_duration' };
     if (payload.iat > nowMs + 5 * 60 * 1000) return { valid: false, reason: 'not_yet_valid' };
     if (payload.exp <= nowMs) return { valid: false, reason: 'expired', payload };
     return { valid: true, reason: 'ok', payload };
