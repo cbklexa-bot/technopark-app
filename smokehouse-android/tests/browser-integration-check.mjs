@@ -6,12 +6,13 @@ import { chromium } from 'playwright';
 const root = process.cwd();
 const port = 4173;
 const origin = 'http://127.0.0.1:' + port;
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', '../dist', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: root,
-  stdio: ['ignore', 'ignore', 'pipe'],
+  stdio: ['ignore', 'pipe', 'pipe'],
   env: process.env,
 });
 let serverErrors = '';
+server.stdout.on('data', (chunk) => { serverErrors += chunk.toString(); });
 server.stderr.on('data', (chunk) => { serverErrors += chunk.toString(); });
 let browser;
 const fatalPageErrors = [];
