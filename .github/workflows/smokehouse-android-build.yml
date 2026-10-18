@@ -6,6 +6,7 @@ on:
     branches:
       - smokehouse-android
       - koptilnya-ui-fixes-oct17
+      - koptilnya-client-crm-debts-oct18
     paths:
       - 'smokehouse-android/**'
       - '.github/workflows/smokehouse-android-build.yml'
