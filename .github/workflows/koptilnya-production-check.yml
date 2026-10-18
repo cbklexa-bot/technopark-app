@@ -51,6 +51,9 @@ jobs:
       - name: Install JavaScript dependencies
         working-directory: smokehouse-android
         run: npm install --no-audit --no-fund
+      - name: Install Playwright Chromium for browser integration tests
+        working-directory: smokehouse-android
+        run: npx playwright install --with-deps chromium
       - name: Validate app behavior and backup/import smoke tests
         working-directory: smokehouse-android
         run: npm test
