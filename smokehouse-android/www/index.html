@@ -238,6 +238,65 @@ body{background:#f5f7fa;color:#1b2735}
  #page-home .quick b{font-size:13px}
  #page-home .quick small{font-size:11px}
 }
+
+/* Dashboard sizing: divide the usable phone viewport into exact 40:60 tracks. */
+@media(max-width:760px){
+ .main{
+  height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(8px + env(safe-area-inset-bottom,0px));
+ }
+ .top{flex:0 0 auto;margin-bottom:10px;min-height:40px}
+ #page-home.section.active{
+  flex:1 1 auto;min-height:0;height:auto;overflow:hidden;
+  display:grid;grid-template-rows:minmax(0,2fr) minmax(0,3fr);gap:8px;
+ }
+ #page-home .finance-panel{
+  min-width:0;min-height:0;height:auto;flex:none;overflow:hidden;
+  display:flex;flex-direction:column;padding:8px;border-radius:13px;
+ }
+ #page-home .finance-panel-head{flex:0 0 auto;min-height:22px;margin:0 0 5px;gap:5px}
+ #page-home .finance-panel-head h2{font-size:14px;line-height:1.2}
+ #page-home .finance-details{font-size:10px;line-height:1.2}
+ #page-home .home-metrics{
+  flex:1 1 auto;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,minmax(0,1fr));gap:5px;margin:0;
+ }
+ #page-home .home-metrics .card{
+  min-width:0;min-height:0;height:100%;padding:7px;border:1px solid #e5e9e2;
+  border-radius:9px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ }
+ #page-home .home-metrics .label{font-size:clamp(9px,2.8vw,12px);line-height:1.2;gap:3px;overflow-wrap:anywhere}
+ #page-home .home-metrics .metric-icon{width:19px;height:19px;flex:0 0 19px;font-size:11px;margin:0}
+ #page-home .home-metrics .value{font-size:clamp(13px,3.4vw,19px);line-height:1.15;letter-spacing:-.025em;margin:4px 0 2px;overflow-wrap:anywhere;word-break:normal}
+ #page-home .home-metrics .sub{display:block;font-size:clamp(8px,2.3vw,10px);line-height:1.15;overflow-wrap:anywhere}
+ #page-home .home-actions{min-width:0;min-height:0;height:auto;flex:none;overflow:hidden;display:flex;flex-direction:column}
+ #page-home .home-actions .head{flex:0 0 auto;margin:0 0 5px;min-height:24px}
+ #page-home .home-actions .head h2{font-size:16px;line-height:1.2}
+ #page-home .home-actions .head p{font-size:10px;line-height:1.2}
+ #page-home .quickgrid{
+  flex:1 1 auto;min-height:0;min-width:0;display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:6px;
+ }
+ #page-home .quick{
+  min-width:0;min-height:0;width:100%;height:100%;padding:7px;gap:7px;
+  align-items:center;overflow:hidden;border-radius:11px;
+ }
+ #page-home .quick span:first-child{width:32px;height:32px;flex:0 0 32px;border-radius:9px;font-size:19px}
+ #page-home .quick b{font-size:clamp(11px,3.1vw,14px);line-height:1.2;overflow-wrap:anywhere}
+ #page-home .quick small{font-size:clamp(9px,2.5vw,11px);line-height:1.2;margin-top:3px;overflow-wrap:anywhere}
+ #page-home .quick>span:last-child{min-width:0}
+ .section.active:not(#page-home){flex:1 1 auto;min-height:0;overflow:auto}
+}
+@media(max-width:360px){
+ #page-home .finance-panel{padding:6px}
+ #page-home .finance-panel-head h2{font-size:12px}
+ #page-home .home-metrics .card{padding:5px}
+ #page-home .home-metrics .value{font-size:clamp(12px,3.5vw,14px)}
+ #page-home .quick{padding:5px;gap:5px}
+ #page-home .quick span:first-child{width:27px;height:27px;flex-basis:27px;font-size:17px}
+ #page-home .quick b{font-size:11px}
+ #page-home .quick small{font-size:9px}
+}
 </style><script type="module" src="./native-bridge.js"></script><script type="module" src="./local-backend.js"></script></head><body>
 <div class="drawer-overlay" id="drawerOverlay"></div><div class="layout"><aside class="side"><div class="brand"><div class="logo">К</div><div><b>Коптильня</b><small>учёт производства</small></div></div><nav class="nav"><button class="active" data-page="home">⌂　Главная</button><button data-page="products">▦　Продукция и склад</button><button data-page="documents">▤　Документы</button><button data-page="services">♨　Услуги по сырью клиентов</button><button data-page="clients">♙　Клиенты / CRM</button><button data-page="expenses">↘　Затраты</button><button data-page="debts">₽　Долги</button><button data-page="reports">▥　Отчёты</button><button data-page="settings">⚙　Настройки</button></nav></aside>
 <main class="main"><header class="top"><div class="heading-group"><button class="back-toggle" id="pageBack" type="button" aria-label="Назад" hidden>‹</button><button class="menu-toggle" id="menuToggle" type="button" aria-label="Открыть меню">☰</button><div><div class="eyebrow" id="eyebrow">ваше производство · финансы</div><h1 id="title">Главная</h1></div></div><div class="topright"><select class="period" id="period"><option value="month">Текущий месяц</option><option value="today">Сегодня</option><option value="year">Текущий год</option><option value="all">За всё время</option></select><button class="btn" id="quick">＋ Новая операция</button></div></header><section id="page-home" class="section active"><div class="finance-panel"><div class="finance-panel-head"><h2>Финансы за месяц</h2><button type="button" class="finance-details" data-page="reports">Подробные финансы →</button></div><div class="cards home-metrics" id="metrics"></div></div><div class="home-actions"><div class="head"><div><h2>Быстрые действия</h2><p>Шесть основных операций — в одно касание</p></div></div><div class="quickgrid"><button class="quick" data-page="products"><span class="quick-icon">▦</span><span><b>Продукция</b><small>Каталог и карточки</small></span></button><button class="quick" data-page="documents"><span class="quick-icon">▤</span><span><b>Документы</b><small>Все приходные и расходные накладные</small></span></button><button class="quick" data-page="expenses"><span class="quick-icon">↘</span><span><b>Затраты</b><small>Расходы производства</small></span></button><button class="quick" data-action="service"><span class="quick-icon">♨</span><span><b>Услуга по сырью клиента</b><small>Оформить переработку</small></span></button><button class="quick" data-action="receipt"><span class="quick-icon">＋</span><span><b>Новый приход</b><small>Принять продукцию на склад</small></span></button><button class="quick" data-action="sale"><span class="quick-icon">↘</span><span><b>Новый расход</b><small>Списать продукцию со склада</small></span></button></div></div></section>
@@ -294,38 +353,48 @@ function persistStateToNative(snapshot){
  });
 }
 function notifyStateChange(){try{window.dispatchEvent(new CustomEvent('koptilnya-state-change',{detail:JSON.parse(JSON.stringify(s))}))}catch(e){}}
-function save(){
- nativeStateRevision++;
- var cacheSaved=false,cacheError=null;
+async function save(){
+ var previousRevision=nativeStateRevision,nextRevision=previousRevision+1;
+ var snapshot=Object.assign({},s,{_koptilnyaLocalRevision:nextRevision});
+ var native=window.KoptilnyaNative;
  try{
-  var cacheSnapshot=Object.assign({},s,{_koptilnyaLocalRevision:nativeStateRevision});
-  localStorage.setItem(KEY,JSON.stringify(cacheSnapshot));
-  cacheSaved=true;
- }catch(e){
-  cacheError=e;
-  console.warn('Local cache unavailable; trying native SQLite persistence',e);
-  if(!window.KoptilnyaNative||typeof window.KoptilnyaNative.saveBusinessState!=='function'){
-   throw new Error('Локальное хранилище переполнено или недоступно, а резервное хранилище не подключено. Не удалось сохранить изменения: '+(e&&e.message?e.message:'ошибка записи')+'. Сохраните резервную копию и освободите место.');
+  if(native&&typeof native.saveBusinessState==='function'){
+   var confirmation=await native.saveBusinessState(snapshot,nextRevision);
+   if(!confirmation||confirmation.saved!==true)throw new Error('Хранилище не подтвердило завершение записи');
+   // SQLite on Android and IndexedDB in the browser are the primary stores.
+   // localStorage is only a cache and must never replace the primary-store confirmation.
+   try{localStorage.setItem(KEY,JSON.stringify(snapshot));localStorage.setItem(VERSION_KEY,String(nextRevision))}
+   catch(cacheError){console.warn('Persistent store committed; local cache could not be refreshed',cacheError)}
+  }else{
+   // Emergency compatibility mode if the bridge did not load at all.
+   localStorage.setItem(KEY,JSON.stringify(snapshot));
+   try{localStorage.setItem(VERSION_KEY,String(nextRevision))}catch(cacheVersionError){}
   }
- }
- if(cacheSaved){
-  try{localStorage.setItem(VERSION_KEY,String(nativeStateRevision))}catch(e){}
-  persistStateToNative(s);
+  nativeStateRevision=nextRevision;
   notifyStateChange();
   return true;
+ }catch(error){
+  nativeStateRevision=previousRevision;
+  console.error('Primary business-state persistence failed',error);
+  throw new Error('Не удалось подтвердить запись в постоянное хранилище: '+(error&&error.message?error.message:'ошибка записи'));
  }
- if(cacheError){
-  return window.KoptilnyaNative.saveBusinessState(s,nativeStateRevision).then(function(){
-   notifyStateChange();
-   return true;
-  }).catch(function(error){
-   console.error('Native SQLite fallback save failed',error);
-   toast('Не удалось сохранить данные на устройстве: '+(error&&error.message?error.message:'ошибка записи')+'. Повторите попытку и сохраните резервную копию.',6500);
-   return false;
-  });
- }
- return false;
 }
+async function persistMutationOrRollback(previousState,previousRevision,successMessage){
+ try{
+  var result=await save();
+  if(result!==true)throw new Error('Хранилище не подтвердило запись');
+  render();
+  if(successMessage)toast(successMessage);
+  return true;
+ }catch(error){
+  try{s=JSON.parse(previousState);nativeStateRevision=previousRevision}catch(rollbackError){console.error('State rollback failed',rollbackError)}
+  render();
+  console.error('State mutation was rolled back',error);
+  toast('Изменения не сохранены: '+(error&&error.message?error.message:'ошибка записи'),6500);
+  return false;
+ }
+}
+
 function n(v){return Number(v)||0}
 function money(v){return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n(v))}
 function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -405,7 +474,7 @@ function renderReports(){
 
 function normalizePhone(phone){var d=String(phone||'').replace(/\D/g,'');if(d.length===11&&d.charAt(0)==='8')d='7'+d.slice(1);else if(d.length===10)d='7'+d;return d}
 function genericClient(c){var name=String(c&&c.name||'').trim().toLowerCase();return !name||name==='заказчик услуг'||name==='клиент'||name==='розничный покупатель (цех)'||name==='новый клиент'}
-function deleteClient(clientId){
+async function deleteClient(clientId){
  var c=s.clients.find(function(x){return x.id===clientId});if(!c)return;
  if(clientId==='c_retail'){toast('Системный профиль розничных продаж удалить нельзя');return}
  var displayName=String(c.name||'Клиент').trim(),normalName=displayName.toLowerCase();
@@ -413,6 +482,7 @@ function deleteClient(clientId){
   'Его карточка, история и связанные документы скроются из списков. Выручка, себестоимость, прибыль, остатки продукции и общие финансовые суммы сохранятся; в общих отчётах операции останутся без привязки к имени и телефону.\n\n'+
   'Продолжить?';
  if(!window.confirm(question))return;
+ var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;
  s.docs.forEach(function(d){
   var byClient=d.clientId===clientId;
   var bySupplier=d.type==='receipt'&&normalName&&String(d.supplier||'').trim().toLowerCase()===normalName;
@@ -426,7 +496,7 @@ function deleteClient(clientId){
  s.payments.forEach(function(p){if(p.clientId===clientId){p.hiddenFromDocuments=true;p.clientId=''}});
  s.clients=s.clients.filter(function(x){return x.id!==clientId});
  if(clientHistoryId===clientId)clientHistoryId='';
- save();render();toast('Клиент удалён. Общая финансовая статистика сохранена');
+ await persistMutationOrRollback(previousState,previousRevision,'Клиент удалён. Общая финансовая статистика сохранена');
 }
 function resolveServiceClient(v,oldService){
  var phone=String(v.phone||'').trim(),phoneNorm=normalizePhone(phone),name=String(v.customerName||'').trim();
@@ -622,7 +692,7 @@ function allocatePayment(clientId,amount){var remainder=n(amount),alloc=[];var o
 function normalizeAllocations(payment){var a=Array.isArray(payment.allocations)?payment.allocations:[];return a.map(function(x){if(x&&typeof x==='object'&&x.docId)return x;if(typeof x==='string'){var z=x.split(':');var number=z.shift();var d=s.docs.find(function(doc){return doc.number===number&&doc.clientId===payment.clientId});var amt=n(z.join(':').replace(/[^0-9,.-]/g,'').replace(',','.'));return d?{docId:d.id,amount:amt}:null}return null}).filter(Boolean)}
 function rollbackPayment(payment){normalizeAllocations(payment).forEach(function(a){var d=s.docs.find(function(x){return x.id===a.docId});if(d)d.paid=Math.max(0,n(d.paid)-n(a.amount))})}
 
-var businessForm=document.getElementById('form');businessForm.noValidate=true;businessForm.onsubmit=async function(e){e.preventDefault();var f=e.target,t=f.dataset.type,v={},submitButton=f.querySelector('button[type="submit"]');if(f.dataset.saving==='true')return;f.dataset.saving='true';if(submitButton){submitButton.disabled=true;submitButton.textContent='Сохранение…'}try{var invalidControl=f.querySelector(':invalid');if(invalidControl){var invalidField=invalidControl.closest('.field'),invalidLabel=invalidField&&invalidField.querySelector('label'),invalidText=invalidLabel?String(invalidLabel.textContent||'').trim():'обязательное поле';throw new Error('Проверьте поле «'+invalidText+'» и заполните его корректно.')}v=Object.fromEntries(new FormData(f).entries());var selectedPhoto=f._productPhotoTouched?(f._selectedProductPhoto||''):(f._selectedProductPhoto||(editing&&editing.image)||'');if(!selectedPhoto&&f.elements.photo&&f.elements.photo.files&&f.elements.photo.files[0])selectedPhoto=await readCompressedImage(f.elements.photo.files[0]);var selectedAttachments=await readFormAttachments(f);
+var businessForm=document.getElementById('form');businessForm.noValidate=true;businessForm.onsubmit=async function(e){e.preventDefault();var f=e.target,t=f.dataset.type,v={},submitButton=f.querySelector('button[type="submit"]');if(f.dataset.saving==='true')return;var stateBeforeSubmission=JSON.stringify(s),revisionBeforeSubmission=nativeStateRevision,persistenceConfirmed=false;f.dataset.saving='true';if(submitButton){submitButton.disabled=true;submitButton.textContent='Сохранение…'}try{var invalidControl=f.querySelector(':invalid');if(invalidControl){var invalidField=invalidControl.closest('.field'),invalidLabel=invalidField&&invalidField.querySelector('label'),invalidText=invalidLabel?String(invalidLabel.textContent||'').trim():'обязательное поле';throw new Error('Проверьте поле «'+invalidText+'» и заполните его корректно.')}v=Object.fromEntries(new FormData(f).entries());var selectedPhoto=f._productPhotoTouched?(f._selectedProductPhoto||''):(f._selectedProductPhoto||(editing&&editing.image)||'');if(!selectedPhoto&&f.elements.photo&&f.elements.photo.files&&f.elements.photo.files[0])selectedPhoto=await readCompressedImage(f.elements.photo.files[0]);var selectedAttachments=await readFormAttachments(f);
 if(t==='servicePreset'){
  var presetName=String(v.name||'').trim();if(!presetName)throw new Error('Введите название услуги');
  var presetPrice=Number(v.price),presetCost=Number(v.cost);
@@ -682,24 +752,24 @@ if(oldReceipt)s.docs=s.docs.map(function(d){return d.id===oldReceipt.id?rDoc:d})
 else if(t==='payment'){var amount=n(v.amount);if(amount<=0)throw new Error('Введите сумму платежа');var oldPayment=editing&&editing.editPayment?s.payments.find(function(p){return p.id===editing.editPayment.id}):null;if(oldPayment)rollbackPayment(oldPayment);var targetDocId=!oldPayment&&editing&&editing.doc?String(editing.doc):'',allocation;if(targetDocId){var targetDoc=s.docs.find(function(d){return d.id===targetDocId&&d.clientId===v.clientId&&d.type!=='receipt'});if(!targetDoc)throw new Error('Выбранная накладная не относится к выбранному клиенту');var targetDebt=debt(targetDoc);if(amount>targetDebt+0.001)throw new Error('Сумма больше остатка по этой накладной');targetDoc.paid=n(targetDoc.paid)+amount;allocation={allocations:[{docId:targetDoc.id,amount:amount}],unallocated:0}}else allocation=allocatePayment(v.clientId,amount);var paymentRow={id:oldPayment?oldPayment.id:uid(),date:v.date,clientId:v.clientId,amount:amount,method:v.method,allocations:allocation.allocations,unallocated:allocation.unallocated};if(oldPayment)s.payments=s.payments.map(function(p){return p.id===oldPayment.id?paymentRow:p});else s.payments.push(paymentRow);if(allocation.unallocated>0)toast('Сумма сверх задолженности: '+money(allocation.unallocated)+' не распределена')}
 else if(t==='batch'){var rw=n(v.rawQty),ow=n(v.outputQty),tc=n(v.totalCost);if(!rw||!ow)throw new Error('Укажите начальный и конечный вес');s.batches.push({id:uid(),date:v.date,productId:v.productId,rawName:v.rawName,rawQty:rw,outputQty:ow,totalCost:tc});var p=prod(v.productId);p.stock=n(p.stock)+ow;p.cost=tc/ow}
 
-var saveResult=save();if(saveResult&&typeof saveResult.then==='function'){var saveSucceeded=await saveResult;if(!saveSucceeded)throw new Error('Изменения не сохранены. Проверьте свободное место на устройстве и повторите попытку.')}close();render();toast('Изменения сохранены на устройстве')
-}catch(err){console.error('Koptilnya form submission failed',err);toast('Не удалось сохранить: '+(err&&err.message?err.message:'неизвестная ошибка'),6500)}finally{f.dataset.saving='false';if(submitButton){submitButton.textContent='Сохранить';var activePresetSelect=f.querySelector('#servicePresetSelect');submitButton.disabled=!!(t==='service'&&activePresetSelect&&!activePresetSelect.value)}}}
-document.addEventListener('click',function(e){
-var dp=e.target.closest('[data-delete-product]');if(dp){e.preventDefault();e.stopPropagation();var productId=dp.dataset.deleteProduct,productToDelete=s.products.find(function(p){return p.id===productId});if(productToDelete){var linked=s.docs.some(function(d){return d.productId===productId||(Array.isArray(d.items)&&d.items.some(function(it){return it.productId===productId}))});var promptText='Удалить карточку «'+productToDelete.name+'»?';if(linked)promptText+='\\nНакладные, история продаж и финансовые показатели останутся без изменений.';if(window.confirm(promptText)){productToDelete.inactive=true;save();render();toast('Продукция убрана из каталога')}}return}
-var dx=e.target.closest('[data-delete-expense]');if(dx){var expenseId=dx.dataset.deleteExpense,expenseToDelete=s.expenses.find(function(x){return x.id===expenseId});if(expenseToDelete&&window.confirm('Удалить ошибочно внесённую затрату «'+(expenseToDelete.category||'затрата')+'» на '+money(expenseToDelete.amount)+'?')){s.expenses=s.expenses.filter(function(x){return x.id!==expenseId});save();render();toast('Операция затрат удалена')}return}
+var saveSucceeded=await save();if(saveSucceeded!==true)throw new Error('Хранилище не подтвердило сохранение');persistenceConfirmed=true;close();render();toast('Изменения сохранены на устройстве')
+}catch(err){if(!persistenceConfirmed){try{s=JSON.parse(stateBeforeSubmission);nativeStateRevision=revisionBeforeSubmission;render()}catch(rollbackError){console.error('Form rollback failed',rollbackError)}}console.error('Koptilnya form submission failed',err);toast('Не удалось сохранить: '+(err&&err.message?err.message:'неизвестная ошибка'),6500)}finally{f.dataset.saving='false';if(submitButton){submitButton.textContent='Сохранить';var activePresetSelect=f.querySelector('#servicePresetSelect');submitButton.disabled=!!(t==='service'&&activePresetSelect&&!activePresetSelect.value)}}}
+document.addEventListener('click',async function(e){
+var dp=e.target.closest('[data-delete-product]');if(dp){e.preventDefault();e.stopPropagation();var productId=dp.dataset.deleteProduct,productToDelete=s.products.find(function(p){return p.id===productId});if(productToDelete){var linked=s.docs.some(function(d){return d.productId===productId||(Array.isArray(d.items)&&d.items.some(function(it){return it.productId===productId}))});var promptText='Удалить карточку «'+productToDelete.name+'»?';if(linked)promptText+='\\nНакладные, история продаж и финансовые показатели останутся без изменений.';if(window.confirm(promptText)){var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;productToDelete.inactive=true;await persistMutationOrRollback(previousState,previousRevision,'Продукция убрана из каталога')}}return}
+var dx=e.target.closest('[data-delete-expense]');if(dx){var expenseId=dx.dataset.deleteExpense,expenseToDelete=s.expenses.find(function(x){return x.id===expenseId});if(expenseToDelete&&window.confirm('Удалить ошибочно внесённую затрату «'+(expenseToDelete.category||'затрата')+'» на '+money(expenseToDelete.amount)+'?')){var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;s.expenses=s.expenses.filter(function(x){return x.id!==expenseId});await persistMutationOrRollback(previousState,previousRevision,'Операция затрат удалена')}return}
 var esp=e.target.closest('[data-edit-service-preset]');if(esp){var presetToEdit=(s.servicePresets||[]).find(function(x){return x.id===esp.dataset.editServicePreset});if(presetToEdit)open('servicePreset',presetToEdit);return}
-var dsp=e.target.closest('[data-delete-service-preset]');if(dsp){var presetToDelete=(s.servicePresets||[]).find(function(x){return x.id===dsp.dataset.deleteServicePreset});if(presetToDelete&&window.confirm('Удалить услугу «'+presetToDelete.name+'» из базы? Исторические документы сохранят собственные суммы.')){s.servicePresets=s.servicePresets.filter(function(x){return x.id!==presetToDelete.id});save();render();toast('Услуга удалена из базы')}return}
+var dsp=e.target.closest('[data-delete-service-preset]');if(dsp){var presetToDelete=(s.servicePresets||[]).find(function(x){return x.id===dsp.dataset.deleteServicePreset});if(presetToDelete&&window.confirm('Удалить услугу «'+presetToDelete.name+'» из базы? Исторические документы сохранят собственные суммы.')){var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;s.servicePresets=s.servicePresets.filter(function(x){return x.id!==presetToDelete.id});await persistMutationOrRollback(previousState,previousRevision,'Услуга удалена из базы')}return}
 var erc=e.target.closest('[data-edit-recipe]');if(erc){var recipeToEdit=(s.recipes||[]).find(function(x){return x.id===erc.dataset.editRecipe});if(recipeToEdit)open('recipe',recipeToEdit);return}
-var drc=e.target.closest('[data-delete-recipe]');if(drc){var recipeToDelete=(s.recipes||[]).find(function(x){return x.id===drc.dataset.deleteRecipe});if(recipeToDelete&&window.confirm('Удалить запись «'+recipeToDelete.name+'»? Уже оформленные партии не изменятся.')){s.recipes=s.recipes.filter(function(x){return x.id!==recipeToDelete.id});save();render();toast('Запись удалена')}return}
+var drc=e.target.closest('[data-delete-recipe]');if(drc){var recipeToDelete=(s.recipes||[]).find(function(x){return x.id===drc.dataset.deleteRecipe});if(recipeToDelete&&window.confirm('Удалить запись «'+recipeToDelete.name+'»? Уже оформленные партии не изменятся.')){var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;s.recipes=s.recipes.filter(function(x){return x.id!==recipeToDelete.id});await persistMutationOrRollback(previousState,previousRevision,'Запись удалена')}return}
 var pc=e.target.closest('[data-edit-product-card]');if(pc){var productToEdit=s.products.find(function(p){return p.id===pc.dataset.editProductCard});if(productToEdit)open('product',productToEdit);return}
 var pg=e.target.closest('[data-page]');if(pg){go(pg.dataset.page);return}
-var dd=e.target.closest('[data-delete-doc]');if(dd){var docToDelete=s.docs.find(function(x){return x.id===dd.dataset.deleteDoc});if(docToDelete&&window.confirm('Удалить документ «'+(docToDelete.number||docToDelete.date)+'»? Остатки продукции будут пересчитаны.')){try{if(docToDelete.type==='receipt')docStockDelta(docToDelete,[],-1,0);else if(docToDelete.type==='sale')docStockDelta(docToDelete,[],1,0);s.payments.forEach(function(p){p.allocations=normalizeAllocations(p).filter(function(a){return a.docId!==docToDelete.id})});s.docs=s.docs.filter(function(d){return d.id!==docToDelete.id});save();render();toast('Документ удалён')}catch(err){toast(err.message||'Не удалось удалить документ')}}return}
+var dd=e.target.closest('[data-delete-doc]');if(dd){var docToDelete=s.docs.find(function(x){return x.id===dd.dataset.deleteDoc});if(docToDelete&&window.confirm('Удалить документ «'+(docToDelete.number||docToDelete.date)+'»? Остатки продукции будут пересчитаны.')){try{var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;if(docToDelete.type==='receipt')docStockDelta(docToDelete,[],-1,0);else if(docToDelete.type==='sale')docStockDelta(docToDelete,[],1,0);s.payments.forEach(function(p){p.allocations=normalizeAllocations(p).filter(function(a){return a.docId!==docToDelete.id})});s.docs=s.docs.filter(function(d){return d.id!==docToDelete.id});await persistMutationOrRollback(previousState,previousRevision,'Документ удалён')}catch(err){toast(err.message||'Не удалось удалить документ')}}return}
 var ed=e.target.closest('[data-edit-doc]');if(ed){var doc=s.docs.find(function(x){return x.id===ed.dataset.editDoc});if(doc)open(doc.type==='receipt'?'receipt':doc.type==='service'?'service':'sale',{editDoc:doc});return}
 var ee=e.target.closest('[data-edit-expense]');if(ee){var ex=s.expenses.find(function(x){return x.id===ee.dataset.editExpense});if(ex)open('expense',{editExpense:ex});return}
 var ep=e.target.closest('[data-edit-payment]');if(ep){var pay=s.payments.find(function(x){return x.id===ep.dataset.editPayment});if(pay)open('payment',{editPayment:pay});return}
 var act=e.target.closest('[data-action]');if(act){var action=act.dataset.action;open(action,action==='payment'?{clientId:act.dataset.client||'',doc:act.dataset.doc||''}:null);return}
 var ec=e.target.closest('[data-edit-client]');if(ec){var clientToEdit=s.clients.find(function(x){return x.id===ec.dataset.editClient});if(clientToEdit)open('client',clientToEdit);return}
-var dc=e.target.closest('[data-delete-client]');if(dc){deleteClient(dc.dataset.deleteClient);return}
+var dc=e.target.closest('[data-delete-client]');if(dc){await deleteClient(dc.dataset.deleteClient);return}
 var edit=e.target.closest('[data-edit]');if(edit){open('product',s.products.find(function(x){return x.id===edit.dataset.edit}));return}
 });
 document.getElementById('clientSearchInput').oninput=function(e){clientQuery=e.target.value;clientHistoryId='';renderClientCRM()};
@@ -727,6 +797,7 @@ document.getElementById('restoreFullBackup').onclick=function(){document.getElem
 document.getElementById('backupFile').onchange=function(e){
  var input=e.target,file=input.files&&input.files[0];if(!file)return;
  async function restoreSelectedFile(){
+  var previousRestoreState=null,previousRestoreRevision=nativeStateRevision;
   try{
    var parsed;
    if(window.KoptilnyaNative&&typeof window.KoptilnyaNative.readBackupFile==='function')parsed=await window.KoptilnyaNative.readBackupFile(file);
@@ -734,12 +805,13 @@ document.getElementById('backupFile').onchange=function(e){
    var next=parsed&&parsed.format==='koptilnya-backup'&&Number(parsed.version)>=1?parsed.contents:parsed;
    if(!next||!Array.isArray(next.products)||!Array.isArray(next.clients)||!Array.isArray(next.docs)||!Array.isArray(next.expenses)||!Array.isArray(next.batches)||!Array.isArray(next.recipes)||!Array.isArray(next.payments))throw new Error('Структура архива не распознана');
    if(!window.confirm('Восстановить архив? Текущие данные на этом устройстве будут заменены данными из файла. Перед продолжением убедитесь, что у вас сохранена резервная копия.'))return;
+   previousRestoreState=JSON.stringify(s);previousRestoreRevision=nativeStateRevision;
    s=Object.assign({},s,next);
    /* Retail client is created only when explicitly added by the owner. */
    s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
    clientHistoryId='';clientQuery='';
-   save();render();toast('Архив восстановлен на этом устройстве');
-  }catch(err){toast(err.message||'Не удалось восстановить архив')}
+   if(await save()!==true)throw new Error('Хранилище не подтвердило восстановление архива');render();toast('Архив восстановлен на этом устройстве');
+  }catch(err){if(previousRestoreState!==null){try{s=JSON.parse(previousRestoreState);nativeStateRevision=previousRestoreRevision;render()}catch(rollbackError){console.error('Archive restore rollback failed',rollbackError)}}toast(err.message||'Не удалось восстановить архив')}
   finally{input.value=''}
  }
  restoreSelectedFile();
@@ -755,7 +827,8 @@ document.getElementById('close').onclick=close;document.getElementById('cancel')
 document.getElementById('period').style.display='none';applyTheme('light');try{history.replaceState({koptilnyaPage:page},'',location.href)}catch(e){};render();
 window.KoptilnyaApp={
   getState:function(){return JSON.parse(JSON.stringify(s))},
-  setState:function(next){
+  setState:async function(next){
+    var previousState=JSON.stringify(s),previousRevision=nativeStateRevision;
     next=next&&typeof next==='object'?next:{};
     s={
       products:Array.isArray(next.products)?next.products:[],
@@ -769,7 +842,8 @@ window.KoptilnyaApp={
       importHistory:Array.isArray(next.importHistory)?next.importHistory:[]
     };
     s.payments.forEach(function(p){p.allocations=normalizeAllocations(p)});
-    save();render();
+    try{if(await save()!==true)throw new Error('Хранилище не подтвердило запись');render();return true}
+    catch(error){s=JSON.parse(previousState);nativeStateRevision=previousRevision;render();throw error}
   },
   getLocalState:function(){try{var raw=localStorage.getItem(KEY);return raw?JSON.parse(raw):null}catch(e){return null}},
   hasSavedLocalState:function(){return !!localStorage.getItem(KEY)},
@@ -783,7 +857,7 @@ function initNativeBusinessState(){
  var native=window.KoptilnyaNative;
  if(!native||typeof native.loadBusinessState!=='function'||!window.KoptilnyaApp)return;
  var revisionAtStart=nativeStateRevision;
- native.loadBusinessState().then(function(stored){
+ native.loadBusinessState().then(async function(stored){
   if(nativeStateRevision!==revisionAtStart){
    nativeStateReady=true;
    persistStateToNative(window.KoptilnyaApp.getState());
@@ -798,10 +872,10 @@ function initNativeBusinessState(){
   var preferCache=!!(cached&&typeof cached==='object'&&(cachedVersion>databaseVersion||
    (cachedVersion===0&&databaseVersion===0&&window.KoptilnyaApp.hasLocalBusinessData())));
   if(preferCache){
-   window.KoptilnyaApp.setState(cached);
+   await window.KoptilnyaApp.setState(cached);
   }else if(stored&&stored.found&&stored.state){
    var restored=JSON.parse(stored.state);
-   if(restored&&typeof restored==='object')window.KoptilnyaApp.setState(restored);
+   if(restored&&typeof restored==='object')await window.KoptilnyaApp.setState(restored);
    else persistStateToNative(window.KoptilnyaApp.getState());
   }else{
    persistStateToNative(window.KoptilnyaApp.getState());
