@@ -68,7 +68,7 @@ async function checkDashboard(page, width, height) {
   assert.ok(ratio >= 0.37 && ratio <= 0.43, 'Finance/action blocks are not 40/60 at ' + width + 'x' + height + ': ' + ratio.toFixed(3));
   assert.ok(result.docHeight <= result.viewportHeight + 2, 'Dashboard overflows viewport at ' + width + 'x' + height);
   for (const card of [...result.metrics,...result.quick]) {
-    assert.ok(card.x >= -1 && card.y >= -1 && card.right <= width + 1 && card.bottom <= height + 1, 'Dashboard card exceeds viewport at ' + width + 'x' + height);
+    assert.ok(card.x >= -1 && card.y >= -1 && card.right <= width + 1 && card.bottom <= height + 1, 'Dashboard card exceeds viewport at ' + width + 'x' + height + ': ' + JSON.stringify({x:card.x,y:card.y,right:card.right,bottom:card.bottom,width:card.width,height:card.height,content:card.children.map(c=>c.text)}));
     for (const child of card.children) {
       assert.ok(child.left >= card.x - 1 && child.right <= card.right + 1, 'Text overflows card horizontally: ' + child.text);
       assert.ok(child.top >= card.y - 1 && child.bottom <= card.bottom + 1, 'Text overflows card vertically at ' + width + 'x' + height + ': ' + child.text + ' child=' + JSON.stringify({top:child.top,bottom:child.bottom,height:child.bottom-child.top}) + ' card=' + JSON.stringify({top:card.y,bottom:card.bottom,height:card.height}));
