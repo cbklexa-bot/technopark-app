@@ -222,7 +222,11 @@ const pluginSource =
   '    }\n' +
   '    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n' +
   '      if (oldVersion < 2) {\n' +
-  '        db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
+  '        boolean hasStateVersion = false;\n' +
+  '        try (Cursor columns = db.rawQuery("PRAGMA table_info(app_state)", null)) {\n' +
+  '          while (columns.moveToNext()) { if ("state_version".equals(columns.getString(1))) { hasStateVersion = true; break; } }\n' +
+  '        }\n' +
+  '        if (!hasStateVersion) db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
   '        ContentValues migrationV2 = new ContentValues(); migrationV2.put("version", 2); migrationV2.put("applied_at", System.currentTimeMillis());\n' +
   '        db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
   '      }\n' +
