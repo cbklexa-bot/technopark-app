@@ -11,6 +11,7 @@ let deviceId = '';
 let trialState = { firstRunAt: 0, lastSeenAt: 0 };
 let activeLicense = null;
 let currentAccess = { allowed: false, trial: null, reason: '' };
+let readOnlyMode = false;
 
 const style = document.createElement('style');
 style.textContent = [
@@ -194,6 +195,15 @@ const reasonToText = (reason) => ({
   malformed: 'Не удалось прочитать ключ. Проверь, что вставил его полностью.',
   no_license: 'Введи ключ активации.',
 })[reason] || 'Ключ не подошёл. Проверь его и попробуй снова.';
+const enterReadOnlyMode = () => {
+  readOnlyMode = true;
+  document.getElementById('koptilnyaLicenseGate')?.remove();
+  const bar = makeBar();
+  bar.style.display = 'flex';
+  setLocalStatus('Только просмотр — нужна лицензия');
+  toast('Режим просмотра включён. Изменение данных недоступно. Экспорт и отчёты доступны.');
+};
+
 const showLicenseGate = (blocking, initialMessage = '') => {
   const gate = createOverlay(
     'koptilnyaLicenseGate',
@@ -214,8 +224,10 @@ const showLicenseGate = (blocking, initialMessage = '') => {
     '<textarea id="koptilnyaActivationKey" rows="4" maxlength="2048" placeholder="Вставь ключ, полученный от продавца"></textarea>' +
     '<div class="koptilnyaActions"><button type="button" class="koptilnyaButton" id="koptilnyaActivate">Активировать</button>' +
     '<button type="button" class="koptilnyaButton secondary" id="koptilnyaBackup">Сохранить резервную копию</button>' +
+    (blocking ? '<button type="button" class="koptilnyaButton secondary" id="koptilnyaReadOnly">Продолжить только просмотр</button>' : '') +
     (!blocking ? '<button type="button" class="koptilnyaButton secondary" id="koptilnyaLicenseClose">Закрыть</button>' : '') + '</div>';
   body.querySelector('#koptilnyaCopyDevice').addEventListener('click', () => { void copyDeviceCode(); });
+  if (blocking) body.querySelector('#koptilnyaReadOnly').addEventListener('click', enterReadOnlyMode);
   body.querySelector('#koptilnyaBackup').addEventListener('click', async () => {
     const button = body.querySelector('#koptilnyaBackup');
     button.disabled = true;
@@ -237,6 +249,7 @@ const showLicenseGate = (blocking, initialMessage = '') => {
       }
       localStorage.setItem(LICENSE_TOKEN_KEY, token);
       activeLicense = result.payload;
+      readOnlyMode = false;
       currentAccess = { allowed: true, trial: evaluateTrial(trialState.firstRunAt, getEffectiveNow(), TRIAL_DAYS), reason: 'licensed' };
       gate.remove();
       const bar = document.getElementById('koptilnyaLocalBar');
@@ -352,15 +365,40 @@ const openImportPicker = () => {
   });
 };
 
+// In expired read-only mode, keep navigation, reports and exports available, but reject every data mutation.
+document.addEventListener('click', (event) => {
+  if (currentAccess.allowed || !readOnlyMode) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target) return;
+  const mutation = target.closest('[data-action],[data-delete-product],[data-delete-expense],[data-edit-product-card],[data-edit-doc],[data-edit-expense],[data-edit-payment],[data-edit-client],[data-delete-client],[data-edit],#restoreFullBackup');
+  if (mutation) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    toast('Лицензия закончилась: редактирование и новые операции заблокированы.', true);
+  }
+}, true);
+document.addEventListener('submit', (event) => {
+  if (!currentAccess.allowed && readOnlyMode && event.target?.id === 'form') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    toast('Лицензия закончилась: сохранить изменения можно после активации.', true);
+  }
+}, true);
+document.getElementById('backupFile')?.addEventListener('change', (event) => {
+  if (!currentAccess.allowed && readOnlyMode) {
+    event.preventDefault(); event.stopImmediatePropagation(); event.target.value = '';
+    toast('Восстановление архива требует активной лицензии.', true);
+  }
+}, true);
+
 const refreshAccessState = async () => {
   const wasAllowed = currentAccess.allowed;
   trialState.lastSeenAt = Math.max(Number(trialState.lastSeenAt) || 0, Date.now());
   await saveTrialState();
   currentAccess = await assessAccess();
   const bar = document.getElementById('koptilnyaLocalBar');
-  if (bar) bar.style.display = currentAccess.allowed ? 'flex' : 'none';
+  if (bar) bar.style.display = (currentAccess.allowed || readOnlyMode) ? 'flex' : 'none';
   setLocalStatus(licenseStatusLabel());
-  if (!currentAccess.allowed && (wasAllowed || !document.getElementById('koptilnyaLicenseGate'))) {
+  if (!currentAccess.allowed && !readOnlyMode && (wasAllowed || !document.getElementById('koptilnyaLicenseGate'))) {
     const reason = currentAccess.reason === 'license_expired' ? 'Срок лицензии закончился.' : 'Семидневный пробный период завершён.';
     showLicenseGate(true, reason + ' Данные не удалены; до активации можно сохранить резервную копию.');
   }
@@ -371,7 +409,7 @@ const initLocalApp = async () => {
   await mergeTrialState();
   currentAccess = await assessAccess();
   const bar = makeBar();
-  bar.style.display = currentAccess.allowed ? 'flex' : 'none';
+  bar.style.display = (currentAccess.allowed || readOnlyMode) ? 'flex' : 'none';
   setLocalStatus(licenseStatusLabel());
   window.addEventListener('koptilnya-state-change', () => {
     // The accounting interface itself saves every mutation to localStorage.
