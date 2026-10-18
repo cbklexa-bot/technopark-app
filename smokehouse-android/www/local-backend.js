@@ -337,7 +337,7 @@ const openImportPicker = () => {
           warnings: parsed.summary.warnings,
         },
       ];
-      app()?.setState(parsed.state);
+      await app()?.setState(parsed.state);
       gate.remove();
       setLocalStatus(licenseStatusLabel());
       toast('Импорт завершён и сохранён на устройстве. Проверь отчёты и список контрагентов.');
