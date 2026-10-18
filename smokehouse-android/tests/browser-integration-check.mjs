@@ -134,7 +134,10 @@ async function main() {
   await navigate(page, 'home');
   await page.locator('#page-home .quick[data-action="receipt"]').click();
   await page.locator('#back.open').waitFor();
-  if (await page.locator('#receiptLines .sale-line').count() === 0) await page.locator('#addReceiptLine').click();
+  if (await page.locator('#receiptLines .sale-line').count() === 0) {
+    await page.locator('#addReceiptLine').click();
+    await page.locator('#productPicker [data-pick-product]').filter({ hasText: 'E2E курица' }).click();
+  }
   await page.locator('#form [name="receiptProduct"]').selectOption({ label: 'E2E курица' });
   await page.locator('#form [name="receiptQty"]').fill('10');
   await page.locator('#form [name="receiptCost"]').fill('300');
@@ -148,7 +151,10 @@ async function main() {
   await navigate(page, 'home');
   await page.locator('#page-home .quick[data-action="sale"]').click();
   await page.locator('#back.open').waitFor();
-  if (await page.locator('#saleLines .sale-line').count() === 0) await page.locator('#addSaleLine').click();
+  if (await page.locator('#saleLines .sale-line').count() === 0) {
+    await page.locator('#addSaleLine').click();
+    await page.locator('#productPicker [data-pick-product]').filter({ hasText: 'E2E курица' }).click();
+  }
   await page.locator('#form [name="clientId"]').selectOption({ label: clientName });
   await page.locator('#form [name="lineProduct"]').selectOption({ label: 'E2E курица' });
   await page.locator('#form [name="lineQty"]').fill('2');
