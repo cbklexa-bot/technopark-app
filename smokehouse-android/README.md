@@ -1,69 +1,49 @@
-# Коптильня — Android test build
+# Коптильня — автономное Android-приложение
 
-This branch builds an installable **debug APK** for functional testing. It is not a production release.
+The local-licensing build is designed to work **without account registration, internet access, or Supabase**. All accounting entries remain in the app's local database on the device.
 
-## Get and install the test APK
+## Trial and activation
 
-1. Open the [Koptilnya production workflow](https://github.com/cbklexa-bot/technopark-app/actions/workflows/koptilnya-production-check.yml?query=branch%3Akoptilnya-production), select the newest **successful** run for `koptilnya-production`, and download the `koptilnya-production-candidate` artifact. Avoid the older `smokehouse-android` artifact: it may have the old unconfigured placeholder.
-2. Transfer the APK to an Android phone and open it. Android may ask to allow installation from the app used to open the file; enable this only for the install and then turn it off if desired.
-3. This is a debug-signed test build. It is not the signed Play Store release package.
+- First launch starts a 7-day trial.
+- After the trial, the main workspace is locked until a signed activation key is entered.
+- Activation plans: 1 month (30 days), 3 months (90 days), 6 months (180 days), and 12 months (365 days).
+- Keys are bound to the device code shown on the License screen. The customer sends that code to the seller; the seller returns a key generated with the separate private-key issuer tool.
+- The private signing key is **not** stored in this public repository or inside the APK. Keep the seller's issuer package backed up securely and never share it.
+- When a trial/license expires, records are not deleted. The License screen keeps an option to export a full backup before reactivation.
 
-## Local build
+Offline license verification uses an ECDSA P-256 signature. The app embeds only the public verification key; the issuer holds the corresponding private key. This is a practical offline licensing mechanism, not tamper-proof DRM: advanced users controlling their device can patch a client app or reset its local data.
+
+## Data storage and backups
+
+- Product cards, customers, documents, expenses, payments, production batches, and other app state are saved locally.
+- Excel import is read on-device, shows a preview, and creates a backup before replacing existing records.
+- **Download full archive** creates a ZIP containing the JSON database, Excel financial reports, product photos, document attachments, and a manifest.
+- Restore from the ZIP reconstructs photos and document attachments. Keep a copy outside the phone before app reinstall or device replacement.
+- This build does not synchronize between devices. Data on one device does not automatically appear on another.
+
+## Build a test APK
 
 Requirements: Node.js 22+, Android Studio, JDK 21, Android SDK Platform 36, and Build Tools 36.0.0.
 
 ```bash
 cd smokehouse-android
 npm install
+npm test
 npm run build
 npx cap add android
+node scripts/install-download-plugin.mjs
 npx cap sync android
-npx cap open android
-```
-
-To build a local debug APK after installing the required SDKs:
-
-```bash
 cd android
 ./gradlew assembleDebug
 ```
 
 On Windows use `gradlew.bat assembleDebug`.
 
-## Current functionality and limitations
+GitHub Actions on branch `koptilnya-local-licensing` runs the tests and builds a debug APK. A debug APK is for test installation and is not a signed Play Store release. Before distributing paid copies long-term, create a stable release keystore and sign every customer APK/update with the same keystore. The current CI debug APK is suitable for testing/initial evaluation, not a substitute for a managed production signing key.
 
-The Android shell packages the current app interface and the existing accounting/CRM prototype. The cloud adapter supports email/password Auth and organization-scoped cloud state. The production candidate must be built with the Technopark Supabase URL and publishable key after the `kp_`-namespaced migration is applied. Fresh installs start with empty accounting records; validate login and cloud saving before entering live data.
+## Important operational notes
 
-The app includes a full ZIP archive with a JSON database snapshot, an Excel workbook (summary, products, clients, documents, line items, expenses, payments, production batches, recipes, product sales, services, monthly financial summaries), product photos and document attachments. The ZIP can be restored with the in-app restore control; older JSON backups remain supported. On Android, the archive and CSV exports open the native share/save chooser. Test these flows on a real device, because CI cannot simulate every file manager or share target.
-
-ZIP/Excel export is available locally; account-level cloud backup and subscription lifecycle still require further production hardening.
-
-## Remaining product work before a signed Play Store release
-
-1. Use only the identified Technopark Supabase project (`ereiiidezagburttpxtn`) with every Koptilnya table/function under the `kp_` namespace; never connect to `max-song-app`.
-2. Validate Auth and tenant isolation on a physical device, including email confirmation behavior, cross-organization denial, file storage, backup and restore.
-3. Add trial/subscription lifecycle and server-side entitlement checks; after expiration switch to read-only and keep the full export available.
-4. Add Google Play Billing when subscription implementation begins.
-5. Complete financial acceptance tests, inspect layouts on multiple real Android screen sizes, validate export/import including large photos, and add an audit trail/backups.
-6. Finalize app icon, privacy and data deletion flows, support details, and a release-signing process.
-
-## Native details
-
-- App ID: `ru.koptilnya.app` (provisional).
-- Capacitor core/Android: `8.5.3`.
-- Android SDK target used by CI: API 36.
-- CI build artifact retention is 14 days; the attached APK saved in the conversation is a separate copy.
-
-## Official documentation
-
-- [Capacitor setup](https://capacitorjs.com/docs/getting-started)
-- [Filesystem API](https://next.capacitorjs.com/docs/apis/filesystem)
-- [Share API](https://capacitor-site.vercel.app/docs/apis/share)
-
-## Manual validation after installing the APK
-
-- Exercise the core flows with sample data: product card, multi-line receipt and sale, customer service with a phone number, client edit/delete, payments, expenses and date-filtered reports.
-- In Clients, test the client CSV export. In Reports, test the selected-period CSV export.
-- Use **Download archive**, select a save destination from the Android share sheet, and inspect the ZIP. It should contain `data/database.json`, `reports/koptilnya-financial-reports.xlsx`, `photos/` and/or `attachments/` as applicable, plus a manifest/readme.
-- Test restoring from that ZIP, then verify product photos, attachment previews, document totals, balances and stock. Keep a copy of the test data before restore because restore replaces the current local data.
-- Repeat after fully closing and reopening the app. The CI build verifies compilation and packaging, not this complete device-level flow.
+- Android's app-specific trial state is stored in native SharedPreferences, and the license is bound to the Android ID exposed to this app. Clearing application data or reinstalling can reset local records/trial state; export a ZIP before changing devices or reinstalling.
+- The database is local to this installation; losing or uninstalling the app without a separate backup can lose all records.
+- The license issuer's private PEM file is equivalent to the business's master key: anyone with it can generate licenses. Keep a protected offline backup and never upload it to GitHub.
+- The prior Supabase project is not deleted because it is shared with the separate Technopark application. This build no longer bundles a Supabase client or contacts that service at runtime.

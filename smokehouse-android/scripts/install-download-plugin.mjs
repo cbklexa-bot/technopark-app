@@ -33,10 +33,13 @@ mkdirSync(packagePath, { recursive: true });
 const pluginSource =
   'package ' + packageName + ';\n\n' +
   'import android.content.ContentValues;\n' +
+  'import android.content.Context;\n' +
+  'import android.content.SharedPreferences;\n' +
   'import android.net.Uri;\n' +
   'import android.os.Build;\n' +
   'import android.os.Environment;\n' +
   'import android.provider.MediaStore;\n' +
+  'import android.provider.Settings;\n' +
   'import android.util.Base64;\n' +
   'import com.getcapacitor.JSObject;\n' +
   'import com.getcapacitor.Plugin;\n' +
@@ -45,9 +48,42 @@ const pluginSource =
   'import com.getcapacitor.annotation.CapacitorPlugin;\n' +
   'import java.io.File;\n' +
   'import java.io.FileOutputStream;\n' +
-  'import java.io.OutputStream;\n\n' +
+  'import java.io.OutputStream;\n' +
+  'import java.util.UUID;\n\n' +
   '@CapacitorPlugin(name = "KoptilnyaDownloads")\n' +
   'public class KoptilnyaDownloadsPlugin extends Plugin {\n' +
+  '  @PluginMethod\n' +
+  '  public void getLicenseIdentity(PluginCall call) {\n' +
+  '    String id = Settings.Secure.getString(getContext().getContentResolver(), Settings.Secure.ANDROID_ID);\n' +
+  '    if (id == null || id.trim().isEmpty()) {\n' +
+  '      SharedPreferences prefs = getContext().getSharedPreferences("koptilnya_license", Context.MODE_PRIVATE);\n' +
+  '      id = prefs.getString("deviceId", null);\n' +
+  '      if (id == null || id.trim().isEmpty()) { id = UUID.randomUUID().toString(); prefs.edit().putString("deviceId", id).apply(); }\n' +
+  '    }\n' +
+  '    JSObject result = new JSObject();\n' +
+  '    result.put("deviceId", id);\n' +
+  '    call.resolve(result);\n' +
+  '  }\n' +
+  '  @PluginMethod\n' +
+  '  public void getTrialState(PluginCall call) {\n' +
+  '    SharedPreferences prefs = getContext().getSharedPreferences("koptilnya_license", Context.MODE_PRIVATE);\n' +
+  '    JSObject result = new JSObject();\n' +
+  '    result.put("firstRunAt", prefs.getLong("firstRunAt", 0L));\n' +
+  '    result.put("lastSeenAt", prefs.getLong("lastSeenAt", 0L));\n' +
+  '    call.resolve(result);\n' +
+  '  }\n' +
+  '  @PluginMethod\n' +
+  '  public void saveTrialState(PluginCall call) {\n' +
+  '    long incomingFirst = call.getData().optLong("firstRunAt", 0L);\n' +
+  '    long incomingLast = call.getData().optLong("lastSeenAt", 0L);\n' +
+  '    SharedPreferences prefs = getContext().getSharedPreferences("koptilnya_license", Context.MODE_PRIVATE);\n' +
+  '    long oldFirst = prefs.getLong("firstRunAt", 0L);\n' +
+  '    long oldLast = prefs.getLong("lastSeenAt", 0L);\n' +
+  '    long nextFirst = oldFirst == 0L ? incomingFirst : (incomingFirst == 0L ? oldFirst : Math.min(oldFirst, incomingFirst));\n' +
+  '    long nextLast = Math.max(oldLast, incomingLast);\n' +
+  '    prefs.edit().putLong("firstRunAt", nextFirst).putLong("lastSeenAt", nextLast).apply();\n' +
+  '    call.resolve();\n' +
+  '  }\n' +
   '  @PluginMethod\n' +
   '  public void saveToDownloads(PluginCall call) {\n' +
   '    String fileName = call.getString("fileName");\n' +
@@ -126,22 +162,6 @@ if (!existsSync(manifestPath)) throw new Error('Generated AndroidManifest.xml wa
 let manifest = readFileSync(manifestPath, 'utf8');
 const mainActivityPattern = /(<activity\b(?=[^>]*\bandroid:name="[^"]*MainActivity")[^>]*>)([\s\S]*?)(<\/activity>)/;
 if (!mainActivityPattern.test(manifest)) throw new Error('Could not locate the Capacitor MainActivity in AndroidManifest.xml');
-manifest = manifest.replace(mainActivityPattern, (whole, opening, body, closing) => {
-  if (body.includes('android:scheme="ru.koptilnya.app"')) return whole;
-  const authIntent = [
-    '      <!-- Supabase Auth confirmation and password recovery -->',
-    '      <intent-filter>',
-    '        <action android:name="android.intent.action.VIEW" />',
-    '        <category android:name="android.intent.category.DEFAULT" />',
-    '        <category android:name="android.intent.category.BROWSABLE" />',
-    '        <data android:scheme="ru.koptilnya.app" android:host="auth" android:path="/callback" />',
-    '      </intent-filter>',
-    ''
-  ].join('\n');
-  return opening + body + authIntent + closing;
-});
+manifest = manifest.replace(mainActivityPattern, (whole) => whole);
 writeFileSync(manifestPath, manifest, 'utf8');
-if (!manifest.includes('android:scheme="ru.koptilnya.app"') || !manifest.includes('android:path="/callback"')) {
-  throw new Error('Supabase Auth deep-link intent filter was not installed');
-}
-console.log('Registered Downloads plugin and Supabase Auth deep link (ru.koptilnya.app://auth/callback).');
+console.log('Registered Downloads plugin and offline license/trial methods.');
