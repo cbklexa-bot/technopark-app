@@ -6,11 +6,14 @@ import { chromium } from 'playwright';
 const root = process.cwd();
 const port = 4173;
 const origin = 'http://127.0.0.1:' + port;
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', 'dist', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: root,
-  stdio: 'ignore',
+  stdio: ['ignore', 'pipe', 'pipe'],
   env: process.env,
 });
+let serverErrors = '';
+server.stdout.on('data', (chunk) => { serverErrors += chunk.toString(); });
+server.stderr.on('data', (chunk) => { serverErrors += chunk.toString(); });
 let browser;
 const fatalPageErrors = [];
 async function navigate(page, destination) {
@@ -86,6 +89,18 @@ async function main() {
   await checkDashboard(layoutPage, 390, 844);
   await checkDashboard(layoutPage, 360, 740);
   await checkDashboard(layoutPage, 320, 640);
+
+  // The client action must remain inside narrow phone viewports without horizontal scrolling.
+  await navigate(layoutPage, 'clients');
+  for (const width of [320, 360, 390, 430]) {
+    await layoutPage.setViewportSize({ width, height: 844 });
+    const clientButton = layoutPage.locator('#page-clients > .head .client-actions .btn');
+    const rect = await clientButton.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { left:r.left, right:r.right, width:r.width, scrollWidth:el.scrollWidth, clientWidth:el.clientWidth };
+    });
+    assert.ok(rect.left >= -1 && rect.right <= width + 1, 'Add-client button must fit ' + width + 'px viewport: ' + JSON.stringify(rect));
+  }
   await layoutContext.close();
 
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -259,9 +274,33 @@ async function main() {
   assert.ok(durable.docs.some((d) => d.type === 'service' && d.serviceName === 'E2E копчение'), 'Service must survive reload');
   assert.ok(!durable.clients.some((c) => c.name === 'E2E отказ записи'), 'Rejected write must not appear after reload');
 
+  // 9. Removing a client hides only its directory card; historical documents and payments are immutable.
+  const beforeRemoval = await page.evaluate(() => window.KoptilnyaApp.getState());
+  const clientToRemove = beforeRemoval.clients.find((c) => c.name === clientName);
+  assert.ok(clientToRemove, 'E2E client must exist before removal');
+  const docsBeforeRemoval = JSON.stringify(beforeRemoval.docs);
+  const paymentsBeforeRemoval = JSON.stringify(beforeRemoval.payments);
+  await navigate(page, 'clients');
+  const serviceCountBeforeRemoval = await page.locator('#clientCrmMetrics .card').nth(2).innerText();
+  await page.locator('#clientCrmMetrics .card').first().click();
+  const directoryRow = page.locator('#clientDirectoryList .client-directory-row').filter({ hasText: clientName });
+  await directoryRow.waitFor();
+  page.once('dialog', async (dialog) => {
+    assert.match(dialog.message(), /Исторические документы/);
+    await dialog.accept();
+  });
+  await directoryRow.locator('[data-delete-client]').click();
+  await page.waitForFunction((id) => window.KoptilnyaApp.getState().clients.some((c) => c.id === id && c.removedFromDirectory === true), clientToRemove.id);
+  await directoryRow.waitFor({ state: 'detached' });
+  const afterRemoval = await page.evaluate(() => window.KoptilnyaApp.getState());
+  assert.equal(JSON.stringify(afterRemoval.docs), docsBeforeRemoval, 'Removal must preserve all document records exactly');
+  assert.equal(JSON.stringify(afterRemoval.payments), paymentsBeforeRemoval, 'Removal must preserve all payment records exactly');
+  assert.ok(afterRemoval.clients.some((c) => c.id === clientToRemove.id && c.name === clientName && c.removedFromDirectory), 'The client record and name must remain for historical reports');
+  assert.equal(await page.locator('#clientCrmMetrics .card').nth(2).innerText(), serviceCountBeforeRemoval, 'Removing a client must not change the historical service count');
+
   assert.deepEqual(fatalPageErrors, [], 'No uncaught browser exceptions should occur: ' + fatalPageErrors.join(' | '));
   await context.close();
-  console.log('Browser integration passed: dashboard viewports; client, expense, service template, raw-material service, receipt, sale; durable reload; validation and storage-failure rollback.');
+  console.log('Browser integration passed: dashboard viewports; mobile client-button fit; client removal preserves documents/payments; client, expense, service template, raw-material service, receipt, sale; durable reload; validation and storage-failure rollback.');
 }
 try {
   // Wait until Vite preview is ready without requiring any external network service.
@@ -277,7 +316,7 @@ try {
       ready = true; break;
     } catch { await delay(250); }
   }
-  if (!ready) throw new Error('Vite preview did not start on port ' + port);
+  if (!ready) throw new Error('Vite preview did not start on port ' + port + ': ' + serverErrors);
   await main();
 } finally {
   if (browser) await browser.close();
