@@ -97,14 +97,17 @@ const pluginSource =
   '  @PluginMethod\n' +
   '  public void loadBusinessState(PluginCall call) {\n' +
   '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
-  '    SQLiteDatabase db = helper.getReadableDatabase();\n' +
-  '    try (Cursor cursor = db.rawQuery("SELECT state_json, updated_at, state_version FROM app_state WHERE slot = ?", new String[]{"main"})) {\n' +
-  '      JSObject result = new JSObject();\n' +
-  '      if (cursor.moveToFirst()) { result.put("found", true); result.put("state", cursor.getString(0)); result.put("updatedAt", cursor.getLong(1)); result.put("version", cursor.getLong(2)); }\n' +
-  '      else { result.put("found", false); result.put("state", ""); result.put("updatedAt", 0); }\n' +
-  '      call.resolve(result);\n' +
-  '    } catch (Exception error) { call.reject("Не удалось прочитать локальную SQLite-базу", error); }\n' +
-  '    finally { db.close(); helper.close(); }\n' +
+  '    SQLiteDatabase db = null;\n' +
+  '    try {\n' +
+  '      db = helper.getReadableDatabase();\n' +
+  '      try (Cursor cursor = db.rawQuery("SELECT state_json, updated_at, state_version FROM app_state WHERE slot = ?", new String[]{"main"})) {\n' +
+  '        JSObject result = new JSObject();\n' +
+  '        if (cursor.moveToFirst()) { result.put("found", true); result.put("state", cursor.getString(0)); result.put("updatedAt", cursor.getLong(1)); result.put("version", cursor.getLong(2)); }\n' +
+  '        else { result.put("found", false); result.put("state", ""); result.put("updatedAt", 0); result.put("version", 0); }\n' +
+  '        call.resolve(result);\n' +
+  '      }\n' +
+  '    } catch (Exception error) { call.reject("Не удалось открыть или прочитать локальную SQLite-базу: " + error.getMessage(), error); }\n' +
+  '    finally { if (db != null) db.close(); helper.close(); }\n' +
   '  }\n' +
   '  @PluginMethod\n' +
   '  public void saveBusinessState(PluginCall call) {\n' +
@@ -113,14 +116,15 @@ const pluginSource =
   '    long version = call.getData().optLong("version", 0L);\n' +
   '    if (version < 0L) { call.reject("Неверная версия локального состояния"); return; }\n' +
   '    StateDbHelper helper = new StateDbHelper(getContext());\n' +
-  '    SQLiteDatabase db = helper.getWritableDatabase();\n' +
+  '    SQLiteDatabase db = null;\n' +
   '    try {\n' +
+  '      db = helper.getWritableDatabase();\n' +
   '      ContentValues values = new ContentValues(); values.put("slot", "main"); values.put("state_json", state); values.put("updated_at", System.currentTimeMillis()); values.put("state_version", version);\n' +
   '      long row = db.insertWithOnConflict("app_state", null, values, SQLiteDatabase.CONFLICT_REPLACE);\n' +
   '      if (row < 0) throw new IllegalStateException("SQLite не сохранила данные");\n' +
   '      JSObject result = new JSObject(); result.put("saved", true); result.put("updatedAt", values.getAsLong("updated_at")); result.put("version", values.getAsLong("state_version")); call.resolve(result);\n' +
-  '    } catch (Exception error) { call.reject("Не удалось сохранить данные в SQLite", error); }\n' +
-  '    finally { db.close(); helper.close(); }\n' +
+  '    } catch (Exception error) { call.reject("Не удалось сохранить данные в SQLite: " + error.getMessage(), error); }\n' +
+  '    finally { if (db != null) db.close(); helper.close(); }\n' +
   '  }\n' +
   '  @PluginMethod\n' +
   '  public void pickImage(PluginCall call) {\n' +
@@ -221,11 +225,12 @@ const pluginSource =
   '      db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
   '    }\n' +
   '    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n' +
-  '      if (oldVersion < 2) {\n' +
-  '        db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
-  '        ContentValues migrationV2 = new ContentValues(); migrationV2.put("version", 2); migrationV2.put("applied_at", System.currentTimeMillis());\n' +
-  '        db.insertWithOnConflict("schema_migrations", null, migrationV2, SQLiteDatabase.CONFLICT_IGNORE);\n' +
-  '      }\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS app_state (slot TEXT NOT NULL PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL, state_version INTEGER NOT NULL DEFAULT 0)");\n' +
+  '      db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, applied_at INTEGER NOT NULL)");\n' +
+  '      boolean hasStateVersion = false;\n' +
+  '      try (Cursor columns = db.rawQuery("PRAGMA table_info(app_state)", null)) { while (columns.moveToNext()) { if ("state_version".equals(columns.getString(1))) { hasStateVersion = true; break; } } }\n' +
+  '      if (!hasStateVersion) db.execSQL("ALTER TABLE app_state ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0");\n' +
+  '      for (int v = 1; v <= newVersion; v++) { ContentValues migration = new ContentValues(); migration.put("version", v); migration.put("applied_at", System.currentTimeMillis()); db.insertWithOnConflict("schema_migrations", null, migration, SQLiteDatabase.CONFLICT_IGNORE); }\n' +
   '    }\n' +
   '  }\n' +
   '}\n';
