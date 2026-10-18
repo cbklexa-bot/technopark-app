@@ -1,5 +1,5 @@
 {
-  "appId": "ru.koptilnya.app",
+  "appId": "ru.koptilnya.app.recovery",
   "appName": "Коптильня",
   "webDir": "dist",
   "bundledWebRuntime": false,
