@@ -290,8 +290,12 @@ body{background:#f5f7fa;color:#1b2735}
 @media(max-width:360px){
  #page-home .finance-panel{padding:6px}
  #page-home .finance-panel-head h2{font-size:12px}
- #page-home .home-metrics .card{padding:5px}
- #page-home .home-metrics .value{font-size:clamp(12px,3.5vw,14px)}
+ #page-home .home-metrics .card{padding:5px;justify-content:flex-start;gap:2px}
+ #page-home .home-metrics .label{font-size:9px;line-height:1.1;min-width:0;max-width:100%;align-items:flex-start}
+ #page-home .home-metrics .label>span:last-child{min-width:0;flex:1;white-space:normal;overflow-wrap:anywhere}
+ #page-home .home-metrics .metric-icon{width:16px;height:16px;flex:0 0 16px;font-size:10px}
+ #page-home .home-metrics .value{font-size:12px;line-height:1.1;margin:3px 0 1px}
+ #page-home .home-metrics .sub{font-size:8px;line-height:1.1}
  #page-home .quick{padding:5px;gap:5px}
  #page-home .quick span:first-child{width:27px;height:27px;flex-basis:27px;font-size:17px}
  #page-home .quick b{font-size:11px}
