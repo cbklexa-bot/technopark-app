@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 const root = process.cwd();
 const port = 4173;
 const origin = 'http://127.0.0.1:' + port;
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', '../dist', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--root', '..', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: root,
   stdio: 'ignore',
   env: process.env,
