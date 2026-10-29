@@ -23,7 +23,7 @@ button{cursor:pointer}
 .eyebrow{font-size:9px;letter-spacing:1.8px;color:var(--orange2);font-weight:950;text-transform:uppercase}
 .app-title{font-size:24px;line-height:1;margin:4px 0 0;letter-spacing:-.8px}
 .brand-badge{padding:8px 11px;border-radius:13px;background:linear-gradient(135deg,var(--orange),#ff5200);color:#111;font-size:10px;font-weight:950}
-.nav{position:sticky;top:8px;z-index:1000;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px;background:rgba(10,13,17,.86);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 35px rgba(0,0,0,.24);margin-bottom:14px}
+.nav{position:sticky;top:8px;z-index:1000;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:6px;background:rgba(10,13,17,.86);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 35px rgba(0,0,0,.24);margin-bottom:14px}
 .nav-item{border:0;background:transparent;color:var(--muted);padding:11px 6px;border-radius:12px;font-size:10px;font-weight:900}
 .nav-item.active{background:linear-gradient(135deg,var(--orange),#ff5a00);color:#111;box-shadow:0 7px 20px rgba(255,122,0,.25)}
 .page{display:none}.page.active{display:block}
@@ -105,6 +105,7 @@ input::placeholder{color:#68717d}
   <button class="nav-item active" onclick="showPage('poly',this)">Аренда</button>
   <button class="nav-item" onclick="showPage('fest',this)">Праздник</button>
   <button class="nav-item" onclick="showPage('goods',this)">Товары</button>
+  <button class="nav-item" onclick="showPage('shift',this)">Смена</button>
   <button class="nav-item" onclick="requestAdminAccess(this)">Админ</button>
 </div>
 
@@ -130,21 +131,24 @@ input::placeholder{color:#68717d}
 
   <div class="section-title">Полигон</div>
   <div class="services">
+    <button class="service" id="t_poly_10" onclick="selT(10,100,'t_poly_10','Полигон')"><div class="service-icon">🏎️</div><div class="service-name">10 минут</div><div class="service-meta">Полигон</div><div class="service-price">100 ₽</div></button>
     <button class="service" id="t_poly_30" onclick="selT(30,300,'t_poly_30','Полигон')"><div class="service-icon">🏎️</div><div class="service-name">30 минут</div><div class="service-meta">Полигон</div><div class="service-price">300 ₽</div></button>
-    <button class="service" id="t_poly_60" onclick="selT(60,500,'t_poly_60','Полигон')"><div class="service-icon">🏁</div><div class="service-name">1 час</div><div class="service-meta">Полигон</div><div class="service-price">500 ₽</div></button>
+    <button class="service" id="t_poly_60" onclick="selT(60,600,'t_poly_60','Полигон')"><div class="service-icon">🏁</div><div class="service-name">1 час</div><div class="service-meta">Полигон</div><div class="service-price">600 ₽</div></button>
   </div>
 
   <div class="section-title">VR шлемы</div>
   <div class="services">
+    <button class="service" id="t_vr_10" onclick="selT(10,100,'t_vr_10','VR')"><div class="service-icon">🥽</div><div class="service-name">10 минут</div><div class="service-meta">VR</div><div class="service-price">100 ₽</div></button>
     <button class="service" id="t_vr_30" onclick="selT(30,300,'t_vr_30','VR')"><div class="service-icon">🥽</div><div class="service-name">30 минут</div><div class="service-meta">VR</div><div class="service-price">300 ₽</div></button>
-    <button class="service" id="t_vr_60" onclick="selT(60,500,'t_vr_60','VR')"><div class="service-icon">🌐</div><div class="service-name">1 час</div><div class="service-meta">VR</div><div class="service-price">500 ₽</div></button>
+    <button class="service" id="t_vr_60" onclick="selT(60,600,'t_vr_60','VR')"><div class="service-icon">🌐</div><div class="service-name">1 час</div><div class="service-meta">VR</div><div class="service-price">600 ₽</div></button>
   </div>
 
   <div class="section-title">Другие аттракционы</div>
   <div class="services">
-    <button class="service" id="t_ps_60" onclick="selT(60,400,'t_ps_60','PS4')"><div class="service-icon">🎮</div><div class="service-name">PS4 · 1 час</div><div class="service-meta">Приставка</div><div class="service-price">400 ₽</div></button>
+    <button class="service" id="t_ps_30" onclick="selT(30,200,'t_ps_30','PS4')"><div class="service-icon">🎮</div><div class="service-name">PS4 · 30 минут</div><div class="service-meta">Приставка</div><div class="service-price">200 ₽</div></button>
+    <button class="service" id="t_ps_60" onclick="selT(60,350,'t_ps_60','PS4')"><div class="service-icon">🎮</div><div class="service-name">PS4 · 1 час</div><div class="service-meta">Приставка</div><div class="service-price">350 ₽</div></button>
     <button class="service" id="t_drift_10" onclick="selT(10,150,'t_drift_10','Дрифт/Вело')"><div class="service-icon">🚲</div><div class="service-name">10 минут</div><div class="service-meta">Дрифт / вело</div><div class="service-price">150 ₽</div></button>
-    <button class="service" id="t_range_5" onclick="selT(5,150,'t_range_5','Мини-тир')"><div class="service-icon">🎯</div><div class="service-name">5 минут</div><div class="service-meta">Мини-тир</div><div class="service-price">150 ₽</div></button>
+    <button class="service" id="t_range_1" onclick="selT(0,150,'t_range_1','Мини-тир')"><div class="service-icon">🎯</div><div class="service-name">1 обойма</div><div class="service-meta">Мини-тир</div><div class="service-price">150 ₽</div></button>
   </div>
 
   <button class="btn btn-main" style="margin-top:12px" onclick="startSession()">🚀 Запустить аренду</button>
@@ -174,6 +178,35 @@ input::placeholder{color:#68717d}
   </div>
   <div class="section-title">Продажи сегодня</div>
   <div id="sales_history" class="list"></div>
+
+<section id="shift" class="page">
+  <div class="hero">
+    <div class="eyebrow">РАБОЧИЕ СМЕНЫ</div>
+    <h2>Сотрудник</h2>
+    <p>Отмечайте каждый рабочий день. Зарплата рассчитывается автоматически по типу дня.</p>
+  </div>
+  <div class="panel form-panel">
+    <div class="section-title" style="margin-top:0">Отметить рабочий день</div>
+    <label for="shift_date" style="display:block;color:var(--muted);font-size:11px;margin:0 0 6px">Дата смены</label>
+    <input id="shift_date" type="date" onchange="updateShiftRatePreview()" style="margin-bottom:10px">
+    <label style="display:flex;gap:9px;align-items:center;font-size:12px;font-weight:800;margin:4px 0 10px">
+      <input id="shift_holiday" type="checkbox" onchange="updateShiftRatePreview()" style="width:18px;height:18px;margin:0;accent-color:var(--orange)">
+      Праздничный день — 2 000 ₽
+    </label>
+    <div id="shift_rate_preview" class="highlight" style="margin-bottom:10px"><span>Ставка за смену</span><b>—</b></div>
+    <button class="btn btn-main" onclick="markShift()">✅ Отметить, что я работал</button>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:10px;line-height:1.5">Обычный день: вторник–пятница — 1 000 ₽. Суббота–воскресенье — 1 500 ₽. Для понедельника ставка не задана; отметить его можно только как праздничный день.</p>
+  </div>
+  <div class="section-title">Статистика и зарплата</div>
+  <div class="panel" style="padding:10px;margin-bottom:9px">
+    <label for="shift_month" style="display:block;color:var(--muted);font-size:11px;margin:0 0 6px">Период</label>
+    <select id="shift_month" class="full" onchange="loadShifts()"></select>
+  </div>
+  <div id="shift_kpis" class="kpi-grid" style="margin-bottom:9px"></div>
+  <div class="panel report-box">
+    <div class="section-title" style="margin-top:0">Рабочие дни</div>
+    <div id="shift_history" class="list"></div>
+  </div>
 </section>
 
 <section id="adm_page" class="page">
@@ -189,6 +222,7 @@ input::placeholder{color:#68717d}
     <div class="admin-card" onclick="openWin('win_journal')"><span class="admin-icon">🧾</span><div><b>Журнал операций</b><small>Все аренды, праздники, товары и расходы</small></div></div>
     <div class="admin-card" onclick="openWin('win_exp')"><span class="admin-icon">💸</span><div><b>Расходы</b><small>Добавление задним числом и история</small></div></div>
     <div class="admin-card" onclick="openWin('win_stock')"><span class="admin-icon">📦</span><div><b>Склад</b><small>Остатки, закупка, цена и маржа</small></div></div>
+    <div class="admin-card" onclick="showPage('shift',document.querySelector('.nav-item:nth-child(4)'))"><span class="admin-icon">👷</span><div><b>Смены и зарплата</b><small>Рабочие дни сотрудника и начисления</small></div></div>
   </div>
 </section>
 
@@ -249,11 +283,11 @@ let reportPeriod="month";
 let toastTimer=null;
 
 const EXTENSIONS={
-  "PS4":[[30,200,"+30 мин","200 ₽"],[60,400,"+1 час","400 ₽"]],
+  "PS4":[[30,200,"+30 мин","200 ₽"],[60,350,"+1 час","350 ₽"]],
   "Дрифт/Вело":[[10,150,"+10 мин","150 ₽"]],
-  "Мини-тир":[[5,150,"+5 мин","150 ₽"]],
-  "VR":[[30,300,"+30 мин","300 ₽"],[60,500,"+1 час","500 ₽"]],
-  "Полигон":[[30,300,"+30 мин","300 ₽"],[60,500,"+1 час","500 ₽"]]
+  "Мини-тир":[],
+  "VR":[[10,100,"+10 мин","100 ₽"],[30,300,"+30 мин","300 ₽"],[60,600,"+1 час","600 ₽"]],
+  "Полигон":[[10,100,"+10 мин","100 ₽"],[30,300,"+30 мин","300 ₽"],[60,600,"+1 час","600 ₽"]]
 };
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
@@ -263,7 +297,7 @@ function monthKey(d=new Date()){const x=new Date(d);return x.getFullYear()+"-"+S
 function monthLabel(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-1,1);let s=d.toLocaleDateString("ru-RU",{month:"long",year:"numeric"});return s.charAt(0).toUpperCase()+s.slice(1);}
 function monthRange(key){const [y,m]=key.split("-").map(Number);return {start:new Date(y,m-1,1),end:new Date(y,m,1)};}
 function showToast(msg,kind="good"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+(kind==="bad"?"bad":"good");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2600);}
-function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");}
+function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");if(id==="shift"){prepareShiftControls();loadShifts();}}
 function openWin(id){
   const adminWindows=["win_reports","win_journal","win_exp","win_stock"];
   if(adminWindows.includes(id)&&!adminUnlocked){
@@ -342,12 +376,13 @@ function selT(m,p,id,service){selMins=m;selPrice=p;selService=service;document.q
 
 async function startSession(){
   const name=document.getElementById("p_name").value.trim();
-  if(!name||!selMins){showToast("Введите имя и выберите услугу.","bad");return;}
+  if(!name||!selService){showToast("Введите имя и выберите услугу.","bad");return;}
+  const isMiniTir=selService==="Мини-тир";
   const {error}=await _supabase.rpc("tp_start_session",{p_client_name:name,p_service_code:selService,p_duration:selMins,p_price:selPrice});
-  if(error){showToast("Не удалось запустить аренду.","bad");return;}
+  if(error){showToast(error.message||"Не удалось запустить аренду.","bad");return;}
   document.getElementById("p_name").value="";selMins=0;selPrice=0;selService="";
   document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
-  await init();showToast("Аренда запущена.");
+  await init();showToast(isMiniTir?"Мини-тир: одна обойма учтена.":"Аренда запущена.");
 }
 
 function detectService(p){
@@ -432,11 +467,17 @@ async function saveExp(){
 }
 async function loadExpensesHistory(){
   prepareExpenseControls();const month=document.getElementById("exp_month_filter").value||monthKey();const {start,end}=monthRange(month);
-  const {data,error}=await _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(start)).lt("expense_date",dateInputValue(end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false});
-  if(error){showToast("Не удалось загрузить расходы.","bad");return;}
-  db.expenses=data||[];const total=db.expenses.reduce((s,x)=>s+Number(x.amount||0),0);
-  document.getElementById("expense_total").innerHTML='<div class="kpi"><span>Расходов</span><b>'+db.expenses.length+'</b></div><div class="kpi"><span>Сумма</span><b class="negative">'+money(total)+'</b></div>';
-  document.getElementById("exp_history_list").innerHTML=db.expenses.map(e=>`<div class="expense-row"><div class="expense-main"><b>${esc(e.category||"Прочее")} · ${esc(e.comment||"")}</b><small>${new Date(e.expense_date+"T12:00:00").toLocaleDateString("ru-RU")} · внесено ${new Date(e.created_at).toLocaleDateString("ru-RU")}</small></div><div><div class="expense-amount">− ${money(e.amount)}</div><div class="expense-actions"><button class="icon-btn" onclick="deleteExpense(${e.id})">🗑</button></div></div></div>`).join("")||'<div class="empty">За выбранный месяц расходов нет</div>';
+  const [expRes,shiftRes]=await Promise.all([
+    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(start)).lt("expense_date",dateInputValue(end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false}),
+    _supabase.from("tp_employee_shifts").select("*").gte("work_date",dateInputValue(start)).lt("work_date",dateInputValue(end)).order("work_date",{ascending:false})
+  ]);
+  if(expRes.error){showToast("Не удалось загрузить расходы.","bad");return;}
+  if(shiftRes.error)console.error("Не удалось загрузить начисления сотрудника:",shiftRes.error);
+  const payroll=(shiftRes.data||[]).map(s=>({id:null,category:"Зарплата сотрудника",comment:shiftTypeLabel(s.day_type),expense_date:s.work_date,created_at:s.created_at,amount:Number(s.amount)||0,isPayroll:true}));
+  db.expenses=[...(expRes.data||[]).map(e=>({...e,isPayroll:false})),...payroll].sort((a,b)=>String(b.expense_date).localeCompare(String(a.expense_date))||new Date(b.created_at||0)-new Date(a.created_at||0));
+  const total=db.expenses.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById("expense_total").innerHTML='<div class="kpi"><span>Расходных операций</span><b>'+db.expenses.length+'</b></div><div class="kpi"><span>Сумма с зарплатой</span><b class="negative">'+money(total)+'</b></div>';
+  document.getElementById("exp_history_list").innerHTML=db.expenses.map(e=>`<div class="expense-row"><div class="expense-main"><b>${esc(e.category||"Прочее")} · ${esc(e.comment||"")}</b><small>${new Date(e.expense_date+"T12:00:00").toLocaleDateString("ru-RU")} · ${e.isPayroll?"начислено за смену":"внесено "+new Date(e.created_at).toLocaleDateString("ru-RU")}</small></div><div><div class="expense-amount">− ${money(e.amount)}</div>${e.isPayroll?"":'<div class="expense-actions"><button class="icon-btn" onclick="deleteExpense('+e.id+')">🗑</button></div>'}</div></div>`).join("")||'<div class="empty">За выбранный месяц расходов нет</div>';
 }
 async function deleteExpense(id){if(!confirm("Удалить этот расход?"))return;const {error}=await _supabase.from("tp_expenses").delete().eq("id",id);if(error){showToast("Не удалось удалить расход.","bad");return;}await loadExpensesHistory();await loadAdminDashboard();showToast("Расход удалён.");}
 
@@ -453,16 +494,19 @@ async function loadJournal(){
   prepareJournalControls();
   const key=document.getElementById("journal_month").value||monthKey();
   const r=monthRange(key);
-  const [sessRes,salesRes,expRes]=await Promise.all([
+  const [sessRes,salesRes,expRes,shiftRes]=await Promise.all([
     _supabase.from("tp_sessions").select("*").gte("created_at",r.start.toISOString()).lt("created_at",r.end.toISOString()).order("created_at",{ascending:false}),
     _supabase.from("tp_sales").select("*").gte("created_at",r.start.toISOString()).lt("created_at",r.end.toISOString()).order("created_at",{ascending:false}),
-    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(r.start)).lt("expense_date",dateInputValue(r.end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false})
+    _supabase.from("tp_expenses").select("*").gte("expense_date",dateInputValue(r.start)).lt("expense_date",dateInputValue(r.end)).order("expense_date",{ascending:false}).order("created_at",{ascending:false}),
+    _supabase.from("tp_employee_shifts").select("*").gte("work_date",dateInputValue(r.start)).lt("work_date",dateInputValue(r.end)).order("work_date",{ascending:false})
   ]);
   if(sessRes.error||salesRes.error||expRes.error){showToast("Не удалось загрузить журнал.","bad");return;}
+  if(shiftRes.error)console.error("Не удалось загрузить зарплату в журнал:",shiftRes.error);
   journalRows=[];
   (sessRes.data||[]).forEach(s=>journalRows.push({date:new Date(s.created_at),sort:new Date(s.created_at),type:s.type==="fest"?"Праздник":"Аренда",name:s.client_name,service:s.service_code||detectService(s),amount:Number(s.price)||0,kind:"income"}));
   (salesRes.data||[]).forEach(s=>journalRows.push({date:new Date(s.created_at),sort:new Date(s.created_at),type:"Товар",name:s.name,service:"Продажа",amount:Number(s.price)||0,kind:"income"}));
   (expRes.data||[]).forEach(e=>journalRows.push({date:new Date(e.expense_date+"T12:00:00"),sort:new Date(e.created_at),type:"Расход",name:e.comment||e.category||"Расход",service:e.category||"Прочее",amount:Number(e.amount)||0,kind:"expense"}));
+  (shiftRes.data||[]).forEach(s=>journalRows.push({date:new Date(s.work_date+"T12:00:00"),sort:new Date(s.work_date+"T12:00:00"),type:"Зарплата",name:"Рабочая смена — "+shiftTypeLabel(s.day_type),service:"Зарплата сотрудника",amount:Number(s.amount)||0,kind:"expense"}));
   journalRows.sort((a,b)=>b.sort-a.sort);
   const revenue=journalRows.filter(x=>x.kind==="income").reduce((s,x)=>s+x.amount,0), expenses=journalRows.filter(x=>x.kind==="expense").reduce((s,x)=>s+x.amount,0);
   document.getElementById("journal_summary").innerHTML='<div class="kpi"><span>Операций</span><b>'+journalRows.length+'</b></div><div class="kpi"><span>Приход</span><b class="positive">'+money(revenue)+'</b></div><div class="kpi"><span>Расход</span><b class="negative">'+money(expenses)+'</b></div><div class="kpi"><span>Баланс</span><b class="'+(revenue-expenses>=0?"positive":"negative")+'">'+money(revenue-expenses)+'</b></div>';
@@ -483,16 +527,17 @@ function prepareReportControls(){
 }
 function setReportPeriod(p){reportPeriod=p;selectPeriodButton();loadReports(p);}
 async function getReportData(start,end){
-  const [sessRes,salesRes,expRes]=await Promise.all([
+  const [sessRes,salesRes,expRes,shiftRes]=await Promise.all([
     _supabase.from("tp_sessions").select("*").order("created_at",{ascending:false}),
     _supabase.from("tp_sales").select("*").order("created_at",{ascending:false}),
-    _supabase.from("tp_expenses").select("*").order("expense_date",{ascending:false}).order("created_at",{ascending:false})
+    _supabase.from("tp_expenses").select("*").order("expense_date",{ascending:false}).order("created_at",{ascending:false}),
+    _supabase.from("tp_employee_shifts").select("*").order("work_date",{ascending:false})
   ]);
   const errors=[];
   if(sessRes.error)errors.push("аренды: "+(sessRes.error.message||"ошибка"));
   if(salesRes.error)errors.push("товары: "+(salesRes.error.message||"ошибка"));
   if(expRes.error)errors.push("расходы: "+(expRes.error.message||"ошибка"));
-  console.error("[ФИНАНСЫ]",{start,end,sessions:sessRes.error,sales:salesRes.error,expenses:expRes.error});
+  console.error("[ФИНАНСЫ]",{start,end,sessions:sessRes.error,sales:salesRes.error,expenses:expRes.error,shifts:shiftRes.error});
   if(sessRes.error||salesRes.error){
     throw new Error("Не удалось загрузить финансовые данные: "+errors.filter(x=>!x.startsWith("расходы:")).join("; "));
   }
@@ -500,11 +545,15 @@ async function getReportData(start,end){
   const inRange=(iso)=>{const d=new Date(iso);return d>=start&&d<end;};
   const sessions=(sessRes.data||[]).filter(x=>inRange(x.created_at));
   const sales=(salesRes.data||[]).filter(x=>inRange(x.created_at));
-  const expenses=(expRes.data||[]).filter(x=>{
-    const d=new Date(String(x.expense_date)+"T00:00:00");
-    return d>=new Date(dateInputValue(start)+"T00:00:00")&&d<new Date(dateInputValue(end)+"T00:00:00");
-  });
-
+  const rangeStart=dateInputValue(start),rangeEnd=dateInputValue(end);
+  const expenses=(expRes.data||[]).filter(x=>x.expense_date>=rangeStart&&x.expense_date<rangeEnd);
+  if(shiftRes.error){
+    console.error("Начисления сотрудника не включены в отчёт:",shiftRes.error);
+  }else{
+    (shiftRes.data||[]).filter(s=>s.work_date>=rangeStart&&s.work_date<rangeEnd).forEach(s=>{
+      expenses.push({id:"shift-"+s.work_date,category:"Зарплата сотрудника",comment:shiftTypeLabel(s.day_type),expense_date:s.work_date,created_at:s.created_at,amount:Number(s.amount)||0,isPayroll:true});
+    });
+  }
   if(expRes.error){
     showToast("Финансы загружены, но расходы недоступны: "+(expRes.error.message||"ошибка"),"bad");
   }
@@ -516,8 +565,8 @@ function calculate(data){
   data.sessions.forEach(s=>{const p=Number(s.price)||0,m=Number(s.duration)||0;if(s.type==="fest"){fest+=p;festCount++;festMins+=m;}else{rent+=p;rentCount++;rentMins+=m;const name=detectService(s);services[name]??={count:0,mins:0,revenue:0};services[name].count++;services[name].mins+=m;services[name].revenue+=p;}});
   data.sales.forEach(s=>{const p=Number(s.price)||0,c=Number(s.cost)||0;goods+=p;cost+=c;products[s.name]??={count:0,revenue:0,cost:0};products[s.name].count++;products[s.name].revenue+=p;products[s.name].cost+=c;});
   data.expenses.forEach(e=>{const p=Number(e.amount)||0;const k=e.category||"Прочее";expenses[k]=(expenses[k]||0)+p;});
-  const allRev=rent+fest+goods,totalExp=data.expenses.reduce((s,x)=>s+Number(x.amount||0),0),net=allRev-cost-totalExp,ops=rentCount+festCount+data.sales.length;
-  return {rent,rentCount,rentMins,fest,festCount,festMins,goods,cost,services,products,expenses,totalExp,allRev,net,ops,avg:ops?allRev/ops:0};
+  const allRev=rent+fest+goods,totalExp=data.expenses.reduce((s,x)=>s+Number(x.amount||0),0),net=allRev-cost-totalExp,ops=rentCount+festCount+data.sales.length,staffSalary=expenses["Зарплата сотрудника"]||0;
+  return {rent,rentCount,rentMins,fest,festCount,festMins,goods,cost,services,products,expenses,totalExp,allRev,net,ops,staffSalary,avg:ops?allRev/ops:0};
 }
 function renderReport(title,data,periodStart,periodEnd){
   const c=calculate(data);
@@ -559,7 +608,91 @@ async function loadReports(period){
   }catch(e){showToast(e.message||"Ошибка отчёта.","bad");}
 }
 async function loadAdminDashboard(){
-  const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
+  const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Зарплата сотрудника</span><b class="negative">'+money(c.staffSalary)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
+
+
+function shiftTypeLabel(type){
+  return type==="holiday"?"Праздничный день":type==="weekend"?"Выходной день":"Обычный день";
+}
+function getShiftRate(workDate,isHoliday){
+  if(!workDate)return null;
+  if(isHoliday)return {day_type:"holiday",amount:2000,label:"Праздничный день"};
+  const day=new Date(workDate+"T12:00:00").getDay();
+  if(day>=2&&day<=5)return {day_type:"weekday",amount:1000,label:"Обычный день"};
+  if(day===0||day===6)return {day_type:"weekend",amount:1500,label:"Выходной день"};
+  return null;
+}
+function prepareShiftControls(){
+  const today=dateInputValue();
+  const date=document.getElementById("shift_date");
+  if(date){if(!date.value)date.value=today;date.max=today;}
+  const select=document.getElementById("shift_month");
+  if(select&&!select.options.length){
+    for(let i=0;i<36;i++){const d=new Date();d.setMonth(d.getMonth()-i);const key=monthKey(d);select.add(new Option(monthLabel(key),key));}
+    select.value=monthKey();
+  }
+  updateShiftRatePreview();
+}
+function updateShiftRatePreview(){
+  const date=document.getElementById("shift_date")?.value||dateInputValue();
+  const holiday=!!document.getElementById("shift_holiday")?.checked;
+  const rate=getShiftRate(date,holiday);
+  const preview=document.getElementById("shift_rate_preview");
+  if(!preview)return;
+  if(date>dateInputValue()){
+    preview.innerHTML="<span>Смена</span><b>Будущую дату отметить нельзя</b>";
+  }else if(!rate){
+    preview.innerHTML="<span>Ставка за смену</span><b>Не задана для понедельника</b>";
+  }else{
+    preview.innerHTML="<span>"+esc(rate.label)+"</span><b>"+money(rate.amount)+"</b>";
+  }
+}
+async function markShift(){
+  prepareShiftControls();
+  const workDate=document.getElementById("shift_date").value;
+  const isHoliday=document.getElementById("shift_holiday").checked;
+  if(!workDate||workDate>dateInputValue()){showToast("Нельзя отметить будущую смену.","bad");return;}
+  const rate=getShiftRate(workDate,isHoliday);
+  if(!rate){showToast("Для понедельника ставка не задана. Отметьте праздничный день, только если это действительно праздник.","bad");return;}
+  const {data:existing,error:readError}=await _supabase.from("tp_employee_shifts").select("*").eq("work_date",workDate).maybeSingle();
+  if(readError){showToast("Не удалось проверить смену. Проверьте доступ к таблице смен.","bad");return;}
+  if(existing&&existing.day_type===rate.day_type){
+    showToast("Этот день уже отмечен: "+money(existing.amount)+".");
+    return;
+  }
+  if(existing&&!confirm("Смена за эту дату уже есть. Изменить её на «"+rate.label+"» и пересчитать сумму?"))return;
+  const {error}=await _supabase.from("tp_employee_shifts").upsert([{
+    work_date:workDate,day_type:rate.day_type,amount:rate.amount,is_holiday:isHoliday,updated_at:new Date().toISOString()
+  }],{onConflict:"work_date"});
+  if(error){showToast("Не удалось сохранить смену: "+(error.message||"ошибка"),"bad");return;}
+  document.getElementById("shift_holiday").checked=false;
+  updateShiftRatePreview();
+  await loadShifts();
+  showToast("Смена за "+new Date(workDate+"T12:00:00").toLocaleDateString("ru-RU")+" учтена: "+money(rate.amount)+".");
+}
+async function loadShifts(){
+  prepareShiftControls();
+  const month=document.getElementById("shift_month")?.value||monthKey();
+  const {data,error}=await _supabase.from("tp_employee_shifts").select("*").order("work_date",{ascending:false});
+  if(error){
+    document.getElementById("shift_kpis").innerHTML="";
+    document.getElementById("shift_history").innerHTML='<div class="empty">Не удалось загрузить смены. Проверьте применение миграции базы данных.</div>';
+    console.error("Ошибка загрузки смен:",error);
+    return;
+  }
+  const rows=(data||[]).filter(s=>String(s.work_date||"").slice(0,7)===month);
+  const count=type=>rows.filter(s=>s.day_type===type).length;
+  const total=rows.reduce((sum,s)=>sum+(Number(s.amount)||0),0);
+  document.getElementById("shift_kpis").innerHTML=
+    '<div class="kpi"><span>Отмечено смен</span><b>'+rows.length+'</b></div>'+
+    '<div class="kpi"><span>Обычные дни</span><b>'+count("weekday")+'</b></div>'+
+    '<div class="kpi"><span>Выходные</span><b>'+count("weekend")+'</b></div>'+
+    '<div class="kpi"><span>Праздники</span><b>'+count("holiday")+'</b></div>'+
+    '<div class="kpi"><span>К выплате</span><b class="positive">'+money(total)+'</b></div>';
+  document.getElementById("shift_history").innerHTML=rows.map(s=>
+    '<div class="data-row"><div><b>'+esc(new Date(s.work_date+"T12:00:00").toLocaleDateString("ru-RU",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"}))+'</b><small>'+esc(shiftTypeLabel(s.day_type))+' · '+(s.is_holiday?"Праздничная ставка":"Начисление по календарю")+'</small></div><strong class="positive">'+money(s.amount)+'</strong></div>'
+  ).join("")||'<div class="empty">За выбранный месяц смен пока нет</div>';
+}
 
 async function boot(){
   const {data:{session}}=await _supabase.auth.getSession();
@@ -573,7 +706,7 @@ async function boot(){
     }
   }
   await init();
-  prepareExpenseControls();prepareReportControls();
+  prepareExpenseControls();prepareReportControls();prepareShiftControls();
   if(window.Telegram?.WebApp)window.Telegram.WebApp.expand();
 }
 setInterval(renderPlayers,1000);
