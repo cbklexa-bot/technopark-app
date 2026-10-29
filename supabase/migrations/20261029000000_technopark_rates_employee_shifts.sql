@@ -69,7 +69,7 @@ begin
     else null
   end;
 
-  if v_price is null or v_price <> p_price then
+  if v_price is null or p_price is distinct from v_price then
     raise exception 'Недопустимый тариф услуги';
   end if;
 
