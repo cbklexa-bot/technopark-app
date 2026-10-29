@@ -18,7 +18,7 @@ create table if not exists public.tp_employee_shifts (
 alter table public.tp_employee_shifts enable row level security;
 
 -- Supabase Data API no longer grants access to newly created public tables automatically.
-grant select, insert, update, delete on public.tp_employee_shifts to authenticated;
+grant select, insert, update on public.tp_employee_shifts to authenticated;
 grant all privileges on public.tp_employee_shifts to service_role;
 
 drop policy if exists "allow_anonymous_tp_employee_shifts" on public.tp_employee_shifts;
