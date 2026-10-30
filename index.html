@@ -744,7 +744,21 @@ async function loadReports(period){
   }catch(e){showToast(e.message||"Ошибка отчёта.","bad");}
 }
 async function loadAdminDashboard(){
-  const r=monthRange(monthKey());try{const data=await getReportData(r.start,r.end);const c=calculate(data);document.getElementById("admin_kpis").innerHTML='<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div><div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div><div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div><div class="kpi"><span>Зарплата сотрудника</span><b class="negative">'+money(c.staffSalary)+'</b></div><div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';}catch(e){document.getElementById("admin_kpis").innerHTML="";}}
+  const r=monthRange(monthKey());
+  try{
+    const data=await getReportData(r.start,r.end);const c=calculate(data);
+    document.getElementById("admin_kpis").innerHTML=
+      '<div class="kpi"><span>Выручка за месяц</span><b>'+money(c.allRev)+'</b></div>'+
+      '<div class="kpi"><span>Чистая прибыль</span><b class="'+(c.net>=0?"positive":"negative")+'">'+money(c.net)+'</b></div>'+
+      '<div class="kpi"><span>Расходы</span><b class="negative">'+money(c.totalExp)+'</b></div>'+
+      '<div class="kpi"><span>Зарплата сотрудника</span><b class="negative">'+money(c.staffSalary)+'</b></div>'+
+      '<div class="kpi"><span>Операций</span><b>'+c.ops+'</b></div>';
+  }catch(e){
+    console.error("Ошибка загрузки админ-панели:",e);
+    document.getElementById("admin_kpis").innerHTML='<div class="empty">Не удалось загрузить сводку: '+esc(e?.message||"ошибка")+'</div>';
+    showToast("Админ-панель: "+(e?.message||"ошибка загрузки"),"bad");
+  }
+}
 
 
 function shiftTypeLabel(type){
@@ -809,11 +823,16 @@ async function markShift(){
 async function loadShifts(){
   prepareShiftControls();
   const month=document.getElementById("shift_month")?.value||monthKey();
-  const {data,error}=await _supabase.from("tp_employee_shifts").select("*").order("work_date",{ascending:false});
+  let data,error;
+  try{
+    const result=await _supabase.from("tp_employee_shifts").select("*").order("work_date",{ascending:false});
+    data=result.data;error=result.error;
+  }catch(e){error=e;}
   if(error){
     document.getElementById("shift_kpis").innerHTML="";
-    document.getElementById("shift_history").innerHTML='<div class="empty">Не удалось загрузить смены. Проверьте применение миграции базы данных.</div>';
+    document.getElementById("shift_history").innerHTML='<div class="empty">Не удалось загрузить смены: '+esc(error.message||"ошибка соединения")+'</div>';
     console.error("Ошибка загрузки смен:",error);
+    showToast("Ошибка загрузки смен: "+(error.message||"проверьте соединение"),"bad");
     return;
   }
   const rows=(data||[]).filter(s=>String(s.work_date||"").slice(0,7)===month);
@@ -826,7 +845,7 @@ async function loadShifts(){
     '<div class="kpi"><span>Праздники</span><b>'+count("holiday")+'</b></div>'+
     '<div class="kpi"><span>К выплате</span><b class="positive">'+money(total)+'</b></div>';
   document.getElementById("shift_history").innerHTML=rows.map(s=>
-    '<div class="data-row"><div><b>'+esc(new Date(s.work_date+"T12:00:00").toLocaleDateString("ru-RU",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"}))+'</b><small>'+esc(shiftTypeLabel(s.day_type))+' · '+(s.is_holiday?"Праздничная ставка":"Начисление по календарю")+'</small></div><strong class="positive">'+money(s.amount)+'</strong></div>'
+    '<div class="data-row"><div><b>'+esc(new Date(s.work_date+"T12:00:00").toLocaleDateString("ru-RU",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"}))+'</b><small>'+esc(shiftTypeLabel(s.day_type))+' · '+(s.is_holiday?"Праздничная ставка":"Начисление по календарю")+'</small></div><div style="display:flex;align-items:center;gap:8px"><strong class="positive">'+money(s.amount)+'</strong><button class="icon-btn journal-delete" title="Удалить смену" onclick="deleteJournalOperation(\'shift\',\''+esc(s.work_date)+'\')">🗑</button></div></div>'
   ).join("")||'<div class="empty">За выбранный месяц смен пока нет</div>';
 }
 
