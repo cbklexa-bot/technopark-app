@@ -92,6 +92,8 @@ input::placeholder{color:#68717d}
 .journal-type{font-size:9px;padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .journal-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:center;padding:11px 10px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
 .journal-date{color:var(--muted);font-size:9px}.journal-main{display:flex;flex-direction:column;gap:4px;min-width:0}.journal-main b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.journal-main small{font-size:9px;color:var(--muted)}.journal-amount{font-weight:950;font-size:11px;white-space:nowrap}
+.journal-right{display:flex;align-items:center;gap:6px}
+.journal-delete{width:32px;height:32px;flex:0 0 32px;color:var(--red);border-color:rgba(255,83,102,.25)}
 @media(max-width:365px){.services,.admin-grid{grid-template-columns:1fr}.admin-wide{grid-column:auto}.form-grid-2,.month-row,.exp-head{grid-template-columns:1fr}}
 </style>
 </head>
@@ -178,6 +180,7 @@ input::placeholder{color:#68717d}
   </div>
   <div class="section-title">Продажи сегодня</div>
   <div id="sales_history" class="list"></div>
+</section>
 
 <section id="shift" class="page">
   <div class="hero">
@@ -239,12 +242,20 @@ input::placeholder{color:#68717d}
 
 <div id="win_journal" class="window">
   <div class="window-head"><button class="back" onclick="closeWin()">←</button><div><div class="eyebrow">ИСТОРИЯ</div><h2>Журнал операций</h2></div></div>
-  <div class="month-row">
+  <div class="periods">
+    <button class="period active" id="btn_journal_day" onclick="setJournalPeriod('day')">День</button>
+    <button class="period" id="btn_journal_month" onclick="setJournalPeriod('month')">Месяц</button>
+  </div>
+  <div id="journal_day_controls" class="month-row">
+    <input class="full" id="journal_day" type="date" onchange="loadJournal()">
+  </div>
+  <div id="journal_month_controls" class="month-row hidden">
     <select id="journal_month" class="full" onchange="loadJournal()"></select>
   </div>
   <div class="panel" style="padding:10px;margin-bottom:9px">
     <button class="btn btn-ghost" onclick="exportJournalCsv()">⬇ Экспорт CSV</button>
   </div>
+  <div id="journal_caption" class="report-caption">Операции за сегодня</div>
   <div id="journal_summary" class="kpi-grid" style="margin-bottom:9px"></div>
   <div id="journal_list" class="list"></div>
 </div>
@@ -297,7 +308,15 @@ function monthKey(d=new Date()){const x=new Date(d);return x.getFullYear()+"-"+S
 function monthLabel(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-1,1);let s=d.toLocaleDateString("ru-RU",{month:"long",year:"numeric"});return s.charAt(0).toUpperCase()+s.slice(1);}
 function monthRange(key){const [y,m]=key.split("-").map(Number);return {start:new Date(y,m-1,1),end:new Date(y,m,1)};}
 function showToast(msg,kind="good"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+(kind==="bad"?"bad":"good");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2600);}
-function showPage(id,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById(id)?.classList.add("active");el?.classList.add("active");if(id==="shift"){prepareShiftControls();loadShifts();}}
+function showPage(id,el){
+  const target=document.getElementById(id);
+  if(!target){showToast("Раздел не найден: "+id,"bad");return;}
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));
+  target.classList.add("active");
+  el?.classList.add("active");
+  if(id==="shift"){prepareShiftControls();loadShifts();}
+}
 function openWin(id){
   const adminWindows=["win_reports","win_journal","win_exp","win_stock"];
   if(adminWindows.includes(id)&&!adminUnlocked){
